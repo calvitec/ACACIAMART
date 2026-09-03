@@ -5,14 +5,13 @@
 {% block content %}
 
 <!-- ============================================================
-     MODERN ADMIN DASHBOARD - FIXED STATS
+     MODERN CLEAN ADMIN DASHBOARD - FIXED STATS
      ============================================================ -->
 <style>
     /* ============================================================
-       MODERN CLEAN THEME - FRESH & PROFESSIONAL
+       MODERN CLEAN THEME - FRESH & PROFESSIONAL (LIGHT MODE)
        ============================================================ */
     
-    /* Reset & Variables */
     :root {
         --primary: #6C3CE1;
         --primary-light: #8B5CF6;
@@ -52,29 +51,13 @@
         --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
     
-    /* Dark Mode Override */
-    [data-theme="dark"] {
-        --bg-body: #0F0F1A;
-        --bg-card: #1A1A2E;
-        --bg-input: #1E1E35;
-        --bg-hover: #252540;
-        --text-primary: #F0F0FA;
-        --text-secondary: #A0A0C0;
-        --text-muted: #606080;
-        --border-color: rgba(255,255,255,0.06);
-        --shadow: 0 1px 3px rgba(0,0,0,0.3);
-        --shadow-md: 0 4px 16px rgba(0,0,0,0.4);
-        --shadow-lg: 0 8px 32px rgba(0,0,0,0.5);
-    }
-    
     body {
         background: var(--bg-body);
         color: var(--text-primary);
         font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-        transition: var(--transition);
     }
     
-    /* Modern Glass Cards */
+    /* Modern Cards */
     .glass-card {
         background: var(--bg-card);
         border-radius: var(--radius);
@@ -89,7 +72,7 @@
         border-color: var(--primary-light);
     }
     
-    /* Stats Cards - Modern */
+    /* Stats Cards */
     .stat-card-modern {
         background: var(--bg-card);
         border-radius: var(--radius);
@@ -238,7 +221,7 @@
     }
     
     /* Live Ticker */
-    .live-ticker-modern {
+    .live-ticker {
         background: var(--bg-card);
         border-radius: var(--radius);
         padding: 14px 20px;
@@ -252,7 +235,7 @@
         box-shadow: var(--shadow);
     }
     
-    .live-ticker-modern .live-dot {
+    .live-ticker .live-dot {
         width: 8px;
         height: 8px;
         border-radius: 50%;
@@ -266,7 +249,7 @@
         50% { opacity: 0.5; transform: scale(0.8); }
     }
     
-    .live-ticker-modern .live-item {
+    .live-ticker .live-item {
         display: flex;
         align-items: center;
         gap: 6px;
@@ -274,20 +257,20 @@
         color: var(--text-secondary);
     }
     
-    .live-ticker-modern .live-item .value {
+    .live-ticker .live-item .value {
         font-weight: 700;
         color: var(--text-primary);
     }
     
-    .live-ticker-modern .live-item .value.green {
+    .live-ticker .live-item .value.green {
         color: var(--success);
     }
     
-    .live-ticker-modern .live-item .value.amber {
+    .live-ticker .live-item .value.amber {
         color: var(--warning);
     }
     
-    .live-ticker-modern .live-item .value.purple {
+    .live-ticker .live-item .value.purple {
         color: var(--primary);
     }
     
@@ -611,31 +594,6 @@
         width: 100%;
     }
     
-    /* Responsive */
-    @media (max-width: 768px) {
-        .stat-card-modern .stat-value {
-            font-size: 1.1rem;
-        }
-        .glass-card {
-            padding: 14px 16px;
-        }
-        .quick-actions-grid {
-            grid-template-columns: repeat(3, 1fr);
-        }
-        .stats-grid-modern {
-            grid-template-columns: repeat(2, 1fr) !important;
-        }
-    }
-    
-    @media (max-width: 480px) {
-        .stats-grid-modern {
-            grid-template-columns: 1fr !important;
-        }
-        .quick-actions-grid {
-            grid-template-columns: repeat(2, 1fr);
-        }
-    }
-    
     /* Sections */
     .section {
         display: block;
@@ -646,7 +604,7 @@
     }
     
     /* Stats Grid */
-    .stats-grid-modern {
+    .stats-grid {
         display: grid;
         grid-template-columns: repeat(4, 1fr);
         gap: 16px;
@@ -661,9 +619,31 @@
         margin-bottom: 20px;
     }
     
+    /* Responsive */
     @media (max-width: 768px) {
+        .stats-grid {
+            grid-template-columns: repeat(2, 1fr) !important;
+        }
         .charts-grid {
             grid-template-columns: 1fr;
+        }
+        .quick-actions-grid {
+            grid-template-columns: repeat(3, 1fr);
+        }
+        .glass-card {
+            padding: 14px 16px;
+        }
+        .stat-card-modern .stat-value {
+            font-size: 1.1rem;
+        }
+    }
+    
+    @media (max-width: 480px) {
+        .stats-grid {
+            grid-template-columns: 1fr !important;
+        }
+        .quick-actions-grid {
+            grid-template-columns: repeat(2, 1fr);
         }
     }
     
@@ -683,7 +663,7 @@
         border-radius: 10px;
     }
     
-    /* Tabs/Period Buttons */
+    /* Period Buttons */
     .period-btn {
         padding: 6px 14px;
         border-radius: 9999px;
@@ -707,31 +687,102 @@
         border-color: transparent;
         box-shadow: 0 2px 8px rgba(108, 60, 225, 0.2);
     }
+    
+    /* Sidebar overrides for layout */
+    .sidebar .nav-item {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+        padding: 10px 14px;
+        border-radius: var(--radius-sm);
+        color: var(--text-secondary);
+        cursor: pointer;
+        transition: var(--transition);
+        font-size: 0.8rem;
+        font-weight: 500;
+        border: 1px solid transparent;
+    }
+    
+    .sidebar .nav-item:hover {
+        background: var(--primary-bg);
+        color: var(--text-primary);
+        border-color: var(--primary);
+    }
+    
+    .sidebar .nav-item.active {
+        background: var(--primary-gradient);
+        color: white;
+        box-shadow: 0 4px 16px rgba(108, 60, 225, 0.3);
+    }
+    
+    .sidebar .nav-item .badge-nav {
+        margin-left: auto;
+        background: var(--danger);
+        color: white;
+        font-size: 0.5rem;
+        padding: 1px 8px;
+        border-radius: 9999px;
+        font-weight: 600;
+    }
+    
+    /* Toast */
+    .toast {
+        position: fixed;
+        bottom: 30px;
+        left: 50%;
+        transform: translateX(-50%);
+        padding: 12px 28px;
+        border-radius: var(--radius-sm);
+        color: white;
+        font-weight: 500;
+        font-size: 0.85rem;
+        z-index: 9999;
+        box-shadow: var(--shadow-xl);
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        max-width: 90%;
+    }
+    
+    .toast.success { background: linear-gradient(135deg, #065f46, #10B981); }
+    .toast.error { background: linear-gradient(135deg, #991b1b, #EF4444); }
+    .toast.info { background: linear-gradient(135deg, #1e3a5f, #3B82F6); }
+    .toast.warning { background: linear-gradient(135deg, #78350f, #F59E0B); }
+    .toast.hidden { display: none; }
 </style>
 
 <!-- ============================================================
-     DASHBOARD SECTION
+     SYNC STATUS BAR
      ============================================================ -->
-<div id="dashboard-section" class="section">
-
-    <!-- Sync Status Bar -->
-    <div id="syncStatusBar" class="mb-4" style="background:var(--bg-card);border:1px solid var(--border-color);border-radius:var(--radius);padding:14px 20px;display:none;">
-        <div style="display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:12px;">
-            <div style="display:flex;align-items:center;gap:12px;">
-                <div style="width:40px;height:40px;border-radius:50%;background:var(--info-bg);display:flex;align-items:center;justify-content:center;color:var(--info);font-size:1.2rem;animation:pulse-dot 2s infinite;">☁️</div>
-                <div>
-                    <div style="font-weight:700;color:var(--text-primary);font-size:0.9rem;"><span id="offlineOrderCount">0</span> offline order(s) pending sync</div>
-                    <div style="font-size:0.7rem;color:var(--text-muted);" id="offlineOrderDetails">Click sync to upload to cloud</div>
-                </div>
+<div id="syncStatusBar" class="mb-4 p-3 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200 hidden">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3">
+        <div class="flex items-center gap-3">
+            <div class="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center animate-pulse">
+                <i class="fas fa-cloud-upload-alt text-blue-600 text-xl"></i>
             </div>
-            <div style="display:flex;gap:8px;">
-                <button onclick="syncOfflineOrdersFromDashboard()" class="btn-gradient" style="font-size:0.7rem;padding:6px 16px;">
-                    <i class="fas fa-sync-alt"></i> Sync Now
-                </button>
-                <button onclick="dismissSyncBar()" class="btn-outline" style="font-size:0.7rem;padding:6px 16px;">✕</button>
+            <div>
+                <p class="text-sm font-semibold text-blue-800">
+                    <span id="offlineOrderCount">0</span> offline order(s) pending sync
+                </p>
+                <p class="text-xs text-blue-600" id="offlineOrderDetails">Click sync to upload to cloud</p>
             </div>
         </div>
+        <div class="flex gap-2 w-full sm:w-auto">
+            <button onclick="syncOfflineOrdersFromDashboard()"
+                    class="btn-gradient text-sm py-2 px-4 flex-1 sm:flex-none">
+                <i class="fas fa-sync-alt"></i> Sync Now
+            </button>
+            <button onclick="dismissSyncBar()" class="text-gray-400 hover:text-gray-600 px-3">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
     </div>
+</div>
+
+<!-- ============================================================
+     DASHBOARD SECTION - FIXED STATS
+     ============================================================ -->
+<div id="dashboard-section" class="section">
 
     <!-- Quick Actions -->
     <div class="quick-actions-grid">
@@ -762,7 +813,7 @@
     </div>
 
     <!-- Live Ticker -->
-    <div class="live-ticker-modern">
+    <div class="live-ticker">
         <div class="live-item">
             <span class="live-dot"></span>
             <span style="font-weight:600;">Live</span>
@@ -784,7 +835,7 @@
     </div>
 
     <!-- Stats Grid -->
-    <div class="stats-grid-modern">
+    <div class="stats-grid">
         <div class="stat-card-modern">
             <div style="display:flex;justify-content:space-between;align-items:flex-start;">
                 <div class="icon-wrap purple">💰</div>
@@ -907,171 +958,6 @@
 </div>
 
 <!-- ============================================================
-     ANALYTICS SECTION - FIXED DATA
-     ============================================================ -->
-<div id="analytics-section" class="section hidden">
-    <!-- Summary Stats -->
-    <div class="stats-grid-modern" style="grid-template-columns:repeat(4,1fr);">
-        <div class="stat-card-modern">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-                <div class="icon-wrap green">💰</div>
-            </div>
-            <div class="stat-label">Revenue</div>
-            <div class="stat-value" id="totalRevenue">KSh {{ "%.0f"|format(analytics.total_revenue|default(0)) }}</div>
-        </div>
-        <div class="stat-card-modern">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-                <div class="icon-wrap blue">📦</div>
-            </div>
-            <div class="stat-label">Cost</div>
-            <div class="stat-value" id="totalCost">KSh {{ "%.0f"|format(analytics.total_cost|default(0)) }}</div>
-        </div>
-        <div class="stat-card-modern">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-                <div class="icon-wrap purple">📈</div>
-            </div>
-            <div class="stat-label">Profit</div>
-            <div class="stat-value" id="totalProfit">KSh {{ "%.0f"|format(analytics.total_profit|default(0)) }}</div>
-        </div>
-        <div class="stat-card-modern">
-            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
-                <div class="icon-wrap amber">🛒</div>
-            </div>
-            <div class="stat-label">Orders</div>
-            <div class="stat-value" id="totalOrders">{{ stats.total_orders|default(0) }}</div>
-        </div>
-    </div>
-
-    <!-- Sales Breakdown -->
-    <div class="glass-card" style="margin-bottom:16px;">
-        <h3 style="font-size:0.85rem;font-weight:700;color:var(--text-primary);margin-bottom:12px;display:flex;align-items:center;gap:8px;">
-            <span style="color:var(--primary);">📊</span> Sales Breakdown
-        </h3>
-        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
-            <div style="background:var(--info-bg);padding:12px;border-radius:var(--radius-sm);text-align:center;">
-                <p style="font-size:0.6rem;color:var(--text-muted);">Cash Sales</p>
-                <p style="font-size:1.1rem;font-weight:700;color:var(--info);" id="cashSales">KSh {{ "%.0f"|format(analytics.cash_sales|default(0)) }}</p>
-            </div>
-            <div style="background:var(--primary-bg);padding:12px;border-radius:var(--radius-sm);text-align:center;">
-                <p style="font-size:0.6rem;color:var(--text-muted);">Credit Sales</p>
-                <p style="font-size:1.1rem;font-weight:700;color:var(--primary);" id="creditSales">KSh {{ "%.0f"|format(analytics.credit_sales|default(0)) }}</p>
-            </div>
-            <div style="background:var(--success-bg);padding:12px;border-radius:var(--radius-sm);text-align:center;">
-                <p style="font-size:0.6rem;color:var(--text-muted);">Total Revenue</p>
-                <p style="font-size:1.1rem;font-weight:700;color:var(--success);" id="totalRevenueMerged">KSh {{ "%.0f"|format(analytics.total_revenue|default(0)) }}</p>
-            </div>
-            <div style="background:var(--warning-bg);padding:12px;border-radius:var(--radius-sm);text-align:center;">
-                <p style="font-size:0.6rem;color:var(--text-muted);">Credit % of Total</p>
-                <p style="font-size:1.1rem;font-weight:700;color:var(--warning);" id="creditPercentage">{{ analytics.credit_percentage|default(0) }}%</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Profit Overview -->
-    <div class="glass-card" style="margin-bottom:16px;">
-        <h3 style="font-size:0.85rem;font-weight:700;color:var(--text-primary);margin-bottom:12px;display:flex;align-items:center;gap:8px;">
-            <span style="color:var(--primary);">📈</span> Profit Overview
-        </h3>
-        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
-            <div style="background:linear-gradient(135deg, #ecfdf5, #d1fae5);padding:14px;border-radius:var(--radius-sm);text-align:center;">
-                <p style="font-size:0.6rem;color:var(--text-muted);">Revenue</p>
-                <p style="font-size:1.1rem;font-weight:700;color:var(--success);" id="revRevenue">KSh {{ "%.0f"|format(analytics.total_revenue|default(0)) }}</p>
-            </div>
-            <div style="background:linear-gradient(135deg, #f5f3ff, #ede9fe);padding:14px;border-radius:var(--radius-sm);text-align:center;">
-                <p style="font-size:0.6rem;color:var(--text-muted);">Profit</p>
-                <p style="font-size:1.1rem;font-weight:700;color:var(--primary);" id="revProfit">KSh {{ "%.0f"|format(analytics.total_profit|default(0)) }}</p>
-            </div>
-            <div style="background:linear-gradient(135deg, #eff6ff, #dbeafe);padding:14px;border-radius:var(--radius-sm);text-align:center;">
-                <p style="font-size:0.6rem;color:var(--text-muted);">Margin</p>
-                <p style="font-size:1.1rem;font-weight:700;color:var(--info);" id="profitMarginDisplay">{{ analytics.profit_margin|default(0) }}%</p>
-            </div>
-        </div>
-    </div>
-
-    <!-- Monthly Performance -->
-    <div class="glass-card" style="margin-bottom:16px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-            <h3 style="font-size:0.85rem;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:8px;">
-                <span style="color:var(--primary);">📅</span> Monthly Performance
-            </h3>
-            <span style="font-size:0.6rem;color:var(--text-muted);">Revenue breakdown</span>
-        </div>
-        <div class="table-wrap" style="max-height:300px;overflow-y:auto;">
-            <table>
-                <thead>
-                    <tr>
-                        <th style="font-size:0.6rem;">Month</th>
-                        <th style="text-align:right;font-size:0.6rem;">Orders</th>
-                        <th style="text-align:right;font-size:0.6rem;">Items</th>
-                        <th style="text-align:right;font-size:0.6rem;">Revenue</th>
-                        <th style="text-align:right;font-size:0.6rem;">Cost</th>
-                        <th style="text-align:right;font-size:0.6rem;">Profit</th>
-                        <th style="text-align:right;font-size:0.6rem;">Margin</th>
-                    </tr>
-                </thead>
-                <tbody id="monthlyTable">
-                    {% if analytics.monthly_data and analytics.monthly_data|length > 0 %}
-                        {% for month, data in analytics.monthly_data.items()|sort(reverse=true) %}
-                        <tr>
-                            <td style="font-weight:600;font-size:0.75rem;">{{ month }}</td>
-                            <td style="text-align:right;font-size:0.75rem;">{{ data.orders|default(0) }}</td>
-                            <td style="text-align:right;font-size:0.75rem;">{{ data.items|default(0) }}</td>
-                            <td style="text-align:right;font-weight:600;color:var(--success);font-size:0.75rem;">KSh {{ "%.0f"|format(data.revenue|default(0)) }}</td>
-                            <td style="text-align:right;color:var(--text-muted);font-size:0.75rem;">KSh {{ "%.0f"|format(data.cost|default(0)) }}</td>
-                            <td style="text-align:right;font-weight:600;color:var(--primary);font-size:0.75rem;">KSh {{ "%.0f"|format(data.profit|default(0)) }}</td>
-                            <td style="text-align:right;font-weight:600;color:var(--info);font-size:0.75rem;">{{ data.margin|default(0) }}%</td>
-                        </tr>
-                        {% endfor %}
-                    {% else %}
-                        <tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-muted);">No monthly data available</td></tr>
-                    {% endif %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- Top Products -->
-    <div class="glass-card">
-        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
-            <h3 style="font-size:0.85rem;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:8px;">
-                <span style="color:var(--warning);">🏆</span> Top Selling Products
-            </h3>
-            <span style="font-size:0.6rem;color:var(--text-muted);">By profit</span>
-        </div>
-        <div class="table-wrap" style="max-height:300px;overflow-y:auto;">
-            <table>
-                <thead>
-                    <tr>
-                        <th style="font-size:0.6rem;">Product</th>
-                        <th style="text-align:right;font-size:0.6rem;">Qty</th>
-                        <th style="text-align:right;font-size:0.6rem;">Revenue</th>
-                        <th style="text-align:right;font-size:0.6rem;">Cost</th>
-                        <th style="text-align:right;font-size:0.6rem;">Profit</th>
-                        <th style="text-align:right;font-size:0.6rem;">Margin</th>
-                    </tr>
-                </thead>
-                <tbody id="productTable">
-                    {% if analytics.product_sales and analytics.product_sales|length > 0 %}
-                        {% for name, data in analytics.product_sales.items()|sort(attribute='1.profit', reverse=true)|slice(10) %}
-                        <tr>
-                            <td style="font-weight:600;font-size:0.75rem;">{{ name }}</td>
-                            <td style="text-align:right;font-size:0.75rem;">{{ data.quantity|default(0) }}</td>
-                            <td style="text-align:right;font-weight:600;color:var(--success);font-size:0.75rem;">KSh {{ "%.0f"|format(data.revenue|default(0)) }}</td>
-                            <td style="text-align:right;color:var(--text-muted);font-size:0.75rem;">KSh {{ "%.0f"|format(data.cost|default(0)) }}</td>
-                            <td style="text-align:right;font-weight:600;color:var(--primary);font-size:0.75rem;">KSh {{ "%.0f"|format(data.profit|default(0)) }}</td>
-                            <td style="text-align:right;font-weight:600;color:var(--info);font-size:0.75rem;">{{ data.margin|default(0) }}%</td>
-                        </tr>
-                        {% endfor %}
-                    {% else %}
-                        <tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text-muted);">No products sold yet</td></tr>
-                    {% endif %}
-                </tbody>
-            </table>
-        </div>
-    </div>
-</div>
-
-<!-- ============================================================
      PRODUCTS SECTION - WITH WORKING SEARCH
      ============================================================ -->
 <div id="products-section" class="section hidden">
@@ -1079,15 +965,21 @@
         <div style="flex:1;min-width:200px;">
             <input type="text" id="productSearchInput" 
                    placeholder="🔍 Search products by name, barcode, category..." 
-                   class="form-input" style="font-size:0.8rem;" />
+                   class="form-input" style="font-size:0.8rem;" 
+                   onkeyup="searchProducts()" />
         </div>
-        <select id="productFilterSelect" class="form-input" style="width:auto;min-width:140px;">
+        <select id="productFilterSelect" class="form-input" style="width:auto;min-width:140px;" onchange="searchProducts()">
             <option value="all">📦 All Products</option>
             <option value="low_stock">⚠️ Low Stock</option>
             <option value="out_of_stock">❌ Out of Stock</option>
         </select>
         <button onclick="clearProductFilters()" class="btn-outline" style="font-size:0.7rem;">✕ Clear</button>
         <button onclick="showSection('add-product')" class="btn-gradient" style="font-size:0.7rem;">➕ Add Product</button>
+    </div>
+
+    <!-- Search Results Info -->
+    <div id="searchResultsInfo" class="text-xs text-gray-500 mb-2 hidden">
+        <span id="searchResultCount"></span>
     </div>
 
     <div class="glass-card" style="padding:0;overflow:hidden;">
@@ -1339,7 +1231,7 @@
     </div>
 
     <!-- Credit Stats -->
-    <div class="stats-grid-modern" style="grid-template-columns:repeat(4,1fr);">
+    <div class="stats-grid">
         <div class="stat-card-modern">
             <div class="stat-label">Total Customers</div>
             <div class="stat-value">{{ credit_summary.total_customers|default(0) }}</div>
@@ -1417,7 +1309,7 @@
     </div>
 
     <!-- Supplier Stats -->
-    <div class="stats-grid-modern" style="grid-template-columns:repeat(3,1fr);">
+    <div class="stats-grid">
         <div class="stat-card-modern">
             <div class="stat-label">Total Suppliers</div>
             <div class="stat-value">{{ supplier_summary.total_suppliers|default(0) }}</div>
@@ -1487,7 +1379,7 @@
         <div style="font-size:4rem;margin-bottom:12px;">🛒</div>
         <h3 style="font-size:1.2rem;font-weight:700;color:var(--text-primary);">Point of Sale</h3>
         <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:16px;">Launch the full POS interface to create orders for customers.</p>
-        <a href="/admin/pos" target="_blank" class="btn-gradient" style="font-size:0.9rem;padding:10px 32px;background:linear-gradient(135deg,#10B981,#059669);">
+        <a href="/admin/pos" target="_blank" class="btn-gradient green" style="font-size:0.9rem;padding:10px 32px;background:linear-gradient(135deg,#10B981,#059669);">
             <i class="fas fa-cash-register"></i> Launch POS
         </a>
         <p style="font-size:0.6rem;color:var(--text-muted);margin-top:10px;">Opens in a new tab</p>
@@ -1495,7 +1387,7 @@
 </div>
 
 <!-- ============================================================
-     MODALS (Keep existing modals - they work fine)
+     MODALS
      ============================================================ -->
 
 <!-- Edit Product Modal -->
@@ -1671,19 +1563,8 @@
     </div>
 </div>
 
-<!-- Profit Modal -->
-<div id="profitModal" class="fixed inset-0 bg-black/50 backdrop-blur-sm hidden z-50 flex items-center justify-center p-4">
-    <div class="bg-white rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto shadow-2xl">
-        <div class="sticky top-0 bg-white p-4 border-b flex items-center justify-between">
-            <h3 class="font-bold text-lg">📊 Profit Details</h3>
-            <button onclick="document.getElementById('profitModal').classList.add('hidden')" class="text-gray-400 hover:text-gray-600 text-2xl">&times;</button>
-        </div>
-        <div id="profitContent" class="p-4"></div>
-    </div>
-</div>
-
 <!-- Toast -->
-<div id="toast" class="toast hidden" style="position:fixed;bottom:30px;left:50%;transform:translateX(-50%);padding:12px 28px;border-radius:12px;color:white;font-weight:500;font-size:0.85rem;z-index:9999;box-shadow:0 8px 32px rgba(0,0,0,0.2);display:flex;align-items:center;gap:10px;max-width:90%;">
+<div id="toast" class="toast hidden">
     <span id="toastMessage">Success!</span>
 </div>
 
@@ -1699,13 +1580,7 @@ function showToast(msg, type) {
     const toast = document.getElementById('toast');
     const el = document.getElementById('toastMessage');
     if (toast && el) {
-        const colors = {
-            success: 'linear-gradient(135deg, #065f46, #10B981)',
-            error: 'linear-gradient(135deg, #991b1b, #EF4444)',
-            info: 'linear-gradient(135deg, #1e3a5f, #3B82F6)',
-            warning: 'linear-gradient(135deg, #78350f, #F59E0B)'
-        };
-        toast.style.background = colors[type] || colors.success;
+        toast.className = 'toast ' + type;
         el.textContent = msg;
         toast.classList.remove('hidden');
         clearTimeout(window.toastTimeout);
@@ -1725,6 +1600,14 @@ function showSection(sectionName) {
     const target = document.getElementById(sectionName + '-section');
     if (target) target.classList.remove('hidden');
     
+    // Update sidebar
+    document.querySelectorAll('.sidebar .nav-item').forEach(item => item.classList.remove('active'));
+    document.querySelectorAll('.sidebar .nav-item').forEach(item => {
+        if (item.getAttribute('onclick') && item.getAttribute('onclick').includes("showSection('" + sectionName + "')")) {
+            item.classList.add('active');
+        }
+    });
+    
     // Update page title
     const titles = {
         'dashboard': 'Dashboard',
@@ -1737,14 +1620,29 @@ function showSection(sectionName) {
         'add-product': 'Add Product',
         'pos': 'Point of Sale'
     };
-    document.getElementById('pageTitle').innerHTML = titles[sectionName] || 'Dashboard';
+    const titleEl = document.getElementById('pageTitle');
+    if (titleEl) titleEl.innerHTML = titles[sectionName] || 'Dashboard';
     
     // Load products if needed
     if (sectionName === 'products') setTimeout(loadProductsWithFilters, 300);
-    if (sectionName === 'analytics') setTimeout(loadAnalyticsData, 300);
     
     // Close sidebar on mobile
     closeSidebar();
+}
+
+// ============================================================
+// SIDEBAR
+// ============================================================
+function closeSidebar() {
+    const sidebar = document.getElementById('sidebar');
+    const backdrop = document.getElementById('backdrop');
+    if (sidebar) sidebar.classList.remove('open');
+    if (backdrop) backdrop.classList.remove('active');
+}
+
+function openSidebar() {
+    document.getElementById('sidebar').classList.add('open');
+    document.getElementById('backdrop').classList.add('active');
 }
 
 // ============================================================
@@ -1907,6 +1805,9 @@ function clearProductFilters() {
     productFilter = 'all';
     currentProductPage = 1;
     loadProductsWithFilters();
+    
+    const infoEl = document.getElementById('searchResultsInfo');
+    if (infoEl) infoEl.classList.add('hidden');
 }
 
 // Search input handler
@@ -2097,108 +1998,74 @@ function loadOrdersPage(page) {
 }
 
 // ============================================================
-// ANALYTICS FUNCTIONS
+// CHARTS
 // ============================================================
-function loadAnalyticsData() {
-    console.log('📊 Loading analytics data...');
-    fetch('/admin/api/analytics?t=' + Date.now())
-        .then(r => r.json())
-        .then(data => {
-            console.log('✅ Analytics data loaded:', data);
-            updateAnalyticsUI(data);
-        })
-        .catch(err => console.error('❌ Error loading analytics:', err));
-}
+var revenueChart = null;
+var categoryChart = null;
 
-function updateAnalyticsUI(data) {
-    // Update stats
-    document.getElementById('totalRevenue').textContent = 'KSh ' + (data.total_revenue || 0).toLocaleString();
-    document.getElementById('totalCost').textContent = 'KSh ' + (data.total_cost || 0).toLocaleString();
-    document.getElementById('totalProfit').textContent = 'KSh ' + (data.total_profit || 0).toLocaleString();
-    document.getElementById('totalOrders').textContent = data.total_orders || 0;
-    
-    document.getElementById('cashSales').textContent = 'KSh ' + (data.cash_sales || 0).toLocaleString();
-    document.getElementById('creditSales').textContent = 'KSh ' + (data.credit_sales || 0).toLocaleString();
-    document.getElementById('totalRevenueMerged').textContent = 'KSh ' + (data.total_revenue || 0).toLocaleString();
-    document.getElementById('creditPercentage').textContent = (data.credit_percentage || 0) + '%';
-    
-    document.getElementById('revRevenue').textContent = 'KSh ' + (data.total_revenue || 0).toLocaleString();
-    document.getElementById('revProfit').textContent = 'KSh ' + (data.total_profit || 0).toLocaleString();
-    document.getElementById('profitMarginDisplay').textContent = (data.profit_margin || 0) + '%';
-    
-    // Update monthly table
-    const monthlyTable = document.getElementById('monthlyTable');
-    if (monthlyTable && data.monthly_data) {
-        const months = Object.keys(data.monthly_data).sort();
-        if (months.length > 0) {
-            let html = '';
-            for (let i = 0; i < months.length; i++) {
-                const month = months[i];
-                const m = data.monthly_data[month];
-                html += `<tr>
-                    <td style="font-weight:600;font-size:0.75rem;">${month}</td>
-                    <td style="text-align:right;font-size:0.75rem;">${m.orders || 0}</td>
-                    <td style="text-align:right;font-size:0.75rem;">${m.items || 0}</td>
-                    <td style="text-align:right;font-weight:600;color:var(--success);font-size:0.75rem;">KSh ${(m.revenue || 0).toLocaleString()}</td>
-                    <td style="text-align:right;color:var(--text-muted);font-size:0.75rem;">KSh ${(m.cost || 0).toLocaleString()}</td>
-                    <td style="text-align:right;font-weight:600;color:var(--primary);font-size:0.75rem;">KSh ${(m.profit || 0).toLocaleString()}</td>
-                    <td style="text-align:right;font-weight:600;color:var(--info);font-size:0.75rem;">${m.margin || 0}%</td>
-                </tr>`;
-            }
-            monthlyTable.innerHTML = html;
-        } else {
-            monthlyTable.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-muted);">No monthly data available</td></tr>`;
-        }
+function initCharts() {
+    if (typeof Chart === 'undefined') {
+        setTimeout(initCharts, 500);
+        return;
     }
     
-    // Update product table
-    const productTable = document.getElementById('productTable');
-    if (productTable && data.product_sales) {
-        const productNames = Object.keys(data.product_sales);
-        if (productNames.length > 0) {
-            let html = '';
-            const count = Math.min(productNames.length, 10);
-            for (let j = 0; j < count; j++) {
-                const name = productNames[j];
-                const p = data.product_sales[name];
-                html += `<tr>
-                    <td style="font-weight:600;font-size:0.75rem;">${name}</td>
-                    <td style="text-align:right;font-size:0.75rem;">${p.quantity || 0}</td>
-                    <td style="text-align:right;font-weight:600;color:var(--success);font-size:0.75rem;">KSh ${(p.revenue || 0).toLocaleString()}</td>
-                    <td style="text-align:right;color:var(--text-muted);font-size:0.75rem;">KSh ${(p.cost || 0).toLocaleString()}</td>
-                    <td style="text-align:right;font-weight:600;color:var(--primary);font-size:0.75rem;">KSh ${(p.profit || 0).toLocaleString()}</td>
-                    <td style="text-align:right;font-weight:600;color:var(--info);font-size:0.75rem;">${p.margin || 0}%</td>
-                </tr>`;
+    // Revenue Chart
+    const revenueCtx = document.getElementById('revenueChart');
+    if (revenueCtx) {
+        if (revenueChart) revenueChart.destroy();
+        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
+        const monthRevenue = {{ stats.month_revenue|default(0) }};
+        revenueChart = new Chart(revenueCtx, {
+            type: 'line',
+            data: {
+                labels: months,
+                datasets: [{
+                    label: 'Revenue',
+                    data: [
+                        monthRevenue * 0.2,
+                        monthRevenue * 0.35,
+                        monthRevenue * 0.5,
+                        monthRevenue * 0.7,
+                        monthRevenue * 0.85,
+                        monthRevenue
+                    ],
+                    borderColor: '#6C3CE1',
+                    backgroundColor: 'rgba(108, 60, 225, 0.08)',
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#6C3CE1',
+                    pointBorderColor: 'white',
+                    pointBorderWidth: 2,
+                    pointRadius: 4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } }
             }
-            productTable.innerHTML = html;
-        } else {
-            productTable.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text-muted);">No products sold yet</td></tr>`;
-        }
+        });
     }
     
-    // Update charts if they exist
-    if (typeof revenueChart !== 'undefined' && revenueChart && data.monthly_data) {
-        try {
-            const months = Object.keys(data.monthly_data).sort();
-            const revenueValues = months.map(m => data.monthly_data[m].revenue || 0);
-            revenueChart.data.labels = months;
-            revenueChart.data.datasets[0].data = revenueValues;
-            revenueChart.update();
-        } catch(e) { console.log('⚠️ Could not update revenue chart:', e); }
-    }
-    
-    if (typeof categoryChart !== 'undefined' && categoryChart && data.category_sales) {
-        try {
-            const categories = Object.keys(data.category_sales);
-            const values = categories.map(c => data.category_sales[c].revenue || 0);
-            if (categories.length > 0) {
-                const colors = ['#6C3CE1', '#4F46E5', '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#EC4899', '#14B8A6'];
-                categoryChart.data.labels = categories;
-                categoryChart.data.datasets[0].data = values;
-                categoryChart.data.datasets[0].backgroundColor = colors.slice(0, categories.length);
-                categoryChart.update();
+    // Category Chart
+    const categoryCtx = document.getElementById('categoryChart');
+    if (categoryCtx) {
+        if (categoryChart) categoryChart.destroy();
+        categoryChart = new Chart(categoryCtx, {
+            type: 'doughnut',
+            data: {
+                labels: ['Phones', 'Laptops', 'Accessories', 'Wearables', 'Other'],
+                datasets: [{
+                    data: [35, 25, 20, 12, 8],
+                    backgroundColor: ['#6C3CE1', '#4F46E5', '#3B82F6', '#10B981', '#F59E0B']
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } }
             }
-        } catch(e) { console.log('⚠️ Could not update category chart:', e); }
+        });
     }
 }
 
@@ -2457,75 +2324,10 @@ function dismissSyncBar() {
 }
 
 // ============================================================
-// CHARTS
+// SCAN BARCODE
 // ============================================================
-var revenueChart = null;
-var categoryChart = null;
-
-function initCharts() {
-    if (typeof Chart === 'undefined') {
-        setTimeout(initCharts, 500);
-        return;
-    }
-    
-    // Revenue Chart
-    const revenueCtx = document.getElementById('revenueChart');
-    if (revenueCtx) {
-        if (revenueChart) revenueChart.destroy();
-        const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun'];
-        const monthRevenue = {{ stats.month_revenue|default(0) }};
-        revenueChart = new Chart(revenueCtx, {
-            type: 'line',
-            data: {
-                labels: months,
-                datasets: [{
-                    label: 'Revenue (KSh)',
-                    data: [
-                        monthRevenue * 0.2,
-                        monthRevenue * 0.35,
-                        monthRevenue * 0.5,
-                        monthRevenue * 0.7,
-                        monthRevenue * 0.85,
-                        monthRevenue
-                    ],
-                    borderColor: '#6C3CE1',
-                    backgroundColor: 'rgba(108, 60, 225, 0.08)',
-                    fill: true,
-                    tension: 0.4,
-                    pointBackgroundColor: '#6C3CE1',
-                    pointBorderColor: 'white',
-                    pointBorderWidth: 2,
-                    pointRadius: 4
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { display: false } }
-            }
-        });
-    }
-    
-    // Category Chart
-    const categoryCtx = document.getElementById('categoryChart');
-    if (categoryCtx) {
-        if (categoryChart) categoryChart.destroy();
-        categoryChart = new Chart(categoryCtx, {
-            type: 'doughnut',
-            data: {
-                labels: ['Phones', 'Laptops', 'Accessories', 'Wearables', 'Other'],
-                datasets: [{
-                    data: [35, 25, 20, 12, 8],
-                    backgroundColor: ['#6C3CE1', '#4F46E5', '#3B82F6', '#10B981', '#F59E0B']
-                }]
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { position: 'bottom' } }
-            }
-        });
-    }
+function scanBarcode() {
+    showToast('📷 Barcode scanner - Coming Soon', 'info');
 }
 
 // ============================================================
@@ -2538,30 +2340,15 @@ setInterval(updateLiveTime, 30000);
 updateLiveTime();
 
 // ============================================================
-// SIDEBAR
+// TOGGLE SIDEBAR ON MOBILE
 // ============================================================
-function closeSidebar() {
-    const sidebar = document.getElementById('sidebar');
-    const backdrop = document.getElementById('backdrop');
-    if (sidebar) sidebar.classList.remove('open');
-    if (backdrop) backdrop.classList.remove('active');
-}
-
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
     if (sidebar.classList.contains('open')) {
         closeSidebar();
     } else {
-        sidebar.classList.add('open');
-        document.getElementById('backdrop').classList.add('active');
+        openSidebar();
     }
-}
-
-// ============================================================
-// SCAN BARCODE
-// ============================================================
-function scanBarcode() {
-    showToast('📷 Barcode scanner - Coming Soon', 'info');
 }
 
 // ============================================================
@@ -2572,7 +2359,6 @@ document.addEventListener('DOMContentLoaded', function() {
     
     loadProductsWithFilters();
     initCharts();
-    loadAnalyticsData();
     
     // Check for offline orders
     const offlineCount = 0;
