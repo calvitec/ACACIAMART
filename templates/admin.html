@@ -5,7 +5,7 @@
 {% block content %}
 
 <!-- ============================================================
-     MODERN CLEAN ADMIN DASHBOARD - FIXED STATS
+     MODERN CLEAN ADMIN DASHBOARD - FULLY WORKING
      ============================================================ -->
 <style>
     /* ============================================================
@@ -958,6 +958,171 @@
 </div>
 
 <!-- ============================================================
+     ANALYTICS SECTION - COMPLETE
+     ============================================================ -->
+<div id="analytics-section" class="section hidden">
+    <!-- Summary Stats -->
+    <div class="stats-grid" style="grid-template-columns:repeat(4,1fr);">
+        <div class="stat-card-modern">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                <div class="icon-wrap green">💰</div>
+            </div>
+            <div class="stat-label">Revenue</div>
+            <div class="stat-value" id="totalRevenue">KSh {{ "%.0f"|format(analytics.total_revenue|default(0)) }}</div>
+        </div>
+        <div class="stat-card-modern">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                <div class="icon-wrap blue">📦</div>
+            </div>
+            <div class="stat-label">Cost</div>
+            <div class="stat-value" id="totalCost">KSh {{ "%.0f"|format(analytics.total_cost|default(0)) }}</div>
+        </div>
+        <div class="stat-card-modern">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                <div class="icon-wrap purple">📈</div>
+            </div>
+            <div class="stat-label">Profit</div>
+            <div class="stat-value" id="totalProfit">KSh {{ "%.0f"|format(analytics.total_profit|default(0)) }}</div>
+        </div>
+        <div class="stat-card-modern">
+            <div style="display:flex;justify-content:space-between;align-items:flex-start;">
+                <div class="icon-wrap amber">🛒</div>
+            </div>
+            <div class="stat-label">Orders</div>
+            <div class="stat-value" id="totalOrders">{{ stats.total_orders|default(0) }}</div>
+        </div>
+    </div>
+
+    <!-- Sales Breakdown - Cash vs Credit -->
+    <div class="glass-card" style="margin-bottom:16px;">
+        <h3 style="font-size:0.85rem;font-weight:700;color:var(--text-primary);margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+            <span style="color:var(--primary);">📊</span> Sales Breakdown
+        </h3>
+        <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:12px;">
+            <div style="background:var(--info-bg);padding:12px;border-radius:var(--radius-sm);text-align:center;">
+                <p style="font-size:0.6rem;color:var(--text-muted);">Cash Sales</p>
+                <p style="font-size:1.1rem;font-weight:700;color:var(--info);" id="cashSales">KSh {{ "%.0f"|format(analytics.cash_sales|default(0)) }}</p>
+            </div>
+            <div style="background:var(--primary-bg);padding:12px;border-radius:var(--radius-sm);text-align:center;">
+                <p style="font-size:0.6rem;color:var(--text-muted);">Credit Sales</p>
+                <p style="font-size:1.1rem;font-weight:700;color:var(--primary);" id="creditSales">KSh {{ "%.0f"|format(analytics.credit_sales|default(0)) }}</p>
+            </div>
+            <div style="background:var(--success-bg);padding:12px;border-radius:var(--radius-sm);text-align:center;">
+                <p style="font-size:0.6rem;color:var(--text-muted);">Total Revenue</p>
+                <p style="font-size:1.1rem;font-weight:700;color:var(--success);" id="totalRevenueMerged">KSh {{ "%.0f"|format(analytics.total_revenue|default(0)) }}</p>
+            </div>
+            <div style="background:var(--warning-bg);padding:12px;border-radius:var(--radius-sm);text-align:center;">
+                <p style="font-size:0.6rem;color:var(--text-muted);">Credit % of Total</p>
+                <p style="font-size:1.1rem;font-weight:700;color:var(--warning);" id="creditPercentage">{{ analytics.credit_percentage|default(0) }}%</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Profit Overview -->
+    <div class="glass-card" style="margin-bottom:16px;">
+        <h3 style="font-size:0.85rem;font-weight:700;color:var(--text-primary);margin-bottom:12px;display:flex;align-items:center;gap:8px;">
+            <span style="color:var(--primary);">📈</span> Profit Overview
+        </h3>
+        <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;">
+            <div style="background:linear-gradient(135deg, #ecfdf5, #d1fae5);padding:14px;border-radius:var(--radius-sm);text-align:center;">
+                <p style="font-size:0.6rem;color:var(--text-muted);">Revenue</p>
+                <p style="font-size:1.1rem;font-weight:700;color:var(--success);" id="revRevenue">KSh {{ "%.0f"|format(analytics.total_revenue|default(0)) }}</p>
+            </div>
+            <div style="background:linear-gradient(135deg, #f5f3ff, #ede9fe);padding:14px;border-radius:var(--radius-sm);text-align:center;">
+                <p style="font-size:0.6rem;color:var(--text-muted);">Profit</p>
+                <p style="font-size:1.1rem;font-weight:700;color:var(--primary);" id="revProfit">KSh {{ "%.0f"|format(analytics.total_profit|default(0)) }}</p>
+            </div>
+            <div style="background:linear-gradient(135deg, #eff6ff, #dbeafe);padding:14px;border-radius:var(--radius-sm);text-align:center;">
+                <p style="font-size:0.6rem;color:var(--text-muted);">Margin</p>
+                <p style="font-size:1.1rem;font-weight:700;color:var(--info);" id="profitMarginDisplay">{{ analytics.profit_margin|default(0) }}%</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Monthly Performance -->
+    <div class="glass-card" style="margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <h3 style="font-size:0.85rem;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:8px;">
+                <span style="color:var(--primary);">📅</span> Monthly Performance
+            </h3>
+            <span style="font-size:0.6rem;color:var(--text-muted);">Revenue breakdown</span>
+        </div>
+        <div class="table-wrap" style="max-height:300px;overflow-y:auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="font-size:0.6rem;">Month</th>
+                        <th style="text-align:right;font-size:0.6rem;">Orders</th>
+                        <th style="text-align:right;font-size:0.6rem;">Items</th>
+                        <th style="text-align:right;font-size:0.6rem;">Revenue</th>
+                        <th style="text-align:right;font-size:0.6rem;">Cost</th>
+                        <th style="text-align:right;font-size:0.6rem;">Profit</th>
+                        <th style="text-align:right;font-size:0.6rem;">Margin</th>
+                    </tr>
+                </thead>
+                <tbody id="monthlyTable">
+                    {% if analytics.monthly_data and analytics.monthly_data|length > 0 %}
+                        {% for month, data in analytics.monthly_data.items()|sort(reverse=true) %}
+                        <tr>
+                            <td style="font-weight:600;font-size:0.75rem;">{{ month }}</td>
+                            <td style="text-align:right;font-size:0.75rem;">{{ data.orders|default(0) }}</td>
+                            <td style="text-align:right;font-size:0.75rem;">{{ data.items|default(0) }}</td>
+                            <td style="text-align:right;font-weight:600;color:var(--success);font-size:0.75rem;">KSh {{ "%.0f"|format(data.revenue|default(0)) }}</td>
+                            <td style="text-align:right;color:var(--text-muted);font-size:0.75rem;">KSh {{ "%.0f"|format(data.cost|default(0)) }}</td>
+                            <td style="text-align:right;font-weight:600;color:var(--primary);font-size:0.75rem;">KSh {{ "%.0f"|format(data.profit|default(0)) }}</td>
+                            <td style="text-align:right;font-weight:600;color:var(--info);font-size:0.75rem;">{{ data.margin|default(0) }}%</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-muted);">No monthly data available</td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- Top Selling Products -->
+    <div class="glass-card">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px;">
+            <h3 style="font-size:0.85rem;font-weight:700;color:var(--text-primary);display:flex;align-items:center;gap:8px;">
+                <span style="color:var(--warning);">🏆</span> Top Selling Products
+            </h3>
+            <span style="font-size:0.6rem;color:var(--text-muted);">By profit</span>
+        </div>
+        <div class="table-wrap" style="max-height:300px;overflow-y:auto;">
+            <table>
+                <thead>
+                    <tr>
+                        <th style="font-size:0.6rem;">Product</th>
+                        <th style="text-align:right;font-size:0.6rem;">Qty</th>
+                        <th style="text-align:right;font-size:0.6rem;">Revenue</th>
+                        <th style="text-align:right;font-size:0.6rem;">Cost</th>
+                        <th style="text-align:right;font-size:0.6rem;">Profit</th>
+                        <th style="text-align:right;font-size:0.6rem;">Margin</th>
+                    </tr>
+                </thead>
+                <tbody id="productTable">
+                    {% if analytics.product_sales and analytics.product_sales|length > 0 %}
+                        {% for name, data in analytics.product_sales.items()|sort(attribute='1.profit', reverse=true)|slice(10) %}
+                        <tr>
+                            <td style="font-weight:600;font-size:0.75rem;">{{ name }}</td>
+                            <td style="text-align:right;font-size:0.75rem;">{{ data.quantity|default(0) }}</td>
+                            <td style="text-align:right;font-weight:600;color:var(--success);font-size:0.75rem;">KSh {{ "%.0f"|format(data.revenue|default(0)) }}</td>
+                            <td style="text-align:right;color:var(--text-muted);font-size:0.75rem;">KSh {{ "%.0f"|format(data.cost|default(0)) }}</td>
+                            <td style="text-align:right;font-weight:600;color:var(--primary);font-size:0.75rem;">KSh {{ "%.0f"|format(data.profit|default(0)) }}</td>
+                            <td style="text-align:right;font-weight:600;color:var(--info);font-size:0.75rem;">{{ data.margin|default(0) }}%</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text-muted);">No products sold yet</td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================
      PRODUCTS SECTION - WITH WORKING SEARCH
      ============================================================ -->
 <div id="products-section" class="section hidden">
@@ -1569,7 +1734,7 @@
 </div>
 
 <!-- ============================================================
-     SCRIPTS - WORKING
+     SCRIPTS - FULLY WORKING
      ============================================================ -->
 <script>
 // ============================================================
@@ -1625,6 +1790,7 @@ function showSection(sectionName) {
     
     // Load products if needed
     if (sectionName === 'products') setTimeout(loadProductsWithFilters, 300);
+    if (sectionName === 'analytics') setTimeout(loadAnalyticsData, 300);
     
     // Close sidebar on mobile
     closeSidebar();
@@ -1998,6 +2164,87 @@ function loadOrdersPage(page) {
 }
 
 // ============================================================
+// ANALYTICS FUNCTIONS
+// ============================================================
+function loadAnalyticsData() {
+    console.log('📊 Loading analytics data...');
+    fetch('/admin/api/analytics?t=' + Date.now())
+        .then(r => r.json())
+        .then(data => {
+            console.log('✅ Analytics data loaded:', data);
+            updateAnalyticsUI(data);
+        })
+        .catch(err => console.error('❌ Error loading analytics:', err));
+}
+
+function updateAnalyticsUI(data) {
+    // Update stats
+    document.getElementById('totalRevenue').textContent = 'KSh ' + (data.total_revenue || 0).toLocaleString();
+    document.getElementById('totalCost').textContent = 'KSh ' + (data.total_cost || 0).toLocaleString();
+    document.getElementById('totalProfit').textContent = 'KSh ' + (data.total_profit || 0).toLocaleString();
+    document.getElementById('totalOrders').textContent = data.total_orders || 0;
+    
+    document.getElementById('cashSales').textContent = 'KSh ' + (data.cash_sales || 0).toLocaleString();
+    document.getElementById('creditSales').textContent = 'KSh ' + (data.credit_sales || 0).toLocaleString();
+    document.getElementById('totalRevenueMerged').textContent = 'KSh ' + (data.total_revenue || 0).toLocaleString();
+    document.getElementById('creditPercentage').textContent = (data.credit_percentage || 0) + '%';
+    
+    document.getElementById('revRevenue').textContent = 'KSh ' + (data.total_revenue || 0).toLocaleString();
+    document.getElementById('revProfit').textContent = 'KSh ' + (data.total_profit || 0).toLocaleString();
+    document.getElementById('profitMarginDisplay').textContent = (data.profit_margin || 0) + '%';
+    
+    // Update monthly table
+    const monthlyTable = document.getElementById('monthlyTable');
+    if (monthlyTable && data.monthly_data) {
+        const months = Object.keys(data.monthly_data).sort();
+        if (months.length > 0) {
+            let html = '';
+            for (let i = 0; i < months.length; i++) {
+                const month = months[i];
+                const m = data.monthly_data[month];
+                html += `<tr>
+                    <td style="font-weight:600;font-size:0.75rem;">${month}</td>
+                    <td style="text-align:right;font-size:0.75rem;">${m.orders || 0}</td>
+                    <td style="text-align:right;font-size:0.75rem;">${m.items || 0}</td>
+                    <td style="text-align:right;font-weight:600;color:var(--success);font-size:0.75rem;">KSh ${(m.revenue || 0).toLocaleString()}</td>
+                    <td style="text-align:right;color:var(--text-muted);font-size:0.75rem;">KSh ${(m.cost || 0).toLocaleString()}</td>
+                    <td style="text-align:right;font-weight:600;color:var(--primary);font-size:0.75rem;">KSh ${(m.profit || 0).toLocaleString()}</td>
+                    <td style="text-align:right;font-weight:600;color:var(--info);font-size:0.75rem;">${m.margin || 0}%</td>
+                </tr>`;
+            }
+            monthlyTable.innerHTML = html;
+        } else {
+            monthlyTable.innerHTML = `<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-muted);">No monthly data available</td></tr>`;
+        }
+    }
+    
+    // Update product table
+    const productTable = document.getElementById('productTable');
+    if (productTable && data.product_sales) {
+        const productNames = Object.keys(data.product_sales);
+        if (productNames.length > 0) {
+            let html = '';
+            const count = Math.min(productNames.length, 10);
+            for (let j = 0; j < count; j++) {
+                const name = productNames[j];
+                const p = data.product_sales[name];
+                html += `<tr>
+                    <td style="font-weight:600;font-size:0.75rem;">${name}</td>
+                    <td style="text-align:right;font-size:0.75rem;">${p.quantity || 0}</td>
+                    <td style="text-align:right;font-weight:600;color:var(--success);font-size:0.75rem;">KSh ${(p.revenue || 0).toLocaleString()}</td>
+                    <td style="text-align:right;color:var(--text-muted);font-size:0.75rem;">KSh ${(p.cost || 0).toLocaleString()}</td>
+                    <td style="text-align:right;font-weight:600;color:var(--primary);font-size:0.75rem;">KSh ${(p.profit || 0).toLocaleString()}</td>
+                    <td style="text-align:right;font-weight:600;color:var(--info);font-size:0.75rem;">${p.margin || 0}%</td>
+                </tr>`;
+            }
+            productTable.innerHTML = html;
+        } else {
+            productTable.innerHTML = `<tr><td colspan="6" style="text-align:center;padding:20px;color:var(--text-muted);">No products sold yet</td></tr>`;
+        }
+    }
+}
+
+// ============================================================
 // CHARTS
 // ============================================================
 var revenueChart = null;
@@ -2359,6 +2606,7 @@ document.addEventListener('DOMContentLoaded', function() {
     
     loadProductsWithFilters();
     initCharts();
+    loadAnalyticsData();
     
     // Check for offline orders
     const offlineCount = 0;
