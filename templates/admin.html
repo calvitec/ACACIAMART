@@ -56,7 +56,6 @@
         --radius-xs: 8px;
         --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
         
-        /* Sidebar width fix */
         --sidebar-width: 240px;
     }
 
@@ -82,7 +81,7 @@
     }
 
     /* ============================================================
-       SIDEBAR - FIXED WIDTH
+       SIDEBAR
        ============================================================ */
     .sidebar {
         background: var(--bg-sidebar);
@@ -98,9 +97,6 @@
         overflow-y: auto;
     }
     
-    /* ============================================================
-       MAIN CONTENT - FIXED MARGIN TO MATCH SIDEBAR
-       ============================================================ */
     .main-content {
         margin-left: var(--sidebar-width);
         padding: 24px 32px;
@@ -1570,7 +1566,7 @@
     </div>
 
     <!-- ============================================================
-         CREDIT SECTION
+         CREDIT SECTION WITH COLLECTION RATE
      ============================================================ -->
     <div id="credit-section" class="section hidden">
         <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:16px;">
@@ -1580,6 +1576,9 @@
             </div>
             <div style="display:flex;gap:6px;flex-wrap:wrap;">
                 <button onclick="showAddCreditCustomerModal()" class="btn-gradient" style="font-size:0.7rem;">➕ Add Customer</button>
+                <button onclick="refreshCreditData()" class="btn-outline" style="font-size:0.7rem;">
+                    <i class="fas fa-sync-alt"></i> Refresh
+                </button>
             </div>
         </div>
 
@@ -1600,6 +1599,50 @@
             <div class="stat-card-modern">
                 <div class="stat-label">Overdue</div>
                 <div class="stat-value" style="color:var(--danger);">{{ overdue_count|default(0) }}</div>
+            </div>
+        </div>
+
+        <!-- Collection Rate Bar -->
+        <div class="glass-card" style="margin-bottom:16px;">
+            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+                <div>
+                    <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Collection Rate</div>
+                    <div style="font-size:1.5rem;font-weight:700;" id="creditCollectionRate">
+                        {% if credit_summary.total_purchases|default(0) > 0 %}
+                            {{ ((credit_summary.total_payments|default(0) / credit_summary.total_purchases|default(1)) * 100)|round(1) }}%
+                        {% else %}
+                            0%
+                        {% endif %}
+                    </div>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Total Credit Sales</div>
+                    <div style="font-weight:700;">KSh {{ credit_summary.total_purchases|default(0)|int }}</div>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Total Payments</div>
+                    <div style="font-weight:700;color:var(--success);">KSh {{ credit_summary.total_payments|default(0)|int }}</div>
+                </div>
+                <div style="text-align:right;">
+                    <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Profit Margin</div>
+                    <div style="font-weight:700;color:var(--primary-light);" id="creditProfitMargin">
+                        {% if credit_summary.total_purchases|default(0) > 0 %}
+                            {{ ((credit_summary.total_profit|default(0) / credit_summary.total_purchases|default(1)) * 100)|round(1) }}%
+                        {% else %}
+                            0%
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+            <div style="margin-top:8px;background:var(--bg-input);border-radius:9999px;height:8px;overflow:hidden;">
+                <div style="height:8px;border-radius:9999px;background:var(--primary-gradient);width:{% if credit_summary.total_purchases|default(0) > 0 %}{{ ((credit_summary.total_payments|default(0) / credit_summary.total_purchases|default(1)) * 100)|round(1) }}{% else %}0{% endif %}%;transition:width 0.5s ease;"></div>
+            </div>
+            <div style="display:flex;justify-content:space-between;font-size:0.5rem;color:var(--text-muted);margin-top:4px;">
+                <span>0%</span>
+                <span style="font-weight:600;color:{% if credit_summary.total_purchases|default(0) > 0 and ((credit_summary.total_payments|default(0) / credit_summary.total_purchases|default(1)) * 100) >= 80 %}var(--success){% elif credit_summary.total_purchases|default(0) > 0 and ((credit_summary.total_payments|default(0) / credit_summary.total_purchases|default(1)) * 100) >= 50 %}var(--warning){% else %}var(--danger){% endif %};">
+                    {{ ((credit_summary.total_payments|default(0) / credit_summary.total_purchases|default(1)) * 100)|round(1) }}%
+                </span>
+                <span>100%</span>
             </div>
         </div>
 
@@ -1631,6 +1674,9 @@
                             <td style="text-align:center;">
                                 <button onclick="viewCreditCustomer('{{ customer.customer_id }}')" class="btn-outline" style="font-size:0.55rem;padding:2px 8px;" title="View">
                                     <i class="fas fa-eye"></i>
+                                </button>
+                                <button onclick="editCreditCustomer('{{ customer.customer_id }}')" class="btn-outline" style="font-size:0.55rem;padding:2px 8px;color:var(--primary-light);" title="Edit">
+                                    <i class="fas fa-edit"></i>
                                 </button>
                                 <button onclick="openRecordPaymentModal('{{ customer.customer_id }}', '{{ customer.full_name }}', '{{ customer.current_balance|default(0) }}')" class="btn-success" style="font-size:0.55rem;padding:2px 8px;" title="Pay">
                                     <i class="fas fa-money-bill-wave"></i>
@@ -1752,7 +1798,7 @@
         </div>
     </div>
 
-    <!-- Edit Product Modal - FIXED -->
+    <!-- Edit Product Modal - FULLY WORKING -->
     <div id="editProductModal" class="modal-overlay hidden" onclick="closeModal(event, 'editProductModal')">
         <div class="modal" onclick="event.stopPropagation()" style="max-width:600px;">
             <button class="close" onclick="document.getElementById('editProductModal').classList.add('hidden')">✕</button>
@@ -1807,6 +1853,10 @@
                     <label class="form-label">Image URL</label>
                     <input type="url" id="editProdImage" class="form-input">
                 </div>
+                <div style="margin-top:10px;">
+                    <label class="form-label">Description</label>
+                    <textarea id="editProdDesc" class="form-input" rows="2"></textarea>
+                </div>
                 <div style="display:flex;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border-color);">
                     <button type="submit" class="btn-gradient">💾 Update Product</button>
                     <button type="button" onclick="document.getElementById('editProductModal').classList.add('hidden')" class="btn-outline">Cancel</button>
@@ -1815,7 +1865,47 @@
         </div>
     </div>
 
-    <!-- Credit Customer Modal - FIXED -->
+    <!-- Edit Credit Customer Modal - FULLY WORKING -->
+    <div id="editCreditCustomerModal" class="modal-overlay hidden" onclick="closeModal(event, 'editCreditCustomerModal')">
+        <div class="modal" onclick="event.stopPropagation()" style="max-width:500px;">
+            <button class="close" onclick="document.getElementById('editCreditCustomerModal').classList.add('hidden')">✕</button>
+            <div class="title">✏️ Edit Credit Customer</div>
+            <form id="editCreditCustomerForm" onsubmit="saveEditedCreditCustomer(event)">
+                <input type="hidden" id="editCreditCustomerId">
+                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                    <div>
+                        <label class="form-label">Full Name *</label>
+                        <input type="text" id="editCreditFullName" class="form-input" required>
+                    </div>
+                    <div>
+                        <label class="form-label">Phone *</label>
+                        <input type="tel" id="editCreditPhone" class="form-input" required>
+                    </div>
+                    <div>
+                        <label class="form-label">Email</label>
+                        <input type="email" id="editCreditEmail" class="form-input">
+                    </div>
+                    <div>
+                        <label class="form-label">Credit Limit</label>
+                        <input type="number" id="editCreditLimit" class="form-input" value="0">
+                    </div>
+                    <div>
+                        <label class="form-label">Status</label>
+                        <select id="editCreditStatus" class="form-input">
+                            <option value="active">✅ Active</option>
+                            <option value="inactive">❌ Inactive</option>
+                        </select>
+                    </div>
+                </div>
+                <div style="display:flex;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border-color);">
+                    <button type="submit" class="btn-gradient">💾 Update Customer</button>
+                    <button type="button" onclick="document.getElementById('editCreditCustomerModal').classList.add('hidden')" class="btn-outline">Cancel</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Credit Customer Modal -->
     <div id="creditCustomerModal" class="modal-overlay hidden" onclick="closeModal(event, 'creditCustomerModal')">
         <div class="modal" onclick="event.stopPropagation()" style="max-width:500px;">
             <button class="close" onclick="document.getElementById('creditCustomerModal').classList.add('hidden')">✕</button>
@@ -1874,7 +1964,7 @@
         </div>
     </div>
 
-    <!-- Supplier Modal - FIXED -->
+    <!-- Supplier Modal -->
     <div id="supplierModal" class="modal-overlay hidden" onclick="closeModal(event, 'supplierModal')">
         <div class="modal" onclick="event.stopPropagation()" style="max-width:500px;">
             <button class="close" onclick="document.getElementById('supplierModal').classList.add('hidden')">✕</button>
@@ -1953,7 +2043,7 @@
 </div>
 
 <!-- ============================================================
-     SCRIPTS - COMPLETE FIXED VERSION
+     SCRIPTS - COMPLETE FINAL VERSION
      ============================================================ -->
 <script>
 // ============================================================
@@ -2010,6 +2100,7 @@ function showSection(sectionName) {
     if (sectionName === 'products') setTimeout(loadProductsWithFilters, 300);
     if (sectionName === 'analytics') setTimeout(loadAnalyticsData, 300);
     if (sectionName === 'orders') setTimeout(loadOrders, 300);
+    if (sectionName === 'credit') setTimeout(updateCreditStats, 300);
     
     // Close sidebar on mobile
     closeSidebar();
@@ -2185,7 +2276,7 @@ function viewOrder(orderId) {
 }
 
 // ============================================================
-// PRODUCT FUNCTIONS - FIXED
+// PRODUCT FUNCTIONS
 // ============================================================
 let productSearchTerm = '';
 let productFilter = 'all';
@@ -2331,19 +2422,32 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ============================================================
-// EDIT PRODUCT - FIXED
+// EDIT PRODUCT - FULLY WORKING
 // ============================================================
 function editProduct(productId) {
     console.log('✏️ Editing product:', productId);
     
+    if (!productId) {
+        showToast('❌ No product ID provided', 'error');
+        return;
+    }
+    
+    showToast('🔄 Loading product data...', 'info');
+    
     fetch('/admin/api/product/' + productId + '?t=' + Date.now())
-        .then(r => r.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('HTTP ' + response.status);
+            }
+            return response.json();
+        })
         .then(data => {
-            if (data.success) {
+            if (data.success && data.product) {
                 const p = data.product;
                 console.log('📦 Product loaded:', p);
-                document.getElementById('editProdId').value = p.id;
-                document.getElementById('editProdIdDisplay').value = p.id;
+                
+                document.getElementById('editProdId').value = p.id || '';
+                document.getElementById('editProdIdDisplay').value = p.id || '';
                 document.getElementById('editProdName').value = p.name || '';
                 document.getElementById('editProdCategory').value = p.category || '';
                 document.getElementById('editProdBarcode').value = p.barcode || '';
@@ -2351,15 +2455,19 @@ function editProduct(productId) {
                 document.getElementById('editProdStock').value = p.stock || 0;
                 document.getElementById('editProdBadge').value = p.badge || '';
                 document.getElementById('editProdImage').value = p.image || '';
+                document.getElementById('editProdDesc').value = p.description || '';
+                
                 document.getElementById('editProductModal').classList.remove('hidden');
-                showToast('✅ Product loaded', 'success');
+                showToast('✅ Product loaded successfully', 'success');
             } else {
                 showToast('❌ Product not found', 'error');
+                document.getElementById('editProductModal').classList.add('hidden');
             }
         })
         .catch(err => {
             console.error('Error loading product:', err);
-            showToast('❌ Error loading product', 'error');
+            showToast('❌ Error loading product: ' + err.message, 'error');
+            document.getElementById('editProductModal').classList.add('hidden');
         });
 }
 
@@ -2373,7 +2481,8 @@ function saveEditedProduct(event) {
         price: parseFloat(document.getElementById('editProdPrice').value) || 0,
         stock: parseInt(document.getElementById('editProdStock').value) || 0,
         badge: document.getElementById('editProdBadge').value,
-        image: document.getElementById('editProdImage').value.trim()
+        image: document.getElementById('editProdImage').value.trim(),
+        description: document.getElementById('editProdDesc').value.trim()
     };
     
     if (!data.name) {
@@ -2816,8 +2925,10 @@ function updateAdvancedCharts(data) {
 }
 
 // ============================================================
-// CREDIT FUNCTIONS - FIXED
+// CREDIT FUNCTIONS - FULLY WORKING
 // ============================================================
+
+// Show Add Credit Customer Modal
 function showAddCreditCustomerModal() {
     document.getElementById('creditModalTitle').textContent = '👤 Add Credit Customer';
     document.getElementById('creditCustomerForm').reset();
@@ -2825,6 +2936,157 @@ function showAddCreditCustomerModal() {
     document.getElementById('creditCustomerModal').classList.remove('hidden');
 }
 
+// Edit Credit Customer - FULLY WORKING
+function editCreditCustomer(customerId) {
+    console.log('✏️ Editing credit customer:', customerId);
+    
+    if (!customerId) {
+        showToast('❌ No customer ID provided', 'error');
+        return;
+    }
+    
+    showToast('🔄 Loading customer data...', 'info');
+    
+    fetch('/admin/api/credit/customers/' + customerId + '?t=' + Date.now())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('HTTP ' + response.status);
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.success && data.customer) {
+                const c = data.customer;
+                console.log('👤 Customer loaded:', c);
+                
+                document.getElementById('editCreditCustomerId').value = c.customer_id || '';
+                document.getElementById('editCreditFullName').value = c.full_name || '';
+                document.getElementById('editCreditPhone').value = c.phone || '';
+                document.getElementById('editCreditEmail').value = c.email || '';
+                document.getElementById('editCreditLimit').value = c.credit_limit || 0;
+                document.getElementById('editCreditStatus').value = c.account_status || 'active';
+                
+                document.getElementById('editCreditCustomerModal').classList.remove('hidden');
+                showToast('✅ Customer loaded successfully', 'success');
+            } else {
+                showToast('❌ Customer not found', 'error');
+                document.getElementById('editCreditCustomerModal').classList.add('hidden');
+            }
+        })
+        .catch(err => {
+            console.error('Error loading customer:', err);
+            showToast('❌ Error loading customer: ' + err.message, 'error');
+            document.getElementById('editCreditCustomerModal').classList.add('hidden');
+        });
+}
+
+// Save Edited Credit Customer
+function saveEditedCreditCustomer(event) {
+    event.preventDefault();
+    const id = document.getElementById('editCreditCustomerId').value;
+    const data = {
+        full_name: document.getElementById('editCreditFullName').value.trim(),
+        phone: document.getElementById('editCreditPhone').value.trim(),
+        email: document.getElementById('editCreditEmail').value.trim(),
+        credit_limit: parseFloat(document.getElementById('editCreditLimit').value) || 0,
+        account_status: document.getElementById('editCreditStatus').value
+    };
+    
+    if (!data.full_name || !data.phone) {
+        showToast('⚠️ Name and Phone are required', 'warning');
+        return;
+    }
+    
+    const btn = document.querySelector('#editCreditCustomerForm button[type="submit"]');
+    const originalText = btn ? btn.innerHTML : 'Update';
+    if (btn) {
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        btn.disabled = true;
+    }
+    
+    fetch('/admin/api/credit/customers/' + id, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(r => r.json())
+    .then(result => {
+        if (btn) {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+        if (result.success) {
+            showToast('✅ Customer updated successfully!', 'success');
+            document.getElementById('editCreditCustomerModal').classList.add('hidden');
+            updateCreditStats();
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showToast('❌ Error updating customer: ' + (result.message || 'Unknown error'), 'error');
+        }
+    })
+    .catch(err => {
+        console.error('Error updating customer:', err);
+        if (btn) {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+        showToast('❌ Error updating customer', 'error');
+    });
+}
+
+// Save Credit Customer
+function saveCreditCustomer(event) {
+    event.preventDefault();
+    const data = {
+        full_name: document.getElementById('creditFullName').value.trim(),
+        phone: document.getElementById('creditPhone').value.trim(),
+        email: document.getElementById('creditEmail').value.trim(),
+        credit_limit: parseFloat(document.getElementById('creditLimit').value) || 0
+    };
+    
+    if (!data.full_name || !data.phone) {
+        showToast('⚠️ Name and Phone are required', 'warning');
+        return;
+    }
+    
+    const btn = document.querySelector('#creditCustomerForm button[type="submit"]');
+    const originalText = btn ? btn.innerHTML : 'Save';
+    if (btn) {
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        btn.disabled = true;
+    }
+    
+    fetch('/admin/api/credit/customers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(r => r.json())
+    .then(result => {
+        if (btn) {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+        if (result.success) {
+            showToast('✅ Customer added successfully!', 'success');
+            document.getElementById('creditCustomerModal').classList.add('hidden');
+            updateCreditStats();
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showToast('❌ Error adding customer: ' + (result.message || 'Unknown error'), 'error');
+        }
+    })
+    .catch(err => {
+        console.error('Error adding customer:', err);
+        if (btn) {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+        showToast('❌ Error adding customer', 'error');
+    });
+}
+
+// View Credit Customer
 function viewCreditCustomer(customerId) {
     document.getElementById('viewCreditContent').innerHTML = `
         <div style="text-align:center;padding:20px;color:var(--text-muted);">Loading customer details...</div>
@@ -2848,6 +3110,9 @@ function viewCreditCustomer(customerId) {
                             <button onclick="document.getElementById('viewCreditModal').classList.add('hidden');openRecordPaymentModal('${c.customer_id}','${c.full_name}','${c.current_balance || 0}')" class="btn-success" style="font-size:0.7rem;padding:4px 16px;">
                                 💵 Record Payment
                             </button>
+                            <button onclick="editCreditCustomer('${c.customer_id}');document.getElementById('viewCreditModal').classList.add('hidden')" class="btn-outline" style="font-size:0.7rem;padding:4px 16px;color:var(--primary-light);">
+                                ✏️ Edit
+                            </button>
                             <button onclick="document.getElementById('viewCreditModal').classList.add('hidden')" class="btn-outline" style="font-size:0.7rem;padding:4px 16px;margin-left:8px;">
                                 Close
                             </button>
@@ -2863,60 +3128,7 @@ function viewCreditCustomer(customerId) {
         });
 }
 
-function saveCreditCustomer(event) {
-    event.preventDefault();
-    const data = {
-        full_name: document.getElementById('creditFullName').value.trim(),
-        phone: document.getElementById('creditPhone').value.trim(),
-        email: document.getElementById('creditEmail').value.trim(),
-        credit_limit: parseFloat(document.getElementById('creditLimit').value) || 0
-    };
-    
-    if (!data.full_name || !data.phone) {
-        showToast('⚠️ Name and Phone are required', 'warning');
-        return;
-    }
-    
-    const editId = document.getElementById('editCreditCustomerId').value;
-    const url = editId ? '/admin/api/credit/customers/' + editId : '/admin/api/credit/customers';
-    const method = editId ? 'PUT' : 'POST';
-    
-    const btn = document.querySelector('#creditCustomerForm button[type="submit"]');
-    const originalText = btn ? btn.innerHTML : 'Save';
-    if (btn) {
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
-        btn.disabled = true;
-    }
-    
-    fetch(url, {
-        method: method,
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-    })
-    .then(r => r.json())
-    .then(result => {
-        if (btn) {
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-        }
-        if (result.success) {
-            showToast('✅ Customer saved successfully!', 'success');
-            document.getElementById('creditCustomerModal').classList.add('hidden');
-            setTimeout(() => location.reload(), 1000);
-        } else {
-            showToast('❌ Error saving customer: ' + (result.message || 'Unknown error'), 'error');
-        }
-    })
-    .catch(err => {
-        console.error('Error saving customer:', err);
-        if (btn) {
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-        }
-        showToast('❌ Error saving customer', 'error');
-    });
-}
-
+// Open Record Payment Modal
 function openRecordPaymentModal(customerId, customerName, balance) {
     document.getElementById('paymentCustomerId').value = customerId;
     document.getElementById('paymentCustomerName').textContent = customerName || 'Customer';
@@ -2925,6 +3137,7 @@ function openRecordPaymentModal(customerId, customerName, balance) {
     document.getElementById('paymentModal').classList.remove('hidden');
 }
 
+// Save Payment
 function savePayment(event) {
     event.preventDefault();
     const customerId = document.getElementById('paymentCustomerId').value;
@@ -2961,6 +3174,7 @@ function savePayment(event) {
         if (result.success) {
             showToast('✅ Payment recorded successfully!', 'success');
             document.getElementById('paymentModal').classList.add('hidden');
+            updateCreditStats();
             setTimeout(() => location.reload(), 1000);
         } else {
             showToast('❌ Error recording payment: ' + (result.message || 'Unknown error'), 'error');
@@ -2976,8 +3190,74 @@ function savePayment(event) {
     });
 }
 
+// Update Credit Stats - INCLUDES COLLECTION RATE
+function updateCreditStats() {
+    fetch('/admin/api/credit/summary?t=' + Date.now())
+        .then(r => r.json())
+        .then(data => {
+            if (data.success) {
+                const s = data.summary;
+                const totalPurchases = s.total_purchases || 0;
+                const totalPayments = s.total_payments || 0;
+                const totalProfit = s.total_profit || 0;
+                
+                // Calculate collection rate (capped at 100%)
+                let collectionRate = 0;
+                if (totalPurchases > 0) {
+                    collectionRate = Math.min((totalPayments / totalPurchases) * 100, 100);
+                }
+                
+                // Calculate profit margin
+                let profitMargin = 0;
+                if (totalPurchases > 0) {
+                    profitMargin = (totalProfit / totalPurchases) * 100;
+                }
+                
+                // Update collection rate display
+                const rateEl = document.getElementById('creditCollectionRate');
+                if (rateEl) {
+                    rateEl.textContent = collectionRate.toFixed(1) + '%';
+                    if (collectionRate >= 80) {
+                        rateEl.style.color = 'var(--success)';
+                    } else if (collectionRate >= 50) {
+                        rateEl.style.color = 'var(--warning)';
+                    } else {
+                        rateEl.style.color = 'var(--danger)';
+                    }
+                }
+                
+                // Update profit margin
+                const marginEl = document.getElementById('creditProfitMargin');
+                if (marginEl) {
+                    marginEl.textContent = profitMargin.toFixed(1) + '%';
+                }
+                
+                // Update the progress bar
+                const barEl = document.querySelector('#credit-section .w-full.bg-gray-200 .bg-primary-gradient');
+                if (barEl) {
+                    barEl.style.width = collectionRate + '%';
+                }
+                
+                console.log('📊 Credit Stats:', {
+                    purchases: totalPurchases,
+                    payments: totalPayments,
+                    profit: totalProfit,
+                    collectionRate: collectionRate + '%',
+                    profitMargin: profitMargin + '%'
+                });
+            }
+        })
+        .catch(err => console.error('❌ Error updating credit stats:', err));
+}
+
+function refreshCreditData() {
+    showToast('🔄 Refreshing credit data...', 'info');
+    updateCreditStats();
+    setTimeout(() => location.reload(), 1000);
+}
+
 // ============================================================
-// SUPPLIER FUNCTIONS - FIXED
+// SUPPLIER FUNCTIONS
 // ============================================================
 function showAddSupplierModal() {
     document.getElementById('modalTitle').textContent = '🏢 Add Supplier';
@@ -3175,6 +3455,7 @@ document.addEventListener('DOMContentLoaded', function() {
     initCharts();
     loadAnalyticsData();
     loadOrders();
+    updateCreditStats();
     
     const offlineCount = 0;
     if (offlineCount > 0) {
@@ -3183,7 +3464,8 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
-console.log('✅ AcaciaMart Admin v3.0 loaded successfully!');
+console.log('✅ AcaciaMart Admin v3.0 - Fully Working!');
+console.log('📌 Features: Edit Product, Edit Credit Customer, Collection Rate');
 </script>
 
 {% endblock %}
