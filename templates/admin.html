@@ -55,6 +55,9 @@
         --radius-sm: 10px;
         --radius-xs: 8px;
         --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        
+        /* Sidebar width fix */
+        --sidebar-width: 240px;
     }
 
     /* Dark Theme */
@@ -78,19 +81,33 @@
         --shadow-glow: 0 0 40px rgba(108, 60, 225, 0.15);
     }
 
-    /* ===== SIDEBAR ===== */
+    /* ============================================================
+       SIDEBAR - FIXED WIDTH
+       ============================================================ */
     .sidebar {
         background: var(--bg-sidebar);
         border-right: 1px solid var(--border-color);
-        width: 240px;
+        width: var(--sidebar-width);
         min-height: 100vh;
         padding: 20px 16px;
         position: fixed;
         left: 0;
         top: 0;
         z-index: 1000;
-        transition: var(--transition);
+        transition: transform 0.3s ease;
         overflow-y: auto;
+    }
+    
+    /* ============================================================
+       MAIN CONTENT - FIXED MARGIN TO MATCH SIDEBAR
+       ============================================================ */
+    .main-content {
+        margin-left: var(--sidebar-width);
+        padding: 24px 32px;
+        min-height: 100vh;
+        background: var(--bg-body);
+        width: calc(100% - var(--sidebar-width));
+        max-width: calc(100% - var(--sidebar-width));
     }
     
     .sidebar-brand {
@@ -199,14 +216,9 @@
         background: rgba(255, 255, 255, 0.2);
     }
 
-    /* ===== MAIN CONTENT ===== */
-    .main-content {
-        margin-left: 240px;
-        padding: 24px 32px;
-        min-height: 100vh;
-        background: var(--bg-body);
-    }
-    
+    /* ============================================================
+       MAIN HEADER
+       ============================================================ */
     .main-header {
         display: flex;
         justify-content: space-between;
@@ -303,7 +315,9 @@
         color: var(--danger);
     }
 
-    /* ===== STATS CARDS ===== */
+    /* ============================================================
+       STATS CARDS
+       ============================================================ */
     .stats-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -397,7 +411,9 @@
         margin-top: 4px;
     }
 
-    /* ===== QUICK ACTIONS ===== */
+    /* ============================================================
+       QUICK ACTIONS
+       ============================================================ */
     .quick-actions-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
@@ -428,7 +444,9 @@
     .quick-action-btn .icon { font-size: 1.4rem; display: block; margin-bottom: 4px; }
     .quick-action-btn .label { font-size: 0.55rem; font-weight: 600; }
 
-    /* ===== GLASS CARDS ===== */
+    /* ============================================================
+       GLASS CARDS
+       ============================================================ */
     .glass-card {
         background: var(--bg-card);
         border-radius: var(--radius);
@@ -462,14 +480,18 @@
     .glass-card .card-header .title .icon { color: var(--primary-light); }
     .glass-card .card-header .badge-time { font-size: 0.6rem; color: var(--text-muted); }
 
-    /* ===== CHARTS ===== */
+    /* ============================================================
+       CHARTS
+       ============================================================ */
     .chart-container {
         position: relative;
         height: 240px;
         width: 100%;
     }
 
-    /* ===== LIVE TICKER ===== */
+    /* ============================================================
+       LIVE TICKER
+       ============================================================ */
     .live-ticker {
         background: var(--bg-card);
         border-radius: var(--radius);
@@ -510,7 +532,9 @@
     .live-ticker .live-item .value.amber { color: var(--warning); }
     .live-ticker .live-item .value.purple { color: var(--primary-light); }
 
-    /* ===== TABLES ===== */
+    /* ============================================================
+       TABLES
+       ============================================================ */
     .table-wrap {
         overflow-x: auto;
     }
@@ -546,7 +570,9 @@
     .table-wrap table tbody tr:hover { background: var(--bg-input); }
     .table-wrap table tbody .font-mono { font-family: monospace; font-weight: 600; color: var(--text-primary); }
 
-    /* ===== BADGES ===== */
+    /* ============================================================
+       BADGES
+       ============================================================ */
     .badge {
         display: inline-block;
         padding: 2px 12px;
@@ -561,7 +587,9 @@
     .badge-info { background: var(--info-bg); color: var(--info); }
     .badge-purple { background: var(--primary-bg); color: var(--primary-light); }
 
-    /* ===== FORMS ===== */
+    /* ============================================================
+       FORMS
+       ============================================================ */
     .form-input {
         width: 100%;
         padding: 8px 14px;
@@ -591,7 +619,9 @@
         margin-bottom: 4px;
     }
 
-    /* ===== BUTTONS ===== */
+    /* ============================================================
+       BUTTONS
+       ============================================================ */
     .btn-gradient {
         background: var(--primary-gradient);
         color: white;
@@ -677,7 +707,9 @@
         box-shadow: 0 8px 24px rgba(16, 185, 129, 0.3);
     }
 
-    /* ===== PAGINATION ===== */
+    /* ============================================================
+       PAGINATION
+       ============================================================ */
     .pagination {
         display: flex;
         gap: 4px;
@@ -714,7 +746,9 @@
     
     .page-link.disabled { opacity: 0.5; cursor: not-allowed; }
 
-    /* ===== MODALS ===== */
+    /* ============================================================
+       MODALS
+       ============================================================ */
     .modal-overlay {
         position: fixed;
         inset: 0;
@@ -766,7 +800,9 @@
         gap: 10px;
     }
 
-    /* ===== TOAST ===== */
+    /* ============================================================
+       TOAST
+       ============================================================ */
     .toast {
         position: fixed;
         bottom: 30px;
@@ -792,7 +828,9 @@
     .toast.info { background: linear-gradient(135deg, #1e3a5f, #2563eb); }
     .toast.warning { background: linear-gradient(135deg, #78350f, #d97706); }
 
-    /* ===== RESPONSIVE ===== */
+    /* ============================================================
+       RESPONSIVE
+       ============================================================ */
     @media (max-width: 768px) {
         .sidebar {
             transform: translateX(-100%);
@@ -804,6 +842,8 @@
         .main-content {
             margin-left: 0;
             padding: 16px;
+            width: 100%;
+            max-width: 100%;
         }
         
         .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
@@ -821,7 +861,9 @@
         .modal { padding: 20px; margin: 10px; }
     }
 
-    /* ===== BACKDROP ===== */
+    /* ============================================================
+       BACKDROP
+       ============================================================ */
     #backdrop {
         position: fixed;
         inset: 0;
@@ -833,12 +875,16 @@
     
     #backdrop.active { display: block; }
 
-    /* ===== SCROLLBAR ===== */
+    /* ============================================================
+       SCROLLBAR
+       ============================================================ */
     ::-webkit-scrollbar { width: 4px; height: 4px; }
     ::-webkit-scrollbar-track { background: var(--bg-input); border-radius: 10px; }
     ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 10px; }
 
-    /* ===== SYNC BAR ===== */
+    /* ============================================================
+       SYNC BAR
+       ============================================================ */
     #syncStatusBar {
         background: var(--bg-card);
         border: 1px solid var(--border-hover);
@@ -1179,7 +1225,7 @@
     </div>
 
     <!-- ============================================================
-         ANALYTICS SECTION - FIXED
+         ANALYTICS SECTION
          ============================================================ -->
     <div id="analytics-section" class="section hidden">
         <div class="glass-card" style="margin-bottom:20px;">
@@ -1441,12 +1487,7 @@
                             <td style="text-align:right;font-weight:600;color:var(--success);">KSh {{ "%.0f"|format(order.total|default(0)) }}</td>
                             <td style="text-align:center;">
                                 <select onchange="updateOrderStatus('{{ order.order_id }}', this.value)" 
-                                        class="badge" style="border:none;cursor:pointer;font-size:0.55rem;padding:2px 12px;
-                                        {% if order.status == 'pending' %}background:var(--warning-bg);color:var(--warning);
-                                        {% elif order.status == 'confirmed' %}background:var(--info-bg);color:var(--info);
-                                        {% elif order.status == 'shipped' %}background:var(--primary-bg);color:var(--primary-light);
-                                        {% elif order.status == 'delivered' %}background:var(--success-bg);color:var(--success);
-                                        {% else %}background:var(--bg-input);color:var(--text-muted);{% endif %}">
+                                        class="badge" style="border:none;cursor:pointer;font-size:0.55rem;padding:2px 12px;background:var(--bg-input);color:var(--text-primary);">
                                     <option value="pending" {% if order.status == 'pending' %}selected{% endif %}>⏳ Pending</option>
                                     <option value="confirmed" {% if order.status == 'confirmed' %}selected{% endif %}>✅ Confirmed</option>
                                     <option value="shipped" {% if order.status == 'shipped' %}selected{% endif %}>📦 Shipped</option>
@@ -1711,7 +1752,7 @@
         </div>
     </div>
 
-    <!-- Edit Product Modal -->
+    <!-- Edit Product Modal - FIXED -->
     <div id="editProductModal" class="modal-overlay hidden" onclick="closeModal(event, 'editProductModal')">
         <div class="modal" onclick="event.stopPropagation()" style="max-width:600px;">
             <button class="close" onclick="document.getElementById('editProductModal').classList.add('hidden')">✕</button>
@@ -1719,9 +1760,16 @@
             <form id="editProductForm" onsubmit="saveEditedProduct(event)">
                 <input type="hidden" id="editProdId">
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                    <div><label class="form-label">Product ID</label><input type="text" id="editProdIdDisplay" class="form-input" readonly style="background:var(--bg-input);"></div>
-                    <div><label class="form-label">Name</label><input type="text" id="editProdName" class="form-input" required></div>
-                    <div><label class="form-label">Category</label>
+                    <div>
+                        <label class="form-label">Product ID</label>
+                        <input type="text" id="editProdIdDisplay" class="form-input" readonly style="background:var(--bg-input);">
+                    </div>
+                    <div>
+                        <label class="form-label">Name *</label>
+                        <input type="text" id="editProdName" class="form-input" required>
+                    </div>
+                    <div>
+                        <label class="form-label">Category</label>
                         <select id="editProdCategory" class="form-input">
                             <option value="">Select</option>
                             <option value="Phones">📱 Phones</option>
@@ -1733,10 +1781,20 @@
                             <option value="General">📦 General</option>
                         </select>
                     </div>
-                    <div><label class="form-label">Barcode</label><input type="text" id="editProdBarcode" class="form-input"></div>
-                    <div><label class="form-label">Price (KSh)</label><input type="number" id="editProdPrice" class="form-input" required></div>
-                    <div><label class="form-label">Stock</label><input type="number" id="editProdStock" class="form-input" required></div>
-                    <div><label class="form-label">Badge</label>
+                    <div>
+                        <label class="form-label">Barcode</label>
+                        <input type="text" id="editProdBarcode" class="form-input">
+                    </div>
+                    <div>
+                        <label class="form-label">Price (KSh) *</label>
+                        <input type="number" id="editProdPrice" class="form-input" required>
+                    </div>
+                    <div>
+                        <label class="form-label">Stock *</label>
+                        <input type="number" id="editProdStock" class="form-input" required>
+                    </div>
+                    <div>
+                        <label class="form-label">Badge</label>
                         <select id="editProdBadge" class="form-input">
                             <option value="">None</option>
                             <option value="Best Seller">⭐ Best Seller</option>
@@ -1757,7 +1815,7 @@
         </div>
     </div>
 
-    <!-- Credit Customer Modal -->
+    <!-- Credit Customer Modal - FIXED -->
     <div id="creditCustomerModal" class="modal-overlay hidden" onclick="closeModal(event, 'creditCustomerModal')">
         <div class="modal" onclick="event.stopPropagation()" style="max-width:500px;">
             <button class="close" onclick="document.getElementById('creditCustomerModal').classList.add('hidden')">✕</button>
@@ -1765,10 +1823,22 @@
             <form id="creditCustomerForm" onsubmit="saveCreditCustomer(event)">
                 <input type="hidden" id="editCreditCustomerId">
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                    <div><label class="form-label">Full Name</label><input type="text" id="creditFullName" class="form-input" required></div>
-                    <div><label class="form-label">Phone</label><input type="tel" id="creditPhone" class="form-input" required></div>
-                    <div><label class="form-label">Email</label><input type="email" id="creditEmail" class="form-input"></div>
-                    <div><label class="form-label">Credit Limit</label><input type="number" id="creditLimit" class="form-input" value="0"></div>
+                    <div>
+                        <label class="form-label">Full Name *</label>
+                        <input type="text" id="creditFullName" class="form-input" required>
+                    </div>
+                    <div>
+                        <label class="form-label">Phone *</label>
+                        <input type="tel" id="creditPhone" class="form-input" required>
+                    </div>
+                    <div>
+                        <label class="form-label">Email</label>
+                        <input type="email" id="creditEmail" class="form-input">
+                    </div>
+                    <div>
+                        <label class="form-label">Credit Limit</label>
+                        <input type="number" id="creditLimit" class="form-input" value="0">
+                    </div>
                 </div>
                 <div style="display:flex;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border-color);">
                     <button type="submit" class="btn-gradient">💾 Save Customer</button>
@@ -1804,7 +1874,7 @@
         </div>
     </div>
 
-    <!-- Supplier Modal -->
+    <!-- Supplier Modal - FIXED -->
     <div id="supplierModal" class="modal-overlay hidden" onclick="closeModal(event, 'supplierModal')">
         <div class="modal" onclick="event.stopPropagation()" style="max-width:500px;">
             <button class="close" onclick="document.getElementById('supplierModal').classList.add('hidden')">✕</button>
@@ -1812,11 +1882,24 @@
             <form id="supplierForm" onsubmit="saveSupplier(event)">
                 <input type="hidden" id="editSupplierId">
                 <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                    <div><label class="form-label">Business Name</label><input type="text" id="businessName" class="form-input" required></div>
-                    <div><label class="form-label">Contact Person</label><input type="text" id="contactPerson" class="form-input" required></div>
-                    <div><label class="form-label">Phone</label><input type="tel" id="phone" class="form-input" required></div>
-                    <div><label class="form-label">Email</label><input type="email" id="email" class="form-input"></div>
-                    <div><label class="form-label">Category</label>
+                    <div>
+                        <label class="form-label">Business Name *</label>
+                        <input type="text" id="businessName" class="form-input" required>
+                    </div>
+                    <div>
+                        <label class="form-label">Contact Person *</label>
+                        <input type="text" id="contactPerson" class="form-input" required>
+                    </div>
+                    <div>
+                        <label class="form-label">Phone *</label>
+                        <input type="tel" id="phone" class="form-input" required>
+                    </div>
+                    <div>
+                        <label class="form-label">Email</label>
+                        <input type="email" id="email" class="form-input">
+                    </div>
+                    <div>
+                        <label class="form-label">Category</label>
                         <select id="businessCategory" class="form-input">
                             <option value="">Select</option>
                             <option value="Electronics">📱 Electronics</option>
@@ -1827,7 +1910,8 @@
                             <option value="Other">📦 Other</option>
                         </select>
                     </div>
-                    <div><label class="form-label">Payment Terms</label>
+                    <div>
+                        <label class="form-label">Payment Terms</label>
                         <select id="paymentTerms" class="form-input">
                             <option value="Net 30">Net 30</option>
                             <option value="Net 45">Net 45</option>
@@ -1944,7 +2028,6 @@ function openSidebar() {
     document.getElementById('backdrop').classList.add('active');
 }
 
-// Toggle sidebar on mobile
 function toggleSidebar() {
     const sidebar = document.getElementById('sidebar');
     if (sidebar.classList.contains('open')) {
@@ -1955,7 +2038,7 @@ function toggleSidebar() {
 }
 
 // ============================================================
-// DARK MODE - FIXED WITH LIGHT THEME DEFAULT
+// DARK MODE
 // ============================================================
 function toggleDarkMode() {
     const html = document.documentElement;
@@ -1983,7 +2066,7 @@ function closeModal(event, modalId) {
 }
 
 // ============================================================
-// LOAD ORDERS - FIXED
+// LOAD ORDERS
 // ============================================================
 function loadOrders() {
     const tbody = document.getElementById('ordersTableBody');
@@ -2016,13 +2099,6 @@ function renderOrders(orders) {
     
     let html = '';
     orders.forEach(order => {
-        let statusClass = 'badge-warning';
-        let statusText = order.status || 'Pending';
-        if (order.status === 'delivered') { statusClass = 'badge-success'; statusText = '✅ Delivered'; }
-        else if (order.status === 'shipped') { statusClass = 'badge-info'; statusText = '📦 Shipped'; }
-        else if (order.status === 'confirmed') { statusClass = 'badge-purple'; statusText = '✅ Confirmed'; }
-        else if (order.status === 'cancelled') { statusClass = 'badge-danger'; statusText = '❌ Cancelled'; }
-        
         const customerName = order.customer_name || order.customer?.name || 'Customer';
         const orderId = (order.order_id || order.id || '');
         
@@ -2155,8 +2231,6 @@ function renderProductsTable(products) {
     products.forEach(p => {
         const stock = p.stock || 0;
         let stockColor = stock > 20 ? 'var(--success)' : stock > 0 ? 'var(--warning)' : 'var(--danger)';
-        let stockLabel = stock > 20 ? 'In Stock' : stock > 0 ? 'Low Stock' : 'Out of Stock';
-        let badgeClass = stock > 20 ? 'badge-success' : stock > 0 ? 'badge-warning' : 'badge-danger';
         
         html += `
         <tr>
@@ -2260,11 +2334,14 @@ document.addEventListener('DOMContentLoaded', function() {
 // EDIT PRODUCT - FIXED
 // ============================================================
 function editProduct(productId) {
+    console.log('✏️ Editing product:', productId);
+    
     fetch('/admin/api/product/' + productId + '?t=' + Date.now())
         .then(r => r.json())
         .then(data => {
             if (data.success) {
                 const p = data.product;
+                console.log('📦 Product loaded:', p);
                 document.getElementById('editProdId').value = p.id;
                 document.getElementById('editProdIdDisplay').value = p.id;
                 document.getElementById('editProdName').value = p.name || '';
@@ -2275,11 +2352,15 @@ function editProduct(productId) {
                 document.getElementById('editProdBadge').value = p.badge || '';
                 document.getElementById('editProdImage').value = p.image || '';
                 document.getElementById('editProductModal').classList.remove('hidden');
+                showToast('✅ Product loaded', 'success');
             } else {
                 showToast('❌ Product not found', 'error');
             }
         })
-        .catch(() => showToast('❌ Error loading product', 'error'));
+        .catch(err => {
+            console.error('Error loading product:', err);
+            showToast('❌ Error loading product', 'error');
+        });
 }
 
 function saveEditedProduct(event) {
@@ -2295,6 +2376,22 @@ function saveEditedProduct(event) {
         image: document.getElementById('editProdImage').value.trim()
     };
     
+    if (!data.name) {
+        showToast('⚠️ Product name is required', 'warning');
+        return;
+    }
+    if (data.price <= 0) {
+        showToast('⚠️ Price must be greater than 0', 'warning');
+        return;
+    }
+    
+    const btn = document.querySelector('#editProductForm button[type="submit"]');
+    const originalText = btn ? btn.innerHTML : 'Update';
+    if (btn) {
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        btn.disabled = true;
+    }
+    
     fetch('/admin/api/product/' + id, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -2302,15 +2399,26 @@ function saveEditedProduct(event) {
     })
     .then(r => r.json())
     .then(result => {
+        if (btn) {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
         if (result.success) {
-            showToast('✅ Product updated!', 'success');
+            showToast('✅ Product updated successfully!', 'success');
             document.getElementById('editProductModal').classList.add('hidden');
             loadProductsWithFilters();
         } else {
-            showToast('❌ Error updating product', 'error');
+            showToast('❌ Error updating product: ' + (result.message || 'Unknown error'), 'error');
         }
     })
-    .catch(() => showToast('❌ Error saving product', 'error'));
+    .catch(err => {
+        console.error('Error saving product:', err);
+        if (btn) {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+        showToast('❌ Error saving product', 'error');
+    });
 }
 
 function deleteProduct(productId) {
@@ -2351,6 +2459,13 @@ function saveProduct(event) {
         return;
     }
     
+    const btn = document.querySelector('#productForm button[type="submit"]');
+    const originalText = btn ? btn.innerHTML : 'Save';
+    if (btn) {
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        btn.disabled = true;
+    }
+    
     fetch('/admin/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2358,20 +2473,31 @@ function saveProduct(event) {
     })
     .then(r => r.json())
     .then(result => {
+        if (btn) {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
         if (result.success) {
-            showToast('✅ Product added!', 'success');
+            showToast('✅ Product added successfully!', 'success');
             document.getElementById('productForm').reset();
             showSection('products');
             loadProductsWithFilters();
         } else {
-            showToast('❌ Error adding product', 'error');
+            showToast('❌ Error adding product: ' + (result.message || 'Unknown error'), 'error');
         }
     })
-    .catch(() => showToast('❌ Error saving product', 'error'));
+    .catch(err => {
+        console.error('Error saving product:', err);
+        if (btn) {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+        showToast('❌ Error saving product', 'error');
+    });
 }
 
 // ============================================================
-// ANALYTICS - FIXED
+// ANALYTICS
 // ============================================================
 function loadAnalyticsData() {
     fetch('/admin/api/analytics?t=' + Date.now())
@@ -2379,32 +2505,21 @@ function loadAnalyticsData() {
         .then(data => {
             console.log('📊 Analytics data loaded:', data);
             
-            // Update KPIs
             document.getElementById('kpiRevenue').textContent = 'KSh ' + (data.total_revenue || 0).toLocaleString();
             document.getElementById('kpiOrders').textContent = data.total_orders || 0;
             document.getElementById('kpiProfit').textContent = 'KSh ' + (data.total_profit || 0).toLocaleString();
             document.getElementById('kpiCredit').textContent = 'KSh ' + (data.credit_sales || 0).toLocaleString();
             
-            // Update Status counts
             const statusData = data.status_counts || { pending: 0, completed: 0, shipped: 0, cancelled: 0 };
             document.getElementById('statusPending').textContent = statusData.pending || 0;
             document.getElementById('statusCompleted').textContent = statusData.completed || 0;
             document.getElementById('statusShipped').textContent = statusData.shipped || 0;
             document.getElementById('statusCancelled').textContent = statusData.cancelled || 0;
             
-            // Update Top Products
             updateTopProducts(data.product_sales || {});
-            
-            // Update Categories
             updateCategoryLegend(data.category_sales || {});
-            
-            // Update Payment Methods
             updatePaymentMethods(data.payment_methods || {});
-            
-            // Update Recent Transactions
             updateRecentTransactions(data.recent_transactions || []);
-            
-            // Update Charts
             updateAdvancedCharts(data);
         })
         .catch(err => {
@@ -2550,7 +2665,7 @@ function exportAnalyticsCSV() {
 }
 
 // ============================================================
-// CHARTS - FIXED
+// CHARTS
 // ============================================================
 let revenueChart = null;
 let categoryChart = null;
@@ -2564,7 +2679,6 @@ function initCharts() {
         return;
     }
     
-    // Revenue Chart
     const revenueCtx = document.getElementById('revenueChart');
     if (revenueCtx) {
         if (revenueChart) revenueChart.destroy();
@@ -2589,7 +2703,6 @@ function initCharts() {
         });
     }
     
-    // Category Chart
     const categoryCtx = document.getElementById('categoryChart');
     if (categoryCtx) {
         if (categoryChart) categoryChart.destroy();
@@ -2617,7 +2730,6 @@ function updateAdvancedCharts(data) {
         return;
     }
     
-    // Revenue Chart
     const revenueCtx = document.getElementById('advancedRevenueChart');
     if (revenueCtx) {
         if (advancedRevenueChart) advancedRevenueChart.destroy();
@@ -2656,7 +2768,6 @@ function updateAdvancedCharts(data) {
         });
     }
     
-    // Status Chart
     const statusCtx = document.getElementById('advancedStatusChart');
     if (statusCtx) {
         if (advancedStatusChart) advancedStatusChart.destroy();
@@ -2678,7 +2789,6 @@ function updateAdvancedCharts(data) {
         });
     }
     
-    // Category Chart
     const categoryCtx = document.getElementById('advancedCategoryChart');
     if (categoryCtx) {
         if (advancedCategoryChart) advancedCategoryChart.destroy();
@@ -2762,9 +2872,21 @@ function saveCreditCustomer(event) {
         credit_limit: parseFloat(document.getElementById('creditLimit').value) || 0
     };
     
+    if (!data.full_name || !data.phone) {
+        showToast('⚠️ Name and Phone are required', 'warning');
+        return;
+    }
+    
     const editId = document.getElementById('editCreditCustomerId').value;
     const url = editId ? '/admin/api/credit/customers/' + editId : '/admin/api/credit/customers';
     const method = editId ? 'PUT' : 'POST';
+    
+    const btn = document.querySelector('#creditCustomerForm button[type="submit"]');
+    const originalText = btn ? btn.innerHTML : 'Save';
+    if (btn) {
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        btn.disabled = true;
+    }
     
     fetch(url, {
         method: method,
@@ -2773,15 +2895,26 @@ function saveCreditCustomer(event) {
     })
     .then(r => r.json())
     .then(result => {
+        if (btn) {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
         if (result.success) {
-            showToast('✅ Customer saved!', 'success');
+            showToast('✅ Customer saved successfully!', 'success');
             document.getElementById('creditCustomerModal').classList.add('hidden');
             setTimeout(() => location.reload(), 1000);
         } else {
             showToast('❌ Error saving customer: ' + (result.message || 'Unknown error'), 'error');
         }
     })
-    .catch(() => showToast('❌ Error saving customer', 'error'));
+    .catch(err => {
+        console.error('Error saving customer:', err);
+        if (btn) {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+        showToast('❌ Error saving customer', 'error');
+    });
 }
 
 function openRecordPaymentModal(customerId, customerName, balance) {
@@ -2802,6 +2935,13 @@ function savePayment(event) {
         return;
     }
     
+    const btn = document.querySelector('#paymentForm button[type="submit"]');
+    const originalText = btn ? btn.innerHTML : 'Record';
+    if (btn) {
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        btn.disabled = true;
+    }
+    
     fetch('/admin/api/credit/payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2814,15 +2954,26 @@ function savePayment(event) {
     })
     .then(r => r.json())
     .then(result => {
+        if (btn) {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
         if (result.success) {
-            showToast('✅ Payment recorded!', 'success');
+            showToast('✅ Payment recorded successfully!', 'success');
             document.getElementById('paymentModal').classList.add('hidden');
             setTimeout(() => location.reload(), 1000);
         } else {
             showToast('❌ Error recording payment: ' + (result.message || 'Unknown error'), 'error');
         }
     })
-    .catch(() => showToast('❌ Error recording payment', 'error'));
+    .catch(err => {
+        console.error('Error recording payment:', err);
+        if (btn) {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+        showToast('❌ Error recording payment', 'error');
+    });
 }
 
 // ============================================================
@@ -2836,6 +2987,8 @@ function showAddSupplierModal() {
 }
 
 function editSupplier(supplierId) {
+    console.log('✏️ Editing supplier:', supplierId);
+    
     fetch('/admin/api/suppliers/' + supplierId + '?t=' + Date.now())
         .then(r => r.json())
         .then(data => {
@@ -2850,11 +3003,15 @@ function editSupplier(supplierId) {
                 document.getElementById('businessCategory').value = s.business_category || '';
                 document.getElementById('paymentTerms').value = s.payment_terms || 'Net 30';
                 document.getElementById('supplierModal').classList.remove('hidden');
+                showToast('✅ Supplier loaded', 'success');
             } else {
                 showToast('❌ Supplier not found', 'error');
             }
         })
-        .catch(() => showToast('❌ Error loading supplier', 'error'));
+        .catch(err => {
+            console.error('Error loading supplier:', err);
+            showToast('❌ Error loading supplier', 'error');
+        });
 }
 
 function viewSupplier(supplierId) {
@@ -2895,9 +3052,21 @@ function saveSupplier(event) {
         payment_terms: document.getElementById('paymentTerms').value
     };
     
+    if (!data.business_name || !data.contact_person || !data.phone) {
+        showToast('⚠️ Business Name, Contact Person and Phone are required', 'warning');
+        return;
+    }
+    
     const editId = document.getElementById('editSupplierId').value;
     const url = editId ? '/admin/api/suppliers/' + editId : '/admin/api/suppliers';
     const method = editId ? 'PUT' : 'POST';
+    
+    const btn = document.querySelector('#supplierForm button[type="submit"]');
+    const originalText = btn ? btn.innerHTML : 'Save';
+    if (btn) {
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        btn.disabled = true;
+    }
     
     fetch(url, {
         method: method,
@@ -2906,15 +3075,26 @@ function saveSupplier(event) {
     })
     .then(r => r.json())
     .then(result => {
+        if (btn) {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
         if (result.success) {
-            showToast('✅ Supplier saved!', 'success');
+            showToast('✅ Supplier saved successfully!', 'success');
             document.getElementById('supplierModal').classList.add('hidden');
             setTimeout(() => location.reload(), 1000);
         } else {
             showToast('❌ Error saving supplier: ' + (result.message || 'Unknown error'), 'error');
         }
     })
-    .catch(() => showToast('❌ Error saving supplier', 'error'));
+    .catch(err => {
+        console.error('Error saving supplier:', err);
+        if (btn) {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+        showToast('❌ Error saving supplier', 'error');
+    });
 }
 
 function showLowStockModal() {
@@ -2986,18 +3166,16 @@ document.addEventListener('keydown', function(e) {
 });
 
 // ============================================================
-// INIT - COMPLETE
+// INIT
 // ============================================================
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 Admin dashboard loaded');
     
-    // Load initial data
     loadProductsWithFilters();
     initCharts();
     loadAnalyticsData();
     loadOrders();
     
-    // Check for offline orders
     const offlineCount = 0;
     if (offlineCount > 0) {
         document.getElementById('syncStatusBar').style.display = 'block';
