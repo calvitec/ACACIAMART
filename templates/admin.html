@@ -81,29 +81,50 @@
     }
 
     /* ============================================================
-       SIDEBAR
+       SIDEBAR - FIXED GAP
        ============================================================ */
+    /* ✅ FIX: Removed margin and padding that caused the gap */
+    body {
+        margin: 0;
+        padding: 0;
+    }
+    
+    .app {
+        display: flex;
+        gap: 0;
+        align-items: flex-start;
+        margin: 0;
+        padding: 0;
+        width: 100%;
+        min-height: 100vh;
+        background: var(--bg-body);
+    }
+    
     .sidebar {
         background: var(--bg-sidebar);
         border-right: 1px solid var(--border-color);
         width: var(--sidebar-width);
         min-height: 100vh;
         padding: 20px 16px;
-        position: fixed;
-        left: 0;
+        position: sticky;
         top: 0;
+        height: 100vh;
+        overflow-y: auto;
+        flex-shrink: 0;
+        margin: 0;
         z-index: 1000;
         transition: transform 0.3s ease;
-        overflow-y: auto;
     }
     
     .main-content {
-        margin-left: var(--sidebar-width);
+        flex: 1;
+        margin: 0;
         padding: 24px 32px;
         min-height: 100vh;
         background: var(--bg-body);
         width: calc(100% - var(--sidebar-width));
         max-width: calc(100% - var(--sidebar-width));
+        box-sizing: border-box;
     }
     
     .sidebar-brand {
@@ -210,6 +231,39 @@
     
     .sidebar .nav-item.active .badge-nav {
         background: rgba(255, 255, 255, 0.2);
+    }
+
+    /* Mobile Sidebar */
+    @media (max-width: 768px) {
+        .sidebar {
+            transform: translateX(-100%);
+            width: 280px;
+            position: fixed;
+            height: 100vh;
+            z-index: 1000;
+        }
+        .sidebar.open {
+            transform: translateX(0);
+        }
+        .main-content {
+            margin-left: 0;
+            padding: 16px;
+            width: 100%;
+            max-width: 100%;
+        }
+        .app {
+            display: block;
+        }
+        #backdrop {
+            display: none;
+            position: fixed;
+            inset: 0;
+            background: rgba(0, 0, 0, 0.5);
+            z-index: 999;
+        }
+        #backdrop.active {
+            display: block;
+        }
     }
 
     /* ============================================================
@@ -856,20 +910,6 @@
         .main-content { padding: 12px; }
         .modal { padding: 20px; margin: 10px; }
     }
-
-    /* ============================================================
-       BACKDROP
-       ============================================================ */
-    #backdrop {
-        position: fixed;
-        inset: 0;
-        background: rgba(0, 0, 0, 0.6);
-        z-index: 999;
-        display: none;
-        backdrop-filter: blur(4px);
-    }
-    
-    #backdrop.active { display: block; }
 
     /* ============================================================
        SCROLLBAR
@@ -1602,7 +1642,7 @@
             </div>
         </div>
 
-        <!-- Collection Rate Bar -->
+        <!-- ✅ FIX: Collection Rate Bar -->
         <div class="glass-card" style="margin-bottom:16px;">
             <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
                 <div>
@@ -2432,6 +2472,16 @@ function editProduct(productId) {
         return;
     }
     
+    // ✅ FIX: Force modal to open using display:flex
+    const modal = document.getElementById('editProductModal');
+    if (!modal) {
+        showToast('❌ Modal not found', 'error');
+        return;
+    }
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+    modal.style.zIndex = '99999';
+    
     showToast('🔄 Loading product data...', 'info');
     
     fetch('/admin/api/product/' + productId + '?t=' + Date.now())
@@ -2457,17 +2507,16 @@ function editProduct(productId) {
                 document.getElementById('editProdImage').value = p.image || '';
                 document.getElementById('editProdDesc').value = p.description || '';
                 
-                document.getElementById('editProductModal').classList.remove('hidden');
                 showToast('✅ Product loaded successfully', 'success');
             } else {
                 showToast('❌ Product not found', 'error');
-                document.getElementById('editProductModal').classList.add('hidden');
+                modal.classList.add('hidden');
             }
         })
         .catch(err => {
             console.error('Error loading product:', err);
             showToast('❌ Error loading product: ' + err.message, 'error');
-            document.getElementById('editProductModal').classList.add('hidden');
+            modal.classList.add('hidden');
         });
 }
 
@@ -2933,7 +2982,11 @@ function showAddCreditCustomerModal() {
     document.getElementById('creditModalTitle').textContent = '👤 Add Credit Customer';
     document.getElementById('creditCustomerForm').reset();
     document.getElementById('editCreditCustomerId').value = '';
-    document.getElementById('creditCustomerModal').classList.remove('hidden');
+    // ✅ FIX: Force modal open
+    const modal = document.getElementById('creditCustomerModal');
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+    modal.style.zIndex = '99999';
 }
 
 // Edit Credit Customer - FULLY WORKING
@@ -2944,6 +2997,16 @@ function editCreditCustomer(customerId) {
         showToast('❌ No customer ID provided', 'error');
         return;
     }
+    
+    // ✅ FIX: Force modal open
+    const modal = document.getElementById('editCreditCustomerModal');
+    if (!modal) {
+        showToast('❌ Modal not found', 'error');
+        return;
+    }
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+    modal.style.zIndex = '99999';
     
     showToast('🔄 Loading customer data...', 'info');
     
@@ -2966,17 +3029,16 @@ function editCreditCustomer(customerId) {
                 document.getElementById('editCreditLimit').value = c.credit_limit || 0;
                 document.getElementById('editCreditStatus').value = c.account_status || 'active';
                 
-                document.getElementById('editCreditCustomerModal').classList.remove('hidden');
                 showToast('✅ Customer loaded successfully', 'success');
             } else {
                 showToast('❌ Customer not found', 'error');
-                document.getElementById('editCreditCustomerModal').classList.add('hidden');
+                modal.classList.add('hidden');
             }
         })
         .catch(err => {
             console.error('Error loading customer:', err);
             showToast('❌ Error loading customer: ' + err.message, 'error');
-            document.getElementById('editCreditCustomerModal').classList.add('hidden');
+            modal.classList.add('hidden');
         });
 }
 
@@ -3034,7 +3096,7 @@ function saveEditedCreditCustomer(event) {
     });
 }
 
-// Save Credit Customer
+// Save Credit Customer - WITH DUPLICATE PREVENTION
 function saveCreditCustomer(event) {
     event.preventDefault();
     const data = {
@@ -3049,49 +3111,82 @@ function saveCreditCustomer(event) {
         return;
     }
     
-    const btn = document.querySelector('#creditCustomerForm button[type="submit"]');
-    const originalText = btn ? btn.innerHTML : 'Save';
-    if (btn) {
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
-        btn.disabled = true;
-    }
-    
-    fetch('/admin/api/credit/customers', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-    })
-    .then(r => r.json())
-    .then(result => {
-        if (btn) {
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-        }
-        if (result.success) {
-            showToast('✅ Customer added successfully!', 'success');
-            document.getElementById('creditCustomerModal').classList.add('hidden');
-            updateCreditStats();
-            setTimeout(() => location.reload(), 1000);
-        } else {
-            showToast('❌ Error adding customer: ' + (result.message || 'Unknown error'), 'error');
-        }
-    })
-    .catch(err => {
-        console.error('Error adding customer:', err);
-        if (btn) {
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-        }
-        showToast('❌ Error adding customer', 'error');
-    });
+    // ✅ FIX: Check for duplicates before adding
+    fetch('/admin/api/credit/customers')
+        .then(r => r.json())
+        .then(result => {
+            if (result.customers) {
+                const duplicate = result.customers.find(c => 
+                    c.full_name && c.full_name.toLowerCase() === data.full_name.toLowerCase() &&
+                    c.phone === data.phone
+                );
+                
+                if (duplicate) {
+                    showToast(`⚠️ Customer "${data.full_name}" with phone "${data.phone}" already exists!`, 'warning');
+                    editCreditCustomer(duplicate.customer_id);
+                    document.getElementById('creditCustomerModal').classList.add('hidden');
+                    return;
+                }
+            }
+            
+            // No duplicate, proceed with save
+            const btn = document.querySelector('#creditCustomerForm button[type="submit"]');
+            const originalText = btn ? btn.innerHTML : 'Save';
+            if (btn) {
+                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+                btn.disabled = true;
+            }
+            
+            fetch('/admin/api/credit/customers', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(data)
+            })
+            .then(r => r.json())
+            .then(result => {
+                if (btn) {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+                if (result.success) {
+                    showToast('✅ Customer added successfully!', 'success');
+                    document.getElementById('creditCustomerModal').classList.add('hidden');
+                    updateCreditStats();
+                    setTimeout(() => location.reload(), 1000);
+                } else {
+                    showToast('❌ Error adding customer: ' + (result.message || 'Unknown error'), 'error');
+                }
+            })
+            .catch(err => {
+                console.error('Error adding customer:', err);
+                if (btn) {
+                    btn.innerHTML = originalText;
+                    btn.disabled = false;
+                }
+                showToast('❌ Error adding customer', 'error');
+            });
+        })
+        .catch(err => {
+            console.error('Error checking duplicates:', err);
+            showToast('❌ Error checking for duplicates', 'error');
+        });
 }
 
 // View Credit Customer
 function viewCreditCustomer(customerId) {
+    // ✅ FIX: Force modal open
+    const modal = document.getElementById('viewCreditModal');
+    if (!modal) {
+        showToast('❌ Modal not found', 'error');
+        return;
+    }
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+    modal.style.zIndex = '99999';
+    
     document.getElementById('viewCreditContent').innerHTML = `
         <div style="text-align:center;padding:20px;color:var(--text-muted);">Loading customer details...</div>
     `;
-    document.getElementById('viewCreditModal').classList.remove('hidden');
     
     fetch('/admin/api/credit/customers/' + customerId + '?t=' + Date.now())
         .then(r => r.json())
