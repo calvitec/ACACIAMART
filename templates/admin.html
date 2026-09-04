@@ -1671,6 +1671,7 @@
 <script>
 // ============================================================
 // TOAST NOTIFICATION
+// ============================================================
 function showToast(message, type = 'success') {
     const toast = document.getElementById('toast');
     const messageEl = document.getElementById('toastMessage');
@@ -1715,24 +1716,16 @@ function closeCreditCustomerModal() {
 }
 
 // ============================================================
-// EDIT PRODUCT - FULLY WORKING ✅
+// OPEN MODAL HELPERS
 // ============================================================
-function editProduct(productId) {
-    console.log('✏️ EDIT PRODUCT:', productId);
-    
-    if (!productId) {
-        showToast('❌ No product ID provided', 'error');
-        return;
-    }
-    
-    // Get the modal
-    const modal = document.getElementById('editProductModal');
+function openModal(modalId) {
+    const modal = document.getElementById(modalId);
     if (!modal) {
-        showToast('❌ Modal not found', 'error');
-        return;
+        console.error('Modal not found:', modalId);
+        return false;
     }
     
-    // Force open modal
+    // Force open with ALL necessary styles
     modal.classList.remove('hidden');
     modal.style.display = 'flex';
     modal.style.position = 'fixed';
@@ -1746,26 +1739,56 @@ function editProduct(productId) {
     modal.style.justifyContent = 'center';
     modal.style.padding = '20px';
     modal.style.backdropFilter = 'blur(4px)';
+    modal.style.visibility = 'visible';
+    modal.style.opacity = '1';
     
-    console.log('✅ Modal opened');
+    return true;
+}
+
+// ============================================================
+// EDIT PRODUCT - SINGLE DEFINITION ✅
+// ============================================================
+function editProduct(productId) {
+    console.log('✏️ EDIT PRODUCT CALLED with ID:', productId);
+    
+    if (!productId) {
+        showToast('❌ No product ID provided', 'error');
+        return;
+    }
+    
+    // Open the modal
+    if (!openModal('editProductModal')) {
+        showToast('❌ Edit modal not found', 'error');
+        return;
+    }
+    
     showToast('🔄 Loading product...', 'info');
     
-    // Fetch product data
-    fetch('/admin/api/product/' + productId + '?t=' + Date.now())
+    // Clear form first
+    const form = document.getElementById('editProductForm');
+    if (form) form.reset();
+    
+    // Fetch product data with timeout
+    const fetchUrl = '/admin/api/product/' + encodeURIComponent(productId) + '?t=' + Date.now();
+    console.log('📡 Fetching from:', fetchUrl);
+    
+    fetch(fetchUrl)
         .then(response => {
+            console.log('📡 Response status:', response.status);
             if (!response.ok) {
-                throw new Error('HTTP ' + response.status);
+                throw new Error('HTTP ' + response.status + ': ' + response.statusText);
             }
             return response.json();
         })
         .then(data => {
-            console.log('📦 Product data:', data);
+            console.log('📦 Product data received:', data);
             
             if (data.success && data.product) {
                 const p = data.product;
+                console.log('✅ Product loaded:', p.name);
                 
-                // Populate form fields
-                const fields = {
+                // Populate ALL form fields
+                const fieldMappings = {
                     'editProdId': p.id || '',
                     'editProdIdDisplay': p.id || '',
                     'editProdName': p.name || '',
@@ -1782,27 +1805,29 @@ function editProduct(productId) {
                     'editProdSpecs': (p.specs || []).join(', ')
                 };
                 
-                let count = 0;
-                Object.keys(fields).forEach(id => {
+                let populatedCount = 0;
+                Object.keys(fieldMappings).forEach(id => {
                     const el = document.getElementById(id);
                     if (el) {
-                        el.value = fields[id];
-                        count++;
+                        el.value = fieldMappings[id];
+                        populatedCount++;
+                    } else {
+                        console.warn('⚠️ Element not found:', id);
                     }
                 });
                 
-                console.log(`✅ Form populated with ${count} fields`);
+                console.log(`✅ Form populated with ${populatedCount} fields`);
                 showToast('✅ Product loaded: ' + p.name, 'success');
                 
             } else {
-                showToast('❌ Product not found', 'error');
+                showToast('❌ Product not found: ' + (data.message || 'Unknown'), 'error');
                 closeEditProductModal();
             }
         })
         .catch(err => {
-            console.error('❌ Error:', err);
+            console.error('❌ Fetch error:', err);
             showToast('❌ Error loading product: ' + err.message, 'error');
-            closeEditProductModal();
+            // Don't close modal so user can retry
         });
 }
 
@@ -1811,8 +1836,14 @@ function editProduct(productId) {
 // ============================================================
 function saveEditedProduct(event) {
     event.preventDefault();
+    console.log('💾 Saving edited product...');
     
     const productId = document.getElementById('editProdId').value;
+    if (!productId) {
+        showToast('❌ No product ID to update', 'error');
+        return;
+    }
+    
     const data = {
         name: document.getElementById('editProdName').value.trim(),
         category: document.getElementById('editProdCategory').value,
@@ -1828,7 +1859,7 @@ function saveEditedProduct(event) {
         barcode: document.getElementById('editProdBarcode').value.trim() || ''
     };
     
-    console.log('📦 Updating product:', data);
+    console.log('📦 Update data:', data);
     
     if (!data.name) {
         showToast('❌ Please enter a product name', 'error');
@@ -1846,13 +1877,14 @@ function saveEditedProduct(event) {
         btn.disabled = true;
     }
     
-    fetch('/admin/api/product/' + productId, {
+    fetch('/admin/api/product/' + encodeURIComponent(productId), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
     })
     .then(response => response.json())
     .then(result => {
+        console.log('📥 Update result:', result);
         if (result.success) {
             showToast('✅ Product updated successfully!', 'success');
             closeEditProductModal();
@@ -1862,8 +1894,8 @@ function saveEditedProduct(event) {
         }
     })
     .catch(err => {
-        console.error('❌ Error:', err);
-        showToast('❌ Error saving product: ' + err.message, 'error');
+        console.error('❌ Save error:', err);
+        showToast('❌ Error saving: ' + err.message, 'error');
     })
     .finally(() => {
         if (btn) {
@@ -1874,52 +1906,47 @@ function saveEditedProduct(event) {
 }
 
 // ============================================================
-// EDIT CREDIT CUSTOMER - FULLY WORKING ✅
+// EDIT CREDIT CUSTOMER - SINGLE DEFINITION ✅
 // ============================================================
 function editCreditCustomer(customerId) {
-    console.log('✏️ EDIT CREDIT CUSTOMER:', customerId);
+    console.log('✏️ EDIT CREDIT CUSTOMER CALLED with ID:', customerId);
     
     if (!customerId) {
         showToast('❌ No customer ID provided', 'error');
         return;
     }
     
-    const modal = document.getElementById('creditCustomerModal');
-    if (!modal) {
-        showToast('❌ Modal not found', 'error');
+    // Open the modal
+    if (!openModal('creditCustomerModal')) {
+        showToast('❌ Credit modal not found', 'error');
         return;
     }
-    
-    // Force open modal
-    modal.classList.remove('hidden');
-    modal.style.display = 'flex';
-    modal.style.position = 'fixed';
-    modal.style.top = '0';
-    modal.style.left = '0';
-    modal.style.right = '0';
-    modal.style.bottom = '0';
-    modal.style.backgroundColor = 'rgba(0,0,0,0.6)';
-    modal.style.zIndex = '99999';
-    modal.style.alignItems = 'center';
-    modal.style.justifyContent = 'center';
-    modal.style.padding = '20px';
-    modal.style.backdropFilter = 'blur(4px)';
     
     document.getElementById('creditModalTitle').textContent = 'Loading...';
     showToast('🔄 Loading customer...', 'info');
     
-    fetch('/admin/api/credit/customers/' + customerId + '?t=' + Date.now())
+    // Clear form first
+    const form = document.getElementById('creditCustomerForm');
+    if (form) form.reset();
+    document.getElementById('editCreditCustomerId').value = '';
+    
+    const fetchUrl = '/admin/api/credit/customers/' + encodeURIComponent(customerId) + '?t=' + Date.now();
+    console.log('📡 Fetching from:', fetchUrl);
+    
+    fetch(fetchUrl)
         .then(response => {
+            console.log('📡 Response status:', response.status);
             if (!response.ok) {
-                throw new Error('HTTP ' + response.status);
+                throw new Error('HTTP ' + response.status + ': ' + response.statusText);
             }
             return response.json();
         })
         .then(data => {
-            console.log('📦 Customer data:', data);
+            console.log('📦 Customer data received:', data);
             
             if (data.success && data.customer) {
                 const c = data.customer;
+                console.log('✅ Customer loaded:', c.full_name);
                 
                 document.getElementById('creditModalTitle').textContent = '✏️ Edit Credit Customer';
                 document.getElementById('editCreditCustomerId').value = customerId;
@@ -1937,14 +1964,13 @@ function editCreditCustomer(customerId) {
                 showToast('✅ Customer loaded: ' + c.full_name, 'success');
                 
             } else {
-                showToast('❌ Customer not found', 'error');
+                showToast('❌ Customer not found: ' + (data.message || 'Unknown'), 'error');
                 closeCreditCustomerModal();
             }
         })
         .catch(err => {
-            console.error('❌ Error:', err);
+            console.error('❌ Fetch error:', err);
             showToast('❌ Error loading customer: ' + err.message, 'error');
-            closeCreditCustomerModal();
         });
 }
 
@@ -1953,9 +1979,10 @@ function editCreditCustomer(customerId) {
 // ============================================================
 function saveCreditCustomer(event) {
     event.preventDefault();
+    console.log('💾 Saving credit customer...');
     
     const editId = document.getElementById('editCreditCustomerId').value || '';
-    const url = editId ? '/admin/api/credit/customers/' + editId : '/admin/api/credit/customers';
+    const url = editId ? '/admin/api/credit/customers/' + encodeURIComponent(editId) : '/admin/api/credit/customers';
     const method = editId ? 'PUT' : 'POST';
     
     const data = {
@@ -1965,7 +1992,7 @@ function saveCreditCustomer(event) {
         credit_limit: parseFloat(document.getElementById('creditLimit').value) || 0
     };
     
-    console.log('💾 Saving customer data:', data);
+    console.log('💾 Data:', data);
     
     if (!data.full_name || !data.phone) {
         showToast('⚠️ Full name and phone are required', 'warning');
@@ -1993,11 +2020,7 @@ function saveCreditCustomer(event) {
         return response.json();
     })
     .then(result => {
-        if (btn) {
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-        }
-        console.log('📥 Result:', result);
+        console.log('📥 Save result:', result);
         if (result.success) {
             showToast(method === 'PUT' ? '✅ Customer updated!' : '✅ Customer added!', 'success');
             closeCreditCustomerModal();
@@ -2007,21 +2030,24 @@ function saveCreditCustomer(event) {
         }
     })
     .catch(err => {
-        console.error('❌ Error:', err);
+        console.error('❌ Save error:', err);
+        showToast('❌ Error saving: ' + err.message, 'error');
+    })
+    .finally(() => {
         if (btn) {
             btn.innerHTML = originalText;
             btn.disabled = false;
         }
-        showToast('❌ Error saving customer: ' + err.message, 'error');
     });
 }
 
 // ============================================================
-// SHOW ADD CREDIT CUSTOMER MODAL
+// ADD CREDIT CUSTOMER
 // ============================================================
 function showAddCreditCustomerModal() {
-    const modal = document.getElementById('creditCustomerModal');
-    if (!modal) {
+    console.log('➕ Opening add credit customer modal');
+    
+    if (!openModal('creditCustomerModal')) {
         showToast('❌ Modal not found', 'error');
         return;
     }
@@ -2030,138 +2056,6 @@ function showAddCreditCustomerModal() {
     document.getElementById('creditCustomerForm').reset();
     document.getElementById('editCreditCustomerId').value = '';
     document.getElementById('paymentCurrentBalance').textContent = 'Current Balance: KSh 0';
-    
-    modal.classList.remove('hidden');
-    modal.style.display = 'flex';
-    modal.style.position = 'fixed';
-    modal.style.top = '0';
-    modal.style.left = '0';
-    modal.style.right = '0';
-    modal.style.bottom = '0';
-    modal.style.backgroundColor = 'rgba(0,0,0,0.6)';
-    modal.style.zIndex = '99999';
-    modal.style.alignItems = 'center';
-    modal.style.justifyContent = 'center';
-    modal.style.padding = '20px';
-    modal.style.backdropFilter = 'blur(4px)';
-}
-
-// ============================================================
-// VIEW CREDIT CUSTOMER
-// ============================================================
-function viewCreditCustomer(customerId) {
-    const modal = document.getElementById('viewCreditModal');
-    if (!modal) return;
-    
-    modal.classList.remove('hidden');
-    modal.style.display = 'flex';
-    modal.style.zIndex = '99999';
-    
-    document.getElementById('viewCreditContent').innerHTML = `
-        <div style="text-align:center;padding:20px;color:var(--text-muted);">Loading customer details...</div>
-    `;
-    
-    fetch('/admin/api/credit/customers/' + customerId + '?t=' + Date.now())
-        .then(r => r.json())
-        .then(data => {
-            if (data.success && data.customer) {
-                const c = data.customer;
-                document.getElementById('viewCreditContent').innerHTML = `
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                        <div><span style="color:var(--text-muted);font-size:0.6rem;">Name</span><div style="font-weight:700;">${c.full_name}</div></div>
-                        <div><span style="color:var(--text-muted);font-size:0.6rem;">Phone</span><div>${c.phone || 'N/A'}</div></div>
-                        <div><span style="color:var(--text-muted);font-size:0.6rem;">Credit Limit</span><div style="font-weight:600;">KSh ${(c.credit_limit || 0).toLocaleString()}</div></div>
-                        <div><span style="color:var(--text-muted);font-size:0.6rem;">Balance</span><div style="font-weight:700;color:${c.current_balance > 0 ? 'var(--warning)' : 'var(--success)'};">KSh ${(c.current_balance || 0).toLocaleString()}</div></div>
-                        <div><span style="color:var(--text-muted);font-size:0.6rem;">Total Purchases</span><div>KSh ${(c.total_purchases || 0).toLocaleString()}</div></div>
-                        <div><span style="color:var(--text-muted);font-size:0.6rem;">Total Payments</span><div style="color:var(--success);">KSh ${(c.total_payments || 0).toLocaleString()}</div></div>
-                        <div style="grid-column:span 2;margin-top:8px;padding-top:8px;border-top:1px solid var(--border-color);">
-                            <button onclick="document.getElementById('viewCreditModal').classList.add('hidden');openRecordPaymentModal('${c.customer_id}','${c.full_name}','${c.current_balance || 0}')" class="btn-success" style="font-size:0.7rem;padding:4px 16px;">
-                                💵 Record Payment
-                            </button>
-                            <button onclick="editCreditCustomer('${c.customer_id}');document.getElementById('viewCreditModal').classList.add('hidden')" class="btn-outline" style="font-size:0.7rem;padding:4px 16px;color:var(--primary-light);">
-                                ✏️ Edit
-                            </button>
-                            <button onclick="document.getElementById('viewCreditModal').classList.add('hidden')" class="btn-outline" style="font-size:0.7rem;padding:4px 16px;margin-left:8px;">
-                                Close
-                            </button>
-                        </div>
-                    </div>
-                `;
-            } else {
-                document.getElementById('viewCreditContent').innerHTML = `<div style="text-align:center;padding:20px;color:var(--danger);">Customer not found</div>`;
-            }
-        })
-        .catch(() => {
-            document.getElementById('viewCreditContent').innerHTML = `<div style="text-align:center;padding:20px;color:var(--danger);">Error loading customer</div>`;
-        });
-}
-
-// ============================================================
-// OPEN RECORD PAYMENT MODAL
-// ============================================================
-function openRecordPaymentModal(customerId, customerName, balance) {
-    document.getElementById('paymentCustomerId').value = customerId;
-    document.getElementById('paymentCustomerName').textContent = customerName || 'Customer';
-    document.getElementById('paymentCurrentBalanceDisplay').textContent = 'KSh ' + parseFloat(balance || 0).toLocaleString();
-    document.getElementById('paymentAmount').value = '';
-    document.getElementById('paymentModal').classList.remove('hidden');
-    document.getElementById('paymentModal').style.display = 'flex';
-}
-
-// ============================================================
-// SAVE PAYMENT
-// ============================================================
-function savePayment(event) {
-    event.preventDefault();
-    
-    const customerId = document.getElementById('paymentCustomerId').value;
-    const amount = parseFloat(document.getElementById('paymentAmount').value);
-    
-    if (!customerId || !amount || amount <= 0) {
-        showToast('⚠️ Enter a valid amount', 'warning');
-        return;
-    }
-    
-    const btn = document.querySelector('#paymentForm button[type="submit"]');
-    const originalText = btn ? btn.innerHTML : 'Record';
-    if (btn) {
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
-        btn.disabled = true;
-    }
-    
-    fetch('/admin/api/credit/payment', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            customer_id: customerId,
-            amount: amount,
-            staff_name: 'Admin',
-            payment_method: 'cash'
-        })
-    })
-    .then(r => r.json())
-    .then(result => {
-        if (btn) {
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-        }
-        if (result.success) {
-            showToast('✅ Payment recorded successfully!', 'success');
-            document.getElementById('paymentModal').classList.add('hidden');
-            updateCreditStats();
-            setTimeout(() => location.reload(), 1000);
-        } else {
-            showToast('❌ Error: ' + (result.message || 'Unknown error'), 'error');
-        }
-    })
-    .catch(err => {
-        console.error('❌ Error:', err);
-        if (btn) {
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-        }
-        showToast('❌ Error recording payment: ' + err.message, 'error');
-    });
 }
 
 // ============================================================
@@ -2803,63 +2697,49 @@ function loadAllTransactions() {
     
     container.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-muted);">Loading transactions...</td></tr>';
     
-    let allOrders = [];
-    let page = 1;
-    let hasMore = true;
-    
-    while (hasMore && page <= 10) {
-        fetch(`/admin/api/orders?limit=50&page=${page}&t=${Date.now()}`)
-            .then(r => r.json())
-            .then(data => {
-                if (data.success && data.orders && data.orders.length > 0) {
-                    allOrders = allOrders.concat(data.orders);
-                    page++;
-                    if (data.orders.length < 50) hasMore = false;
-                } else {
-                    hasMore = false;
-                }
-            })
-            .catch(() => { hasMore = false; });
-    }
-    
-    setTimeout(() => {
-        if (allOrders.length > 0) {
-            const sorted = [...allOrders].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
-            let html = '';
-            
-            sorted.slice(0, 20).forEach(order => {
-                const statusColors = {
-                    'delivered': 'badge-success',
-                    'completed': 'badge-success',
-                    'confirmed': 'badge-purple',
-                    'shipped': 'badge-info',
-                    'pending': 'badge-warning',
-                    'cancelled': 'badge-danger',
-                    'returned': 'badge-danger'
-                };
-                const statusClass = statusColors[order.status?.toLowerCase()] || 'badge-warning';
-                const orderId = (order.order_id || order.id || 'N/A');
-                const customerName = order.customer_name || order.customer?.name || 'Walk-in';
-                const paymentMethod = order.payment_method || order.payment_type || 'Cash';
-                const createdAt = order.created_at || order.createdAt || order.date;
+    fetch('/admin/api/orders?limit=50&t=' + Date.now())
+        .then(r => r.json())
+        .then(data => {
+            if (data.success && data.orders) {
+                const sorted = [...data.orders].sort((a, b) => new Date(b.created_at || 0) - new Date(a.created_at || 0));
+                let html = '';
                 
-                html += `
-                    <tr>
-                        <td class="font-mono">#${orderId.slice(0, 8)}</td>
-                        <td style="display:none;" class="sm-table-cell">${customerName}</td>
-                        <td style="text-align:right;font-weight:600;color:var(--success);">KSh ${(order.total || 0).toLocaleString()}</td>
-                        <td style="text-align:center;"><span class="badge badge-info">${paymentMethod}</span></td>
-                        <td style="text-align:center;"><span class="badge ${statusClass}">${order.status || 'Pending'}</span></td>
-                        <td style="text-align:right;display:none;" class="lg-table-cell" style="color:var(--success);">KSh ${(order.profit || 0).toLocaleString()}</td>
-                        <td style="text-align:center;font-size:0.6rem;color:var(--text-muted);">${createdAt ? new Date(createdAt).toLocaleDateString() : 'N/A'}</td>
-                    </tr>
-                `;
-            });
-            container.innerHTML = html;
-        } else {
-            container.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-muted);">No transactions found</td></tr>';
-        }
-    }, 500);
+                sorted.slice(0, 20).forEach(order => {
+                    const statusColors = {
+                        'delivered': 'badge-success',
+                        'completed': 'badge-success',
+                        'confirmed': 'badge-purple',
+                        'shipped': 'badge-info',
+                        'pending': 'badge-warning',
+                        'cancelled': 'badge-danger',
+                        'returned': 'badge-danger'
+                    };
+                    const statusClass = statusColors[order.status?.toLowerCase()] || 'badge-warning';
+                    const orderId = (order.order_id || order.id || 'N/A');
+                    const customerName = order.customer_name || order.customer?.name || 'Walk-in';
+                    const paymentMethod = order.payment_method || order.payment_type || 'Cash';
+                    const createdAt = order.created_at || order.createdAt || order.date;
+                    
+                    html += `
+                        <tr>
+                            <td class="font-mono">#${orderId.slice(0, 8)}</td>
+                            <td style="display:none;" class="sm-table-cell">${customerName}</td>
+                            <td style="text-align:right;font-weight:600;color:var(--success);">KSh ${(order.total || 0).toLocaleString()}</td>
+                            <td style="text-align:center;"><span class="badge badge-info">${paymentMethod}</span></td>
+                            <td style="text-align:center;"><span class="badge ${statusClass}">${order.status || 'Pending'}</span></td>
+                            <td style="text-align:right;display:none;" class="lg-table-cell" style="color:var(--success);">KSh ${(order.profit || 0).toLocaleString()}</td>
+                            <td style="text-align:center;font-size:0.6rem;color:var(--text-muted);">${createdAt ? new Date(createdAt).toLocaleDateString() : 'N/A'}</td>
+                        </tr>
+                    `;
+                });
+                container.innerHTML = html || '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-muted);">No transactions found</td></tr>';
+            } else {
+                container.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-muted);">No transactions found</td></tr>';
+            }
+        })
+        .catch(() => {
+            container.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-muted);">Error loading transactions</td></tr>';
+        });
 }
 
 function exportAnalyticsCSV() {
@@ -2897,6 +2777,124 @@ function refreshCreditData() {
     showToast('🔄 Refreshing credit data...', 'info');
     updateCreditStats();
     setTimeout(() => location.reload(), 1000);
+}
+
+// ============================================================
+// VIEW CREDIT CUSTOMER
+// ============================================================
+function viewCreditCustomer(customerId) {
+    const modal = document.getElementById('viewCreditModal');
+    if (!modal) return;
+    
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+    modal.style.zIndex = '99999';
+    
+    document.getElementById('viewCreditContent').innerHTML = `
+        <div style="text-align:center;padding:20px;color:var(--text-muted);">Loading customer details...</div>
+    `;
+    
+    fetch('/admin/api/credit/customers/' + customerId + '?t=' + Date.now())
+        .then(r => r.json())
+        .then(data => {
+            if (data.success && data.customer) {
+                const c = data.customer;
+                document.getElementById('viewCreditContent').innerHTML = `
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                        <div><span style="color:var(--text-muted);font-size:0.6rem;">Name</span><div style="font-weight:700;">${c.full_name}</div></div>
+                        <div><span style="color:var(--text-muted);font-size:0.6rem;">Phone</span><div>${c.phone || 'N/A'}</div></div>
+                        <div><span style="color:var(--text-muted);font-size:0.6rem;">Credit Limit</span><div style="font-weight:600;">KSh ${(c.credit_limit || 0).toLocaleString()}</div></div>
+                        <div><span style="color:var(--text-muted);font-size:0.6rem;">Balance</span><div style="font-weight:700;color:${c.current_balance > 0 ? 'var(--warning)' : 'var(--success)'};">KSh ${(c.current_balance || 0).toLocaleString()}</div></div>
+                        <div><span style="color:var(--text-muted);font-size:0.6rem;">Total Purchases</span><div>KSh ${(c.total_purchases || 0).toLocaleString()}</div></div>
+                        <div><span style="color:var(--text-muted);font-size:0.6rem;">Total Payments</span><div style="color:var(--success);">KSh ${(c.total_payments || 0).toLocaleString()}</div></div>
+                        <div style="grid-column:span 2;margin-top:8px;padding-top:8px;border-top:1px solid var(--border-color);">
+                            <button onclick="document.getElementById('viewCreditModal').classList.add('hidden');openRecordPaymentModal('${c.customer_id}','${c.full_name}','${c.current_balance || 0}')" class="btn-success" style="font-size:0.7rem;padding:4px 16px;">
+                                💵 Record Payment
+                            </button>
+                            <button onclick="editCreditCustomer('${c.customer_id}');document.getElementById('viewCreditModal').classList.add('hidden')" class="btn-outline" style="font-size:0.7rem;padding:4px 16px;color:var(--primary-light);">
+                                ✏️ Edit
+                            </button>
+                            <button onclick="document.getElementById('viewCreditModal').classList.add('hidden')" class="btn-outline" style="font-size:0.7rem;padding:4px 16px;margin-left:8px;">
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                `;
+            } else {
+                document.getElementById('viewCreditContent').innerHTML = `<div style="text-align:center;padding:20px;color:var(--danger);">Customer not found</div>`;
+            }
+        })
+        .catch(() => {
+            document.getElementById('viewCreditContent').innerHTML = `<div style="text-align:center;padding:20px;color:var(--danger);">Error loading customer</div>`;
+        });
+}
+
+// ============================================================
+// OPEN RECORD PAYMENT MODAL
+// ============================================================
+function openRecordPaymentModal(customerId, customerName, balance) {
+    document.getElementById('paymentCustomerId').value = customerId;
+    document.getElementById('paymentCustomerName').textContent = customerName || 'Customer';
+    document.getElementById('paymentCurrentBalanceDisplay').textContent = 'KSh ' + parseFloat(balance || 0).toLocaleString();
+    document.getElementById('paymentAmount').value = '';
+    document.getElementById('paymentModal').classList.remove('hidden');
+    document.getElementById('paymentModal').style.display = 'flex';
+}
+
+// ============================================================
+// SAVE PAYMENT
+// ============================================================
+function savePayment(event) {
+    event.preventDefault();
+    
+    const customerId = document.getElementById('paymentCustomerId').value;
+    const amount = parseFloat(document.getElementById('paymentAmount').value);
+    
+    if (!customerId || !amount || amount <= 0) {
+        showToast('⚠️ Enter a valid amount', 'warning');
+        return;
+    }
+    
+    const btn = document.querySelector('#paymentForm button[type="submit"]');
+    const originalText = btn ? btn.innerHTML : 'Record';
+    if (btn) {
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        btn.disabled = true;
+    }
+    
+    fetch('/admin/api/credit/payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            customer_id: customerId,
+            amount: amount,
+            staff_name: 'Admin',
+            payment_method: 'cash'
+        })
+    })
+    .then(r => r.json())
+    .then(result => {
+        if (btn) {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+        if (result.success) {
+            showToast('✅ Payment recorded successfully!', 'success');
+            document.getElementById('paymentModal').classList.add('hidden');
+            updateCreditStats();
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showToast('❌ Error: ' + (result.message || 'Unknown error'), 'error');
+        }
+    })
+    .catch(err => {
+        console.error('❌ Error:', err);
+        if (btn) {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+        showToast('❌ Error recording payment: ' + err.message, 'error');
+    });
 }
 
 // ============================================================
