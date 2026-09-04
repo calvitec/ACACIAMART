@@ -1921,6 +1921,8 @@ function renderProductsTable(products) {
     
     let html = '';
     products.forEach(p => {
+        // ✅ FIX: Use product_id fallback like your orders code
+        const productId = p.id || p.product_id || '';
         const stock = p.stock || 0;
         let stockColor = stock > 20 ? 'var(--success)' : stock > 0 ? 'var(--warning)' : 'var(--danger)';
         
@@ -1933,7 +1935,7 @@ function renderProductsTable(products) {
                     </div>
                     <div>
                         <div style="font-weight:600;font-size:0.8rem;color:var(--text-primary);">${p.name}</div>
-                        <div style="font-size:0.55rem;color:var(--text-muted);font-family:monospace;">${p.id || ''}</div>
+                        <div style="font-size:0.55rem;color:var(--text-muted);font-family:monospace;">${productId}</div>
                     </div>
                 </div>
             </td>
@@ -1941,10 +1943,10 @@ function renderProductsTable(products) {
             <td style="text-align:right;font-weight:600;">KSh ${(p.price || 0).toLocaleString()}</td>
             <td style="text-align:center;font-weight:700;color:${stockColor};">${stock}</td>
             <td style="text-align:center;">
-                <button onclick="editProduct('${p.id}')" class="btn-outline" style="font-size:0.55rem;padding:2px 8px;" title="Edit">
+                <button onclick="editProduct('${productId}')" class="btn-outline" style="font-size:0.55rem;padding:2px 8px;" title="Edit">
                     <i class="fas fa-edit"></i>
                 </button>
-                <button onclick="deleteProduct('${p.id}')" class="btn-danger" style="font-size:0.55rem;padding:2px 8px;" title="Delete">
+                <button onclick="deleteProduct('${productId}')" class="btn-danger" style="font-size:0.55rem;padding:2px 8px;" title="Delete">
                     <i class="fas fa-trash"></i>
                 </button>
             </td>
@@ -2023,63 +2025,25 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ============================================================
-// EDIT PRODUCT - FULLY WORKING ✅
+// EDIT PRODUCT - COMPLETE FIX ✅✅✅
 // ============================================================
 function editProduct(productId) {
     console.log('✏️✏️✏️ EDIT PRODUCT:', productId);
     
     if (!productId) {
-        alert('❌ No product ID provided');
+        showToast('❌ No product ID provided', 'error');
         return;
     }
     
-    // Get or create modal
+    // Get the existing modal from HTML
     let modal = document.getElementById('editProductModal');
     
     if (!modal) {
-        console.log('⚠️ Modal not found, creating...');
-        modal = document.createElement('div');
-        modal.id = 'editProductModal';
-        modal.className = 'modal-overlay';
-        modal.style.display = 'none';
-        modal.style.position = 'fixed';
-        modal.style.inset = '0';
-        modal.style.backgroundColor = 'rgba(0,0,0,0.6)';
-        modal.style.zIndex = '99999';
-        modal.style.alignItems = 'center';
-        modal.style.justifyContent = 'center';
-        modal.style.padding = '20px';
-        modal.style.backdropFilter = 'blur(4px)';
-        modal.setAttribute('onclick', "closeModal(event, 'editProductModal')");
-        
-        modal.innerHTML = `
-            <div class="modal" onclick="event.stopPropagation()" style="background:white;border-radius:16px;padding:28px;max-width:600px;width:100%;max-height:90vh;overflow-y:auto;position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
-                <button class="close" onclick="document.getElementById('editProductModal').style.display='none'" style="position:absolute;top:12px;right:16px;background:none;border:none;font-size:1.2rem;color:#8A8AAA;cursor:pointer;">✕</button>
-                <div class="title" style="font-size:1.05rem;font-weight:700;color:#1A1A2E;margin-bottom:16px;display:flex;align-items:center;gap:10px;">✏️ Edit Product</div>
-                <form id="editProductForm" onsubmit="saveEditedProduct(event)">
-                    <input type="hidden" id="editProdId">
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                        <div><label style="font-size:0.6rem;font-weight:600;color:#8A8AAA;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">Product ID</label><input type="text" id="editProdIdDisplay" class="form-input" readonly style="width:100%;padding:8px 14px;border:1px solid rgba(0,0,0,0.08);border-radius:8px;background:#f0f0f0;color:#1A1A2E;font-size:0.8rem;outline:none;"></div>
-                        <div><label style="font-size:0.6rem;font-weight:600;color:#8A8AAA;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">Name *</label><input type="text" id="editProdName" class="form-input" required style="width:100%;padding:8px 14px;border:1px solid rgba(0,0,0,0.08);border-radius:8px;background:#f0f0f0;color:#1A1A2E;font-size:0.8rem;outline:none;"></div>
-                        <div><label style="font-size:0.6rem;font-weight:600;color:#8A8AAA;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">Category</label><select id="editProdCategory" class="form-input" style="width:100%;padding:8px 14px;border:1px solid rgba(0,0,0,0.08);border-radius:8px;background:#f0f0f0;color:#1A1A2E;font-size:0.8rem;outline:none;"><option value="">Select</option><option value="Phones">📱 Phones</option><option value="Laptops">💻 Laptops</option><option value="Accessories">🎧 Accessories</option><option value="Wearables">⌚ Wearables</option><option value="Audio">🎵 Audio</option><option value="Gaming">🎮 Gaming</option><option value="General">📦 General</option></select></div>
-                        <div><label style="font-size:0.6rem;font-weight:600;color:#8A8AAA;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">Barcode</label><input type="text" id="editProdBarcode" class="form-input" style="width:100%;padding:8px 14px;border:1px solid rgba(0,0,0,0.08);border-radius:8px;background:#f0f0f0;color:#1A1A2E;font-size:0.8rem;outline:none;"></div>
-                        <div><label style="font-size:0.6rem;font-weight:600;color:#8A8AAA;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">Price (KSh) *</label><input type="number" id="editProdPrice" class="form-input" required style="width:100%;padding:8px 14px;border:1px solid rgba(0,0,0,0.08);border-radius:8px;background:#f0f0f0;color:#1A1A2E;font-size:0.8rem;outline:none;"></div>
-                        <div><label style="font-size:0.6rem;font-weight:600;color:#8A8AAA;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">Stock *</label><input type="number" id="editProdStock" class="form-input" required style="width:100%;padding:8px 14px;border:1px solid rgba(0,0,0,0.08);border-radius:8px;background:#f0f0f0;color:#1A1A2E;font-size:0.8rem;outline:none;"></div>
-                    </div>
-                    <div style="margin-top:10px;"><label style="font-size:0.6rem;font-weight:600;color:#8A8AAA;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">Image URL</label><input type="url" id="editProdImage" class="form-input" style="width:100%;padding:8px 14px;border:1px solid rgba(0,0,0,0.08);border-radius:8px;background:#f0f0f0;color:#1A1A2E;font-size:0.8rem;outline:none;"></div>
-                    <div style="margin-top:10px;"><label style="font-size:0.6rem;font-weight:600;color:#8A8AAA;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">Description</label><textarea id="editProdDesc" class="form-input" rows="2" style="width:100%;padding:8px 14px;border:1px solid rgba(0,0,0,0.08);border-radius:8px;background:#f0f0f0;color:#1A1A2E;font-size:0.8rem;outline:none;"></textarea></div>
-                    <div style="display:flex;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid #e5e7eb;">
-                        <button type="submit" class="btn-gradient" style="background:linear-gradient(135deg, #6C3CE1, #4F46E5);color:white;border:none;padding:8px 20px;border-radius:9999px;font-weight:600;font-size:0.75rem;cursor:pointer;transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);">💾 Update Product</button>
-                        <button type="button" onclick="document.getElementById('editProductModal').style.display='none'" class="btn-outline" style="background:transparent;border:1px solid rgba(0,0,0,0.08);color:#4A4A6A;padding:8px 20px;border-radius:9999px;font-weight:600;font-size:0.75rem;cursor:pointer;transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);">Cancel</button>
-                    </div>
-                </form>
-            </div>
-        `;
-        document.body.appendChild(modal);
-        console.log('✅ Modal created!');
+        showToast('❌ Edit modal not found in HTML', 'error');
+        return;
     }
     
-    // FORCE OPEN
+    // ✅ FORCE OPEN the modal - using display:flex
     modal.style.display = 'flex';
     modal.style.position = 'fixed';
     modal.style.top = '0';
@@ -2112,9 +2076,21 @@ function editProduct(productId) {
     }
     
     console.log('✅ Modal forced open');
-    alert('🔄 Loading product...');
+    showToast('🔄 Loading product...', 'info');
     
-    fetch('/admin/api/product/' + productId + '?t=' + Date.now())
+    // Clear stale values
+    const fieldIds = [
+        'editProdId', 'editProdIdDisplay', 'editProdName', 'editProdCategory',
+        'editProdBarcode', 'editProdPrice', 'editProdCost', 'editProdOriginal',
+        'editProdStock', 'editProdRating', 'editProdBadge', 'editProdImage',
+        'editProdDesc', 'editProdSpecs'
+    ];
+    fieldIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
+    
+    fetch('/admin/api/product/' + encodeURIComponent(productId) + '?t=' + Date.now())
         .then(response => {
             if (!response.ok) {
                 throw new Error('HTTP ' + response.status);
@@ -2128,10 +2104,13 @@ function editProduct(productId) {
                 const p = data.product;
                 console.log('✅ Product loaded:', p.name);
                 
+                // Resolve ID with fallback
+                const resolvedId = p.id || p.product_id || productId;
+                
                 // Populate all fields
                 const fields = {
-                    'editProdId': p.id || '',
-                    'editProdIdDisplay': p.id || '',
+                    'editProdId': resolvedId,
+                    'editProdIdDisplay': resolvedId,
                     'editProdName': p.name || '',
                     'editProdCategory': p.category || '',
                     'editProdBarcode': p.barcode || '',
@@ -2159,22 +2138,22 @@ function editProduct(productId) {
                 });
                 
                 console.log(`✅ Form populated with ${count} fields`);
-                alert('✅ Product loaded: ' + p.name);
+                showToast('✅ Loaded: ' + p.name, 'success');
             } else {
-                alert('❌ Product not found');
+                showToast('❌ Product not found', 'error');
                 modal.style.display = 'none';
                 modal.classList.add('hidden');
             }
         })
         .catch(err => {
             console.error('❌ Error loading product:', err);
-            alert('❌ Error loading product: ' + err.message);
+            showToast('❌ Error loading product: ' + err.message, 'error');
             modal.style.display = 'none';
             modal.classList.add('hidden');
         });
 }
         
-  function closeEditModal() {
+function closeEditModal() {
     const modal = document.getElementById('editProductModal');
     if (modal) {
         modal.classList.add('hidden');
@@ -2182,14 +2161,19 @@ function editProduct(productId) {
     }
 }
 
-        
 // ============================================================
-// SAVE EDITED PRODUCT
+// SAVE EDITED PRODUCT - COMPLETE FIX ✅
 // ============================================================
 function saveEditedProduct(event) {
     event.preventDefault();
     
     const productId = document.getElementById('editProdId').value;
+    
+    if (!productId) {
+        showToast('❌ Missing product ID', 'error');
+        return;
+    }
+    
     const data = {
         name: document.getElementById('editProdName').value.trim(),
         category: document.getElementById('editProdCategory').value,
@@ -2205,14 +2189,14 @@ function saveEditedProduct(event) {
         barcode: document.getElementById('editProdBarcode').value.trim() || ''
     };
     
-    console.log('📦 Updating product:', data);
+    console.log('📦 Updating product:', productId, data);
     
     if (!data.name) {
-        alert('❌ Please enter a product name');
+        showToast('⚠️ Please enter a product name', 'warning');
         return;
     }
     if (data.price <= 0) {
-        alert('❌ Please enter a valid price');
+        showToast('⚠️ Please enter a valid price', 'warning');
         return;
     }
     
@@ -2223,7 +2207,7 @@ function saveEditedProduct(event) {
         btn.disabled = true;
     }
     
-    fetch('/admin/api/product/' + productId, {
+    fetch('/admin/api/product/' + encodeURIComponent(productId), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
@@ -2232,17 +2216,25 @@ function saveEditedProduct(event) {
     .then(result => {
         console.log('📥 Result:', result);
         if (result.success) {
-            alert('✅ Product updated successfully!');
+            showToast('✅ Product updated successfully!', 'success');
             document.getElementById('editProductModal').classList.add('hidden');
             document.getElementById('editProductModal').style.display = 'none';
-            setTimeout(() => location.reload(), 1000);
+            setTimeout(() => {
+                // Reload products without full page refresh if on products section
+                if (document.getElementById('products-section') && 
+                    !document.getElementById('products-section').classList.contains('hidden')) {
+                    loadProductsWithFilters();
+                } else {
+                    location.reload();
+                }
+            }, 800);
         } else {
-            alert('❌ ' + (result.message || 'Failed to update'));
+            showToast('❌ ' + (result.message || 'Failed to update'), 'error');
         }
     })
     .catch(err => {
         console.error('❌ Error:', err);
-        alert('❌ Error saving product: ' + err.message);
+        showToast('❌ Error saving product: ' + err.message, 'error');
     })
     .finally(() => {
         if (btn) {
@@ -2253,16 +2245,20 @@ function saveEditedProduct(event) {
 }
 
 function deleteProduct(productId) {
+    if (!productId) {
+        showToast('❌ No product ID', 'error');
+        return;
+    }
     if (!confirm('⚠️ Delete this product?')) return;
     
-    fetch('/admin/api/product/' + productId, { method: 'DELETE' })
+    fetch('/admin/api/product/' + encodeURIComponent(productId), { method: 'DELETE' })
         .then(r => r.json())
         .then(result => {
             if (result.success) {
                 showToast('✅ Product deleted', 'success');
                 loadProductsWithFilters();
             } else {
-                showToast('❌ Error deleting product', 'error');
+                showToast('❌ ' + (result.message || 'Error deleting product'), 'error');
             }
         })
         .catch(() => showToast('❌ Error deleting product', 'error'));
@@ -2723,13 +2719,13 @@ function editCreditCustomer(customerId) {
     console.log('✏️ Editing credit customer:', customerId);
     
     if (!customerId) {
-        alert('❌ No customer ID provided');
+        showToast('❌ No customer ID provided', 'error');
         return;
     }
     
     const modal = document.getElementById('creditCustomerModal');
     if (!modal) {
-        alert('❌ Credit customer modal not found');
+        showToast('❌ Credit customer modal not found', 'error');
         return;
     }
     
@@ -2768,19 +2764,15 @@ function editCreditCustomer(customerId) {
                 }
                 
                 console.log('✅ Form populated!');
-                console.log('  - Name:', document.getElementById('creditFullName').value);
-                console.log('  - Phone:', document.getElementById('creditPhone').value);
-                console.log('  - Limit:', document.getElementById('creditLimit').value);
-                
-                alert('✅ Customer loaded: ' + c.full_name);
+                showToast('✅ Customer loaded: ' + c.full_name, 'success');
             } else {
-                alert('❌ ' + (data.message || 'Customer not found'));
+                showToast('❌ ' + (data.message || 'Customer not found'), 'error');
                 modal.classList.add('hidden');
             }
         })
         .catch(e => {
             console.error('❌ Error:', e);
-            alert('❌ Error loading customer: ' + e.message);
+            showToast('❌ Error loading customer: ' + e.message, 'error');
             modal.classList.add('hidden');
         });
 }
@@ -2802,7 +2794,7 @@ function saveCreditCustomer(event) {
     console.log('💾 Saving customer data:', data);
     
     if (!data.full_name || !data.phone) {
-        alert('⚠️ Full name and phone are required');
+        showToast('⚠️ Full name and phone are required', 'warning');
         return;
     }
     
@@ -2818,7 +2810,7 @@ function saveCreditCustomer(event) {
                     );
                     
                     if (duplicate) {
-                        alert(`⚠️ Customer "${data.full_name}" with phone "${data.phone}" already exists!\n\nEdit the existing customer instead.`);
+                        showToast(`⚠️ Customer "${data.full_name}" already exists!`, 'warning');
                         editCreditCustomer(duplicate.customer_id);
                         closeCreditCustomerModal();
                         return;
@@ -2868,11 +2860,11 @@ function saveCustomerData(url, method, data) {
         }
         console.log('📥 Result:', result);
         if (result.success) {
-            alert(method === 'PUT' ? '✅ Customer updated successfully!' : '✅ Customer added successfully!');
+            showToast(method === 'PUT' ? '✅ Customer updated successfully!' : '✅ Customer added successfully!', 'success');
             closeCreditCustomerModal();
             setTimeout(() => location.reload(), 1500);
         } else {
-            alert('❌ Error: ' + (result.message || 'Unknown error'));
+            showToast('❌ Error: ' + (result.message || 'Unknown error'), 'error');
         }
     })
     .catch(e => {
@@ -2881,7 +2873,7 @@ function saveCustomerData(url, method, data) {
             btn.innerHTML = originalText;
             btn.disabled = false;
         }
-        alert('❌ Error saving customer: ' + e.message);
+        showToast('❌ Error saving customer: ' + e.message, 'error');
     });
 }
 
@@ -2896,7 +2888,7 @@ function closeCreditCustomerModal() {
 function viewCreditCustomer(customerId) {
     const modal = document.getElementById('viewCreditModal');
     if (!modal) {
-        alert('❌ View credit modal not found');
+        showToast('❌ View credit modal not found', 'error');
         return;
     }
     
@@ -2959,7 +2951,7 @@ function savePayment(event) {
     const amount = parseFloat(document.getElementById('paymentAmount').value);
     
     if (!customerId || !amount || amount <= 0) {
-        alert('⚠️ Enter a valid amount');
+        showToast('⚠️ Enter a valid amount', 'warning');
         return;
     }
     
@@ -2987,12 +2979,12 @@ function savePayment(event) {
             btn.disabled = false;
         }
         if (result.success) {
-            alert('✅ Payment recorded successfully!');
+            showToast('✅ Payment recorded successfully!', 'success');
             document.getElementById('paymentModal').classList.add('hidden');
             updateCreditStats();
             setTimeout(() => location.reload(), 1000);
         } else {
-            alert('❌ Error recording payment: ' + (result.message || 'Unknown error'));
+            showToast('❌ Error recording payment: ' + (result.message || 'Unknown error'), 'error');
         }
     })
     .catch(err => {
@@ -3001,7 +2993,7 @@ function savePayment(event) {
             btn.innerHTML = originalText;
             btn.disabled = false;
         }
-        alert('❌ Error recording payment: ' + err.message);
+        showToast('❌ Error recording payment: ' + err.message, 'error');
     });
 }
 
