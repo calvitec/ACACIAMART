@@ -310,6 +310,56 @@
     .table-wrap table tbody tr { transition: var(--transition); }
     .table-wrap table tbody tr:hover { background: var(--bg-input); }
     .table-wrap table tbody .font-mono { font-family: monospace; font-weight: 600; color: var(--text-primary); }
+    
+    /* Inline Edit Row */
+    .edit-row td {
+        background: var(--primary-bg) !important;
+        padding: 8px 6px !important;
+    }
+    
+    .edit-row input, .edit-row select {
+        background: var(--bg-card);
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        padding: 4px 8px;
+        font-size: 0.75rem;
+        width: 100%;
+        color: var(--text-primary);
+    }
+    
+    .edit-row input:focus, .edit-row select:focus {
+        border-color: var(--primary);
+        outline: none;
+        box-shadow: 0 0 0 2px rgba(108, 60, 225, 0.15);
+    }
+    
+    .edit-row .btn-sm {
+        padding: 4px 10px;
+        font-size: 0.6rem;
+        border-radius: 6px;
+        border: none;
+        cursor: pointer;
+        font-weight: 600;
+        margin: 0 2px;
+    }
+    
+    .edit-row .btn-save {
+        background: var(--success);
+        color: white;
+    }
+    
+    .edit-row .btn-save:hover {
+        background: #059669;
+    }
+    
+    .edit-row .btn-cancel {
+        background: var(--bg-input);
+        color: var(--text-secondary);
+    }
+    
+    .edit-row .btn-cancel:hover {
+        background: var(--border-color);
+    }
 
     /* ============================================================
        BADGES
@@ -579,6 +629,8 @@
         .quick-actions-grid { grid-template-columns: repeat(3, 1fr); }
         .glass-card { padding: 14px 16px; }
         .stat-card-modern .stat-value { font-size: 1.1rem; }
+        .edit-row input, .edit-row select { font-size: 0.6rem; padding: 2px 4px; }
+        .edit-row .btn-sm { font-size: 0.5rem; padding: 2px 6px; }
     }
     
     @media (max-width: 480px) {
@@ -988,7 +1040,7 @@
 </div>
 
 <!-- ============================================================
-     PRODUCTS SECTION
+     PRODUCTS SECTION - WITH INLINE EDITING
      ============================================================ -->
 <div id="products-section" class="section hidden">
     <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
@@ -1010,11 +1062,11 @@
             <table>
                 <thead style="position:sticky;top:0;z-index:10;background:var(--bg-card);">
                     <tr>
-                        <th>Product</th>
+                        <th style="min-width:150px;">Product</th>
                         <th style="display:none;" class="sm-table-cell">Category</th>
-                        <th style="text-align:right;">Price</th>
-                        <th style="text-align:center;">Stock</th>
-                        <th style="text-align:center;">Actions</th>
+                        <th style="text-align:right;min-width:100px;">Price</th>
+                        <th style="text-align:center;min-width:70px;">Stock</th>
+                        <th style="text-align:center;min-width:120px;">Actions</th>
                     </tr>
                 </thead>
                 <tbody id="productsTableBody">
@@ -1443,90 +1495,7 @@
     </div>
 </div>
 
-<!-- Edit Product Modal - FIXED -->
-<div id="editProductModal" class="modal-overlay hidden" onclick="closeModal(event, 'editProductModal')">
-    <div class="modal" onclick="event.stopPropagation()" style="max-width:600px;">
-        <button class="close" onclick="closeEditProductModal()">✕</button>
-        <div class="title">✏️ Edit Product</div>
-        <form id="editProductForm" onsubmit="saveEditedProduct(event)">
-            <input type="hidden" id="editProdId">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                <div>
-                    <label class="form-label">Product ID</label>
-                    <input type="text" id="editProdIdDisplay" class="form-input" readonly style="background:var(--bg-input);">
-                </div>
-                <div>
-                    <label class="form-label">Name *</label>
-                    <input type="text" id="editProdName" class="form-input" required>
-                </div>
-                <div>
-                    <label class="form-label">Category</label>
-                    <select id="editProdCategory" class="form-input">
-                        <option value="">Select</option>
-                        <option value="Phones">📱 Phones</option>
-                        <option value="Laptops">💻 Laptops</option>
-                        <option value="Accessories">🎧 Accessories</option>
-                        <option value="Wearables">⌚ Wearables</option>
-                        <option value="Audio">🎵 Audio</option>
-                        <option value="Gaming">🎮 Gaming</option>
-                        <option value="General">📦 General</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="form-label">Barcode</label>
-                    <input type="text" id="editProdBarcode" class="form-input">
-                </div>
-                <div>
-                    <label class="form-label">Price (KSh) *</label>
-                    <input type="number" id="editProdPrice" class="form-input" required>
-                </div>
-                <div>
-                    <label class="form-label">Cost Price (KSh)</label>
-                    <input type="number" id="editProdCost" class="form-input" value="0">
-                </div>
-                <div>
-                    <label class="form-label">Original Price</label>
-                    <input type="number" id="editProdOriginal" class="form-input" value="0">
-                </div>
-                <div>
-                    <label class="form-label">Stock *</label>
-                    <input type="number" id="editProdStock" class="form-input" required>
-                </div>
-                <div>
-                    <label class="form-label">Rating</label>
-                    <input type="number" id="editProdRating" class="form-input" step="0.1" value="4.5">
-                </div>
-                <div>
-                    <label class="form-label">Badge</label>
-                    <select id="editProdBadge" class="form-input">
-                        <option value="">None</option>
-                        <option value="Best Seller">⭐ Best Seller</option>
-                        <option value="New">🌟 New</option>
-                        <option value="Trending">🔥 Trending</option>
-                    </select>
-                </div>
-                <div style="grid-column:span 2;">
-                    <label class="form-label">Specs (comma separated)</label>
-                    <input type="text" id="editProdSpecs" class="form-input" placeholder="RAM, Storage, Color">
-                </div>
-            </div>
-            <div style="margin-top:10px;">
-                <label class="form-label">Image URL</label>
-                <input type="url" id="editProdImage" class="form-input">
-            </div>
-            <div style="margin-top:10px;">
-                <label class="form-label">Description</label>
-                <textarea id="editProdDesc" class="form-input" rows="2"></textarea>
-            </div>
-            <div style="display:flex;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border-color);">
-                <button type="submit" class="btn-gradient">💾 Update Product</button>
-                <button type="button" onclick="closeEditProductModal()" class="btn-outline">Cancel</button>
-            </div>
-        </form>
-    </div>
-</div>
-
-<!-- Credit Customer Modal - FIXED -->
+<!-- Credit Customer Modal -->
 <div id="creditCustomerModal" class="modal-overlay hidden" onclick="closeModal(event, 'creditCustomerModal')">
     <div class="modal" onclick="event.stopPropagation()" style="max-width:500px;">
         <button class="close" onclick="closeCreditCustomerModal()">✕</button>
@@ -1671,7 +1640,6 @@
 <script>
 // ============================================================
 // TOAST NOTIFICATION
-// ============================================================
 function showToast(message, type = 'success') {
     const toast = document.getElementById('toast');
     const messageEl = document.getElementById('toastMessage');
@@ -1699,14 +1667,6 @@ function closeModal(event, modalId) {
     }
 }
 
-function closeEditProductModal() {
-    const modal = document.getElementById('editProductModal');
-    if (modal) {
-        modal.classList.add('hidden');
-        modal.style.display = 'none';
-    }
-}
-
 function closeCreditCustomerModal() {
     const modal = document.getElementById('creditCustomerModal');
     if (modal) {
@@ -1716,16 +1676,184 @@ function closeCreditCustomerModal() {
 }
 
 // ============================================================
-// OPEN MODAL HELPERS
+// INLINE PRODUCT EDITING - NEW APPROACH ✅
 // ============================================================
-function openModal(modalId) {
-    const modal = document.getElementById(modalId);
-    if (!modal) {
-        console.error('Modal not found:', modalId);
-        return false;
+
+// Track which product is being edited
+let editingProductId = null;
+
+function startEditProduct(productId) {
+    console.log('✏️ Starting inline edit for:', productId);
+    editingProductId = productId;
+    
+    // Get the product row and convert to edit mode
+    const row = document.querySelector(`tr[data-product-id="${productId}"]`);
+    if (!row) {
+        showToast('❌ Product not found in table', 'error');
+        return;
     }
     
-    // Force open with ALL necessary styles
+    // Fetch product data
+    showToast('🔄 Loading product...', 'info');
+    
+    fetch('/admin/api/product/' + productId + '?t=' + Date.now())
+        .then(response => {
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            return response.json();
+        })
+        .then(data => {
+            if (data.success && data.product) {
+                const p = data.product;
+                console.log('✅ Product loaded:', p.name);
+                
+                // Replace row with edit row
+                row.innerHTML = `
+                    <td colspan="5" style="padding:6px 8px;">
+                        <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:6px;align-items:center;">
+                            <div style="display:flex;align-items:center;gap:6px;">
+                                <div style="width:28px;height:28px;border-radius:6px;background:var(--bg-input);display:flex;align-items:center;justify-content:center;font-size:0.8rem;flex-shrink:0;">
+                                    ${p.image ? `<img src="${p.image}" style="width:100%;height:100%;object-fit:contain;border-radius:6px;" onerror="this.parentElement.innerHTML='📦'">` : '📦'}
+                                </div>
+                                <div>
+                                    <input type="text" id="editName_${p.id}" value="${p.name || ''}" class="form-input" style="font-size:0.7rem;padding:2px 6px;width:120px;" placeholder="Name">
+                                    <input type="text" id="editId_${p.id}" value="${p.id || ''}" class="form-input" style="font-size:0.55rem;padding:2px 6px;width:100px;background:var(--bg-input);" readonly>
+                                </div>
+                            </div>
+                            <div>
+                                <select id="editCategory_${p.id}" class="form-input" style="font-size:0.65rem;padding:2px 6px;width:100px;">
+                                    <option value="">Select</option>
+                                    <option value="Phones" ${p.category == 'Phones' ? 'selected' : ''}>Phones</option>
+                                    <option value="Laptops" ${p.category == 'Laptops' ? 'selected' : ''}>Laptops</option>
+                                    <option value="Accessories" ${p.category == 'Accessories' ? 'selected' : ''}>Accessories</option>
+                                    <option value="Wearables" ${p.category == 'Wearables' ? 'selected' : ''}>Wearables</option>
+                                    <option value="Audio" ${p.category == 'Audio' ? 'selected' : ''}>Audio</option>
+                                    <option value="Gaming" ${p.category == 'Gaming' ? 'selected' : ''}>Gaming</option>
+                                    <option value="General" ${p.category == 'General' ? 'selected' : ''}>General</option>
+                                </select>
+                            </div>
+                            <div>
+                                <input type="number" id="editPrice_${p.id}" value="${p.price || 0}" class="form-input" style="font-size:0.7rem;padding:2px 6px;width:80px;" step="1">
+                            </div>
+                            <div>
+                                <input type="number" id="editStock_${p.id}" value="${p.stock || 0}" class="form-input" style="font-size:0.7rem;padding:2px 6px;width:60px;" min="0">
+                            </div>
+                            <div style="display:flex;gap:4px;white-space:nowrap;">
+                                <button onclick="saveInlineEdit('${p.id}')" class="btn-sm btn-save" title="Save">
+                                    <i class="fas fa-check"></i>
+                                </button>
+                                <button onclick="cancelInlineEdit('${p.id}')" class="btn-sm btn-cancel" title="Cancel">
+                                    <i class="fas fa-times"></i>
+                                </button>
+                            </div>
+                        </div>
+                    </td>
+                `;
+                row.className = 'edit-row';
+                row.style.background = 'var(--primary-bg)';
+                
+                showToast('✏️ Editing: ' + p.name, 'info');
+                editingProductId = null;
+            } else {
+                showToast('❌ Product not found', 'error');
+            }
+        })
+        .catch(err => {
+            console.error('❌ Error:', err);
+            showToast('❌ Error loading product: ' + err.message, 'error');
+        });
+}
+
+function saveInlineEdit(productId) {
+    console.log('💾 Saving inline edit for:', productId);
+    
+    const name = document.getElementById('editName_' + productId)?.value?.trim();
+    const category = document.getElementById('editCategory_' + productId)?.value;
+    const price = parseFloat(document.getElementById('editPrice_' + productId)?.value) || 0;
+    const stock = parseInt(document.getElementById('editStock_' + productId)?.value) || 0;
+    
+    if (!name) {
+        showToast('⚠️ Product name is required', 'warning');
+        return;
+    }
+    if (price <= 0) {
+        showToast('⚠️ Price must be greater than 0', 'warning');
+        return;
+    }
+    
+    const data = {
+        name: name,
+        category: category || 'General',
+        price: price,
+        stock: stock,
+        cost_price: 0,
+        original_price: null,
+        rating: 4.5,
+        badge: '',
+        image: '',
+        description: '',
+        specs: [],
+        barcode: ''
+    };
+    
+    const btn = document.querySelector(`#editName_${productId}`)?.closest('.edit-row')?.querySelector('.btn-save');
+    if (btn) {
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+        btn.disabled = true;
+    }
+    
+    fetch('/admin/api/product/' + productId, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        if (result.success) {
+            showToast('✅ Product updated: ' + name, 'success');
+            // Reload the table
+            loadProductsWithFilters();
+        } else {
+            showToast('❌ ' + (result.message || 'Failed to update'), 'error');
+            if (btn) {
+                btn.innerHTML = '<i class="fas fa-check"></i>';
+                btn.disabled = false;
+            }
+        }
+    })
+    .catch(err => {
+        console.error('❌ Error:', err);
+        showToast('❌ Error saving: ' + err.message, 'error');
+        if (btn) {
+            btn.innerHTML = '<i class="fas fa-check"></i>';
+            btn.disabled = false;
+        }
+    });
+}
+
+function cancelInlineEdit(productId) {
+    console.log('❌ Cancelling edit for:', productId);
+    loadProductsWithFilters();
+    showToast('❌ Edit cancelled', 'info');
+}
+
+// ============================================================
+// EDIT CREDIT CUSTOMER - MODAL BASED ✅
+// ============================================================
+function editCreditCustomer(customerId) {
+    console.log('✏️ EDIT CREDIT CUSTOMER:', customerId);
+    
+    if (!customerId) {
+        showToast('❌ No customer ID provided', 'error');
+        return;
+    }
+    
+    const modal = document.getElementById('creditCustomerModal');
+    if (!modal) {
+        showToast('❌ Modal not found', 'error');
+        return;
+    }
+    
+    // Force open modal
     modal.classList.remove('hidden');
     modal.style.display = 'flex';
     modal.style.position = 'fixed';
@@ -1739,214 +1867,20 @@ function openModal(modalId) {
     modal.style.justifyContent = 'center';
     modal.style.padding = '20px';
     modal.style.backdropFilter = 'blur(4px)';
-    modal.style.visibility = 'visible';
-    modal.style.opacity = '1';
-    
-    return true;
-}
-
-// ============================================================
-// EDIT PRODUCT - SINGLE DEFINITION ✅
-// ============================================================
-function editProduct(productId) {
-    console.log('✏️ EDIT PRODUCT CALLED with ID:', productId);
-    
-    if (!productId) {
-        showToast('❌ No product ID provided', 'error');
-        return;
-    }
-    
-    // Open the modal
-    if (!openModal('editProductModal')) {
-        showToast('❌ Edit modal not found', 'error');
-        return;
-    }
-    
-    showToast('🔄 Loading product...', 'info');
-    
-    // Clear form first
-    const form = document.getElementById('editProductForm');
-    if (form) form.reset();
-    
-    // Fetch product data with timeout
-    const fetchUrl = '/admin/api/product/' + encodeURIComponent(productId) + '?t=' + Date.now();
-    console.log('📡 Fetching from:', fetchUrl);
-    
-    fetch(fetchUrl)
-        .then(response => {
-            console.log('📡 Response status:', response.status);
-            if (!response.ok) {
-                throw new Error('HTTP ' + response.status + ': ' + response.statusText);
-            }
-            return response.json();
-        })
-        .then(data => {
-            console.log('📦 Product data received:', data);
-            
-            if (data.success && data.product) {
-                const p = data.product;
-                console.log('✅ Product loaded:', p.name);
-                
-                // Populate ALL form fields
-                const fieldMappings = {
-                    'editProdId': p.id || '',
-                    'editProdIdDisplay': p.id || '',
-                    'editProdName': p.name || '',
-                    'editProdCategory': p.category || '',
-                    'editProdBarcode': p.barcode || '',
-                    'editProdPrice': p.price || 0,
-                    'editProdCost': p.cost_price || 0,
-                    'editProdOriginal': p.original_price || '',
-                    'editProdStock': p.stock || 0,
-                    'editProdRating': p.rating || 4.5,
-                    'editProdBadge': p.badge || '',
-                    'editProdImage': p.image || '',
-                    'editProdDesc': p.description || '',
-                    'editProdSpecs': (p.specs || []).join(', ')
-                };
-                
-                let populatedCount = 0;
-                Object.keys(fieldMappings).forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) {
-                        el.value = fieldMappings[id];
-                        populatedCount++;
-                    } else {
-                        console.warn('⚠️ Element not found:', id);
-                    }
-                });
-                
-                console.log(`✅ Form populated with ${populatedCount} fields`);
-                showToast('✅ Product loaded: ' + p.name, 'success');
-                
-            } else {
-                showToast('❌ Product not found: ' + (data.message || 'Unknown'), 'error');
-                closeEditProductModal();
-            }
-        })
-        .catch(err => {
-            console.error('❌ Fetch error:', err);
-            showToast('❌ Error loading product: ' + err.message, 'error');
-            // Don't close modal so user can retry
-        });
-}
-
-// ============================================================
-// SAVE EDITED PRODUCT
-// ============================================================
-function saveEditedProduct(event) {
-    event.preventDefault();
-    console.log('💾 Saving edited product...');
-    
-    const productId = document.getElementById('editProdId').value;
-    if (!productId) {
-        showToast('❌ No product ID to update', 'error');
-        return;
-    }
-    
-    const data = {
-        name: document.getElementById('editProdName').value.trim(),
-        category: document.getElementById('editProdCategory').value,
-        price: parseFloat(document.getElementById('editProdPrice').value) || 0,
-        cost_price: parseFloat(document.getElementById('editProdCost').value) || 0,
-        original_price: parseFloat(document.getElementById('editProdOriginal').value) || null,
-        stock: parseInt(document.getElementById('editProdStock').value) || 0,
-        rating: parseFloat(document.getElementById('editProdRating').value) || 4.5,
-        badge: document.getElementById('editProdBadge').value,
-        image: document.getElementById('editProdImage').value.trim(),
-        description: document.getElementById('editProdDesc').value.trim(),
-        specs: document.getElementById('editProdSpecs').value.split(',').map(s => s.trim()).filter(s => s),
-        barcode: document.getElementById('editProdBarcode').value.trim() || ''
-    };
-    
-    console.log('📦 Update data:', data);
-    
-    if (!data.name) {
-        showToast('❌ Please enter a product name', 'error');
-        return;
-    }
-    if (data.price <= 0) {
-        showToast('❌ Please enter a valid price', 'error');
-        return;
-    }
-    
-    const btn = document.querySelector('#editProductForm button[type="submit"]');
-    const originalText = btn ? btn.innerHTML : 'Update';
-    if (btn) {
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
-        btn.disabled = true;
-    }
-    
-    fetch('/admin/api/product/' + encodeURIComponent(productId), {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-    })
-    .then(response => response.json())
-    .then(result => {
-        console.log('📥 Update result:', result);
-        if (result.success) {
-            showToast('✅ Product updated successfully!', 'success');
-            closeEditProductModal();
-            setTimeout(() => loadProductsWithFilters(), 500);
-        } else {
-            showToast('❌ ' + (result.message || 'Failed to update'), 'error');
-        }
-    })
-    .catch(err => {
-        console.error('❌ Save error:', err);
-        showToast('❌ Error saving: ' + err.message, 'error');
-    })
-    .finally(() => {
-        if (btn) {
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-        }
-    });
-}
-
-// ============================================================
-// EDIT CREDIT CUSTOMER - SINGLE DEFINITION ✅
-// ============================================================
-function editCreditCustomer(customerId) {
-    console.log('✏️ EDIT CREDIT CUSTOMER CALLED with ID:', customerId);
-    
-    if (!customerId) {
-        showToast('❌ No customer ID provided', 'error');
-        return;
-    }
-    
-    // Open the modal
-    if (!openModal('creditCustomerModal')) {
-        showToast('❌ Credit modal not found', 'error');
-        return;
-    }
     
     document.getElementById('creditModalTitle').textContent = 'Loading...';
     showToast('🔄 Loading customer...', 'info');
     
-    // Clear form first
-    const form = document.getElementById('creditCustomerForm');
-    if (form) form.reset();
-    document.getElementById('editCreditCustomerId').value = '';
-    
-    const fetchUrl = '/admin/api/credit/customers/' + encodeURIComponent(customerId) + '?t=' + Date.now();
-    console.log('📡 Fetching from:', fetchUrl);
-    
-    fetch(fetchUrl)
+    fetch('/admin/api/credit/customers/' + customerId + '?t=' + Date.now())
         .then(response => {
-            console.log('📡 Response status:', response.status);
-            if (!response.ok) {
-                throw new Error('HTTP ' + response.status + ': ' + response.statusText);
-            }
+            if (!response.ok) throw new Error('HTTP ' + response.status);
             return response.json();
         })
         .then(data => {
-            console.log('📦 Customer data received:', data);
+            console.log('📦 Customer data:', data);
             
             if (data.success && data.customer) {
                 const c = data.customer;
-                console.log('✅ Customer loaded:', c.full_name);
                 
                 document.getElementById('creditModalTitle').textContent = '✏️ Edit Credit Customer';
                 document.getElementById('editCreditCustomerId').value = customerId;
@@ -1962,15 +1896,15 @@ function editCreditCustomer(customerId) {
                 
                 console.log('✅ Form populated!');
                 showToast('✅ Customer loaded: ' + c.full_name, 'success');
-                
             } else {
-                showToast('❌ Customer not found: ' + (data.message || 'Unknown'), 'error');
+                showToast('❌ Customer not found', 'error');
                 closeCreditCustomerModal();
             }
         })
         .catch(err => {
-            console.error('❌ Fetch error:', err);
+            console.error('❌ Error:', err);
             showToast('❌ Error loading customer: ' + err.message, 'error');
+            closeCreditCustomerModal();
         });
 }
 
@@ -1979,10 +1913,9 @@ function editCreditCustomer(customerId) {
 // ============================================================
 function saveCreditCustomer(event) {
     event.preventDefault();
-    console.log('💾 Saving credit customer...');
     
     const editId = document.getElementById('editCreditCustomerId').value || '';
-    const url = editId ? '/admin/api/credit/customers/' + encodeURIComponent(editId) : '/admin/api/credit/customers';
+    const url = editId ? '/admin/api/credit/customers/' + editId : '/admin/api/credit/customers';
     const method = editId ? 'PUT' : 'POST';
     
     const data = {
@@ -1992,7 +1925,7 @@ function saveCreditCustomer(event) {
         credit_limit: parseFloat(document.getElementById('creditLimit').value) || 0
     };
     
-    console.log('💾 Data:', data);
+    console.log('💾 Saving customer data:', data);
     
     if (!data.full_name || !data.phone) {
         showToast('⚠️ Full name and phone are required', 'warning');
@@ -2020,7 +1953,11 @@ function saveCreditCustomer(event) {
         return response.json();
     })
     .then(result => {
-        console.log('📥 Save result:', result);
+        if (btn) {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+        console.log('📥 Result:', result);
         if (result.success) {
             showToast(method === 'PUT' ? '✅ Customer updated!' : '✅ Customer added!', 'success');
             closeCreditCustomerModal();
@@ -2030,24 +1967,21 @@ function saveCreditCustomer(event) {
         }
     })
     .catch(err => {
-        console.error('❌ Save error:', err);
-        showToast('❌ Error saving: ' + err.message, 'error');
-    })
-    .finally(() => {
+        console.error('❌ Error:', err);
         if (btn) {
             btn.innerHTML = originalText;
             btn.disabled = false;
         }
+        showToast('❌ Error saving customer: ' + err.message, 'error');
     });
 }
 
 // ============================================================
-// ADD CREDIT CUSTOMER
+// SHOW ADD CREDIT CUSTOMER MODAL
 // ============================================================
 function showAddCreditCustomerModal() {
-    console.log('➕ Opening add credit customer modal');
-    
-    if (!openModal('creditCustomerModal')) {
+    const modal = document.getElementById('creditCustomerModal');
+    if (!modal) {
         showToast('❌ Modal not found', 'error');
         return;
     }
@@ -2056,6 +1990,138 @@ function showAddCreditCustomerModal() {
     document.getElementById('creditCustomerForm').reset();
     document.getElementById('editCreditCustomerId').value = '';
     document.getElementById('paymentCurrentBalance').textContent = 'Current Balance: KSh 0';
+    
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+    modal.style.position = 'fixed';
+    modal.style.top = '0';
+    modal.style.left = '0';
+    modal.style.right = '0';
+    modal.style.bottom = '0';
+    modal.style.backgroundColor = 'rgba(0,0,0,0.6)';
+    modal.style.zIndex = '99999';
+    modal.style.alignItems = 'center';
+    modal.style.justifyContent = 'center';
+    modal.style.padding = '20px';
+    modal.style.backdropFilter = 'blur(4px)';
+}
+
+// ============================================================
+// VIEW CREDIT CUSTOMER
+// ============================================================
+function viewCreditCustomer(customerId) {
+    const modal = document.getElementById('viewCreditModal');
+    if (!modal) return;
+    
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+    modal.style.zIndex = '99999';
+    
+    document.getElementById('viewCreditContent').innerHTML = `
+        <div style="text-align:center;padding:20px;color:var(--text-muted);">Loading customer details...</div>
+    `;
+    
+    fetch('/admin/api/credit/customers/' + customerId + '?t=' + Date.now())
+        .then(r => r.json())
+        .then(data => {
+            if (data.success && data.customer) {
+                const c = data.customer;
+                document.getElementById('viewCreditContent').innerHTML = `
+                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                        <div><span style="color:var(--text-muted);font-size:0.6rem;">Name</span><div style="font-weight:700;">${c.full_name}</div></div>
+                        <div><span style="color:var(--text-muted);font-size:0.6rem;">Phone</span><div>${c.phone || 'N/A'}</div></div>
+                        <div><span style="color:var(--text-muted);font-size:0.6rem;">Credit Limit</span><div style="font-weight:600;">KSh ${(c.credit_limit || 0).toLocaleString()}</div></div>
+                        <div><span style="color:var(--text-muted);font-size:0.6rem;">Balance</span><div style="font-weight:700;color:${c.current_balance > 0 ? 'var(--warning)' : 'var(--success)'};">KSh ${(c.current_balance || 0).toLocaleString()}</div></div>
+                        <div><span style="color:var(--text-muted);font-size:0.6rem;">Total Purchases</span><div>KSh ${(c.total_purchases || 0).toLocaleString()}</div></div>
+                        <div><span style="color:var(--text-muted);font-size:0.6rem;">Total Payments</span><div style="color:var(--success);">KSh ${(c.total_payments || 0).toLocaleString()}</div></div>
+                        <div style="grid-column:span 2;margin-top:8px;padding-top:8px;border-top:1px solid var(--border-color);">
+                            <button onclick="document.getElementById('viewCreditModal').classList.add('hidden');openRecordPaymentModal('${c.customer_id}','${c.full_name}','${c.current_balance || 0}')" class="btn-success" style="font-size:0.7rem;padding:4px 16px;">
+                                💵 Record Payment
+                            </button>
+                            <button onclick="editCreditCustomer('${c.customer_id}');document.getElementById('viewCreditModal').classList.add('hidden')" class="btn-outline" style="font-size:0.7rem;padding:4px 16px;color:var(--primary-light);">
+                                ✏️ Edit
+                            </button>
+                            <button onclick="document.getElementById('viewCreditModal').classList.add('hidden')" class="btn-outline" style="font-size:0.7rem;padding:4px 16px;margin-left:8px;">
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                `;
+            } else {
+                document.getElementById('viewCreditContent').innerHTML = `<div style="text-align:center;padding:20px;color:var(--danger);">Customer not found</div>`;
+            }
+        })
+        .catch(() => {
+            document.getElementById('viewCreditContent').innerHTML = `<div style="text-align:center;padding:20px;color:var(--danger);">Error loading customer</div>`;
+        });
+}
+
+// ============================================================
+// OPEN RECORD PAYMENT MODAL
+// ============================================================
+function openRecordPaymentModal(customerId, customerName, balance) {
+    document.getElementById('paymentCustomerId').value = customerId;
+    document.getElementById('paymentCustomerName').textContent = customerName || 'Customer';
+    document.getElementById('paymentCurrentBalanceDisplay').textContent = 'KSh ' + parseFloat(balance || 0).toLocaleString();
+    document.getElementById('paymentAmount').value = '';
+    document.getElementById('paymentModal').classList.remove('hidden');
+    document.getElementById('paymentModal').style.display = 'flex';
+}
+
+// ============================================================
+// SAVE PAYMENT
+// ============================================================
+function savePayment(event) {
+    event.preventDefault();
+    
+    const customerId = document.getElementById('paymentCustomerId').value;
+    const amount = parseFloat(document.getElementById('paymentAmount').value);
+    
+    if (!customerId || !amount || amount <= 0) {
+        showToast('⚠️ Enter a valid amount', 'warning');
+        return;
+    }
+    
+    const btn = document.querySelector('#paymentForm button[type="submit"]');
+    const originalText = btn ? btn.innerHTML : 'Record';
+    if (btn) {
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        btn.disabled = true;
+    }
+    
+    fetch('/admin/api/credit/payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+            customer_id: customerId,
+            amount: amount,
+            staff_name: 'Admin',
+            payment_method: 'cash'
+        })
+    })
+    .then(r => r.json())
+    .then(result => {
+        if (btn) {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+        if (result.success) {
+            showToast('✅ Payment recorded successfully!', 'success');
+            document.getElementById('paymentModal').classList.add('hidden');
+            updateCreditStats();
+            setTimeout(() => location.reload(), 1000);
+        } else {
+            showToast('❌ Error: ' + (result.message || 'Unknown error'), 'error');
+        }
+    })
+    .catch(err => {
+        console.error('❌ Error:', err);
+        if (btn) {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+        showToast('❌ Error recording payment: ' + err.message, 'error');
+    });
 }
 
 // ============================================================
@@ -2254,9 +2320,10 @@ function renderProductsTable(products) {
     products.forEach(p => {
         const stock = p.stock || 0;
         let stockColor = stock > 20 ? 'var(--success)' : stock > 0 ? 'var(--warning)' : 'var(--danger)';
+        const productId = p.id || '';
         
         html += `
-        <tr>
+        <tr data-product-id="${productId}">
             <td>
                 <div style="display:flex;align-items:center;gap:10px;">
                     <div style="width:36px;height:36px;border-radius:8px;background:var(--bg-input);display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;">
@@ -2272,10 +2339,10 @@ function renderProductsTable(products) {
             <td style="text-align:right;font-weight:600;">KSh ${(p.price || 0).toLocaleString()}</td>
             <td style="text-align:center;font-weight:700;color:${stockColor};">${stock}</td>
             <td style="text-align:center;">
-                <button onclick="editProduct('${p.id}')" class="btn-outline" style="font-size:0.55rem;padding:2px 8px;" title="Edit">
+                <button onclick="startEditProduct('${productId}')" class="btn-outline" style="font-size:0.55rem;padding:2px 8px;" title="Edit">
                     <i class="fas fa-edit"></i>
                 </button>
-                <button onclick="deleteProduct('${p.id}')" class="btn-danger" style="font-size:0.55rem;padding:2px 8px;" title="Delete">
+                <button onclick="deleteProduct('${productId}')" class="btn-danger" style="font-size:0.55rem;padding:2px 8px;" title="Delete">
                     <i class="fas fa-trash"></i>
                 </button>
             </td>
@@ -2780,124 +2847,6 @@ function refreshCreditData() {
 }
 
 // ============================================================
-// VIEW CREDIT CUSTOMER
-// ============================================================
-function viewCreditCustomer(customerId) {
-    const modal = document.getElementById('viewCreditModal');
-    if (!modal) return;
-    
-    modal.classList.remove('hidden');
-    modal.style.display = 'flex';
-    modal.style.zIndex = '99999';
-    
-    document.getElementById('viewCreditContent').innerHTML = `
-        <div style="text-align:center;padding:20px;color:var(--text-muted);">Loading customer details...</div>
-    `;
-    
-    fetch('/admin/api/credit/customers/' + customerId + '?t=' + Date.now())
-        .then(r => r.json())
-        .then(data => {
-            if (data.success && data.customer) {
-                const c = data.customer;
-                document.getElementById('viewCreditContent').innerHTML = `
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                        <div><span style="color:var(--text-muted);font-size:0.6rem;">Name</span><div style="font-weight:700;">${c.full_name}</div></div>
-                        <div><span style="color:var(--text-muted);font-size:0.6rem;">Phone</span><div>${c.phone || 'N/A'}</div></div>
-                        <div><span style="color:var(--text-muted);font-size:0.6rem;">Credit Limit</span><div style="font-weight:600;">KSh ${(c.credit_limit || 0).toLocaleString()}</div></div>
-                        <div><span style="color:var(--text-muted);font-size:0.6rem;">Balance</span><div style="font-weight:700;color:${c.current_balance > 0 ? 'var(--warning)' : 'var(--success)'};">KSh ${(c.current_balance || 0).toLocaleString()}</div></div>
-                        <div><span style="color:var(--text-muted);font-size:0.6rem;">Total Purchases</span><div>KSh ${(c.total_purchases || 0).toLocaleString()}</div></div>
-                        <div><span style="color:var(--text-muted);font-size:0.6rem;">Total Payments</span><div style="color:var(--success);">KSh ${(c.total_payments || 0).toLocaleString()}</div></div>
-                        <div style="grid-column:span 2;margin-top:8px;padding-top:8px;border-top:1px solid var(--border-color);">
-                            <button onclick="document.getElementById('viewCreditModal').classList.add('hidden');openRecordPaymentModal('${c.customer_id}','${c.full_name}','${c.current_balance || 0}')" class="btn-success" style="font-size:0.7rem;padding:4px 16px;">
-                                💵 Record Payment
-                            </button>
-                            <button onclick="editCreditCustomer('${c.customer_id}');document.getElementById('viewCreditModal').classList.add('hidden')" class="btn-outline" style="font-size:0.7rem;padding:4px 16px;color:var(--primary-light);">
-                                ✏️ Edit
-                            </button>
-                            <button onclick="document.getElementById('viewCreditModal').classList.add('hidden')" class="btn-outline" style="font-size:0.7rem;padding:4px 16px;margin-left:8px;">
-                                Close
-                            </button>
-                        </div>
-                    </div>
-                `;
-            } else {
-                document.getElementById('viewCreditContent').innerHTML = `<div style="text-align:center;padding:20px;color:var(--danger);">Customer not found</div>`;
-            }
-        })
-        .catch(() => {
-            document.getElementById('viewCreditContent').innerHTML = `<div style="text-align:center;padding:20px;color:var(--danger);">Error loading customer</div>`;
-        });
-}
-
-// ============================================================
-// OPEN RECORD PAYMENT MODAL
-// ============================================================
-function openRecordPaymentModal(customerId, customerName, balance) {
-    document.getElementById('paymentCustomerId').value = customerId;
-    document.getElementById('paymentCustomerName').textContent = customerName || 'Customer';
-    document.getElementById('paymentCurrentBalanceDisplay').textContent = 'KSh ' + parseFloat(balance || 0).toLocaleString();
-    document.getElementById('paymentAmount').value = '';
-    document.getElementById('paymentModal').classList.remove('hidden');
-    document.getElementById('paymentModal').style.display = 'flex';
-}
-
-// ============================================================
-// SAVE PAYMENT
-// ============================================================
-function savePayment(event) {
-    event.preventDefault();
-    
-    const customerId = document.getElementById('paymentCustomerId').value;
-    const amount = parseFloat(document.getElementById('paymentAmount').value);
-    
-    if (!customerId || !amount || amount <= 0) {
-        showToast('⚠️ Enter a valid amount', 'warning');
-        return;
-    }
-    
-    const btn = document.querySelector('#paymentForm button[type="submit"]');
-    const originalText = btn ? btn.innerHTML : 'Record';
-    if (btn) {
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
-        btn.disabled = true;
-    }
-    
-    fetch('/admin/api/credit/payment', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-            customer_id: customerId,
-            amount: amount,
-            staff_name: 'Admin',
-            payment_method: 'cash'
-        })
-    })
-    .then(r => r.json())
-    .then(result => {
-        if (btn) {
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-        }
-        if (result.success) {
-            showToast('✅ Payment recorded successfully!', 'success');
-            document.getElementById('paymentModal').classList.add('hidden');
-            updateCreditStats();
-            setTimeout(() => location.reload(), 1000);
-        } else {
-            showToast('❌ Error: ' + (result.message || 'Unknown error'), 'error');
-        }
-    })
-    .catch(err => {
-        console.error('❌ Error:', err);
-        if (btn) {
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-        }
-        showToast('❌ Error recording payment: ' + err.message, 'error');
-    });
-}
-
-// ============================================================
 // SUPPLIER FUNCTIONS
 // ============================================================
 function showAddSupplierModal() {
@@ -3102,8 +3051,8 @@ document.addEventListener('DOMContentLoaded', function() {
     updateCreditStats();
 });
 
-console.log('✅ AcaciaMart Admin v4.0 - Fully Working!');
-console.log('📌 Features: Edit Product ✅, Edit Credit Customer ✅, Collection Rate ✅, Real Charts ✅');
+console.log('✅ AcaciaMart Admin v5.0 - Inline Editing!');
+console.log('📌 Features: Inline Product Edit ✅, Edit Credit Customer ✅, All Graphs ✅');
 </script>
 
 {% endblock %}
