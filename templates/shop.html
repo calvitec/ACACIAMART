@@ -3,9 +3,8 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    
     <title>ACACIAMART · Kenya's Supermarket</title>
-    <meta name="description" content="ACACIAMART Kenya - Your one-stop supermarket for bread, juice, snacks, beverages, and more. Best prices in Kenya with fast delivery." />
+    <meta name="description" content="ACACIAMART Kenya - Your one-stop supermarket for bread, juice, snacks, beverages, and more." />
     <meta name="theme-color" content="#059669" />
 
     <!-- Font Awesome -->
@@ -198,10 +197,6 @@
             0% { opacity: 0; transform: scale(0.95) translateY(20px); }
             100% { opacity: 1; transform: scale(1) translateY(0); }
         }
-        @keyframes kenburns {
-            0% { transform: scale(1) translate(0, 0); }
-            100% { transform: scale(1.12) translate(-1%, -1%); }
-        }
         @keyframes floatIcon {
             0%, 100% { transform: translateY(0); }
             50% { transform: translateY(-6px); }
@@ -211,7 +206,7 @@
         .animate-card-pop { animation: cardPop 0.4s ease-out forwards; }
 
         /* ============================================================
-           HEADER - GLASSMORPHISM / ADVANCED
+           HEADER - GLASSMORPHISM
            ============================================================ */
         .app-header {
             background: var(--header-bg);
@@ -412,7 +407,6 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            animation: kenburns 8s ease-out forwards;
         }
         .hero-slide .slide-overlay {
             position: absolute;
@@ -521,7 +515,6 @@
         }
         .hero-features span i { color: #34d399; }
 
-        /* --- carousel controls --- */
         .hero-arrow {
             position: absolute;
             top: 50%;
@@ -588,6 +581,58 @@
         }
 
         /* ============================================================
+           CATEGORY GRID - NAIVAS STYLE
+           ============================================================ */
+        .category-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 16px;
+        }
+        @media (min-width: 640px) { .category-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); } }
+        @media (min-width: 1024px) { .category-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); } }
+
+        .category-card {
+            background: var(--bg-card);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            overflow: hidden;
+            transition: all 0.3s ease;
+            cursor: pointer;
+            text-decoration: none;
+            display: block;
+            box-shadow: var(--shadow);
+        }
+        .category-card:hover {
+            transform: translateY(-4px);
+            box-shadow: var(--shadow-lg);
+            border-color: var(--primary);
+        }
+        .category-card .category-image {
+            width: 100%;
+            height: 160px;
+            object-fit: cover;
+            background: var(--bg-input);
+        }
+        .category-card .category-info {
+            padding: 12px 14px 14px;
+            text-align: center;
+        }
+        .category-card .category-name {
+            font-weight: 700;
+            font-size: 0.85rem;
+            color: var(--text-primary);
+            margin-bottom: 2px;
+        }
+        .category-card .category-count {
+            font-size: 0.7rem;
+            color: var(--text-muted);
+        }
+        .category-card .category-count i {
+            color: var(--primary);
+            margin-right: 3px;
+        }
+
+        /* ============================================================
            SEARCH
            ============================================================ */
         .search-container {
@@ -642,9 +687,6 @@
         }
         .search-clear:hover { background: var(--bg-input); color: var(--text-primary); }
 
-        /* ============================================================
-           CATEGORIES
-           ============================================================ */
         .category-scroll {
             display: flex;
             gap: 6px;
@@ -715,14 +757,20 @@
         /* ============================================================
            PRODUCTS
            ============================================================ */
+        .product-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(160px, 1fr));
+            gap: 14px;
+        }
+        @media (min-width: 640px) { .product-grid { grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); } }
+        @media (min-width: 1024px) { .product-grid { grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); } }
+
         .product-card {
             background: var(--bg-card);
             border-radius: 12px;
             padding: 12px;
             border: 1px solid var(--border-color);
             transition: all 0.3s ease;
-            position: relative;
-            height: 100%;
             display: flex;
             flex-direction: column;
             box-shadow: var(--shadow);
@@ -734,7 +782,7 @@
         }
         .product-card .product-image {
             width: 100%;
-            height: 170px;
+            height: 150px;
             object-fit: contain;
             background: var(--bg-input);
             border-radius: 8px;
@@ -812,13 +860,6 @@
             opacity: 0.5;
         }
 
-        .product-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(165px, 1fr));
-            gap: 14px;
-        }
-        .product-grid .product-card { animation: cardPop 0.4s ease-out forwards; }
-
         .no-products {
             text-align: center;
             padding: 40px 20px;
@@ -872,7 +913,7 @@
         .toast.hidden { display: none; }
 
         /* ============================================================
-           FOOTER - REFINED & WELL SPACED
+           FOOTER
            ============================================================ */
         .app-footer {
             background: var(--gray-900);
@@ -898,9 +939,7 @@
         .app-footer a { color: var(--text-muted); text-decoration: none; transition: color 0.2s; }
         .app-footer a:hover { color: white; }
 
-        .footer-top {
-            padding: 56px 0 40px;
-        }
+        .footer-top { padding: 56px 0 40px; }
         .footer-heading {
             color: white;
             font-weight: 700;
@@ -1127,7 +1166,7 @@
         </div>
     </header>
 
-    <!-- ===== HERO CAROUSEL - SUPERMARKET IMAGERY ===== -->
+    <!-- ===== HERO CAROUSEL ===== -->
     <section class="hero-carousel" aria-label="Hero banner" id="heroCarousel">
 
         <!-- Slide 1: Grocery aisle -->
@@ -1479,7 +1518,7 @@
                 if (i === heroIndex) {
                     const img = slide.querySelector('.slide-img');
                     img.style.animation = 'none';
-                    void img.offsetWidth; // restart ken-burns animation
+                    void img.offsetWidth;
                     img.style.animation = 'kenburns 8s ease-out forwards';
                 }
             });
