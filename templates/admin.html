@@ -5,17 +5,9 @@
 {% block content %}
 
 <!-- ============================================================
-     DASHBOARD SECTION - MODERN REDESIGN
+     STYLES - MODERN THEME
      ============================================================ -->
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
-
 <style>
-    /* ============================================================
-       MODERN THEME - LIGHT & DARK
-       ============================================================ */
-    
     /* CSS Variables - Default Light Theme */
     :root {
         --primary: #6C3CE1;
@@ -37,7 +29,6 @@
         --bg-card: #FFFFFF;
         --bg-card-hover: #F8F9FA;
         --bg-input: #F0F2F5;
-        --bg-sidebar: #FFFFFF;
         
         --text-primary: #1A1A2E;
         --text-secondary: #4A4A6A;
@@ -55,8 +46,6 @@
         --radius-sm: 10px;
         --radius-xs: 8px;
         --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
-        
-        --sidebar-width: 240px;
     }
 
     /* Dark Theme */
@@ -65,7 +54,6 @@
         --bg-card: #14142A;
         --bg-card-hover: #1C1C38;
         --bg-input: #1A1A32;
-        --bg-sidebar: #0F0F22;
         
         --text-primary: #F0F0FA;
         --text-secondary: #A0A0C0;
@@ -80,294 +68,7 @@
         --shadow-glow: 0 0 40px rgba(108, 60, 225, 0.15);
     }
 
-    /* ============================================================
-       SIDEBAR - FIXED GAP
-       ============================================================ */
-    /* ✅ FIX: Removed margin and padding that caused the gap */
-    body {
-        margin: 0;
-        padding: 0;
-    }
-    
-    .app {
-        display: flex;
-        gap: 0;
-        align-items: flex-start;
-        margin: 0;
-        padding: 0;
-        width: 100%;
-        min-height: 100vh;
-        background: var(--bg-body);
-    }
-    
-    .sidebar {
-        background: var(--bg-sidebar);
-        border-right: 1px solid var(--border-color);
-        width: var(--sidebar-width);
-        min-height: 100vh;
-        padding: 20px 16px;
-        position: sticky;
-        top: 0;
-        height: 100vh;
-        overflow-y: auto;
-        flex-shrink: 0;
-        margin: 0;
-        z-index: 1000;
-        transition: transform 0.3s ease;
-    }
-    
-    .main-content {
-        flex: 1;
-        margin: 0;
-        padding: 24px 32px;
-        min-height: 100vh;
-        background: var(--bg-body);
-        width: calc(100% - var(--sidebar-width));
-        max-width: calc(100% - var(--sidebar-width));
-        box-sizing: border-box;
-    }
-    
-    .sidebar-brand {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 8px 12px 24px 12px;
-        border-bottom: 1px solid var(--border-color);
-        margin-bottom: 20px;
-    }
-    
-    .sidebar-brand .logo {
-        width: 42px;
-        height: 42px;
-        background: var(--primary-gradient);
-        border-radius: 12px;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 1.2rem;
-        color: white;
-        box-shadow: 0 4px 16px rgba(108, 60, 225, 0.3);
-        flex-shrink: 0;
-    }
-    
-    .sidebar-brand .brand-text {
-        font-weight: 800;
-        font-size: 1rem;
-        color: var(--text-primary);
-        letter-spacing: -0.5px;
-    }
-    
-    .sidebar-brand .brand-text .highlight {
-        background: var(--primary-gradient);
-        -webkit-background-clip: text;
-        -webkit-text-fill-color: transparent;
-        background-clip: text;
-    }
-    
-    .sidebar-brand .version {
-        font-size: 0.45rem;
-        color: var(--text-muted);
-        background: var(--bg-input);
-        padding: 1px 8px;
-        border-radius: 9999px;
-        margin-left: 4px;
-        -webkit-text-fill-color: var(--text-muted);
-    }
-    
-    .sidebar .nav-section {
-        font-size: 0.5rem;
-        text-transform: uppercase;
-        letter-spacing: 0.8px;
-        color: var(--text-muted);
-        padding: 12px 12px 6px 12px;
-        font-weight: 600;
-    }
-    
-    .sidebar .nav-item {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        padding: 10px 14px;
-        border-radius: var(--radius-sm);
-        color: var(--text-secondary);
-        text-decoration: none;
-        cursor: pointer;
-        transition: var(--transition);
-        font-size: 0.8rem;
-        font-weight: 500;
-        margin-bottom: 2px;
-        border: 1px solid transparent;
-        position: relative;
-    }
-    
-    .sidebar .nav-item:hover {
-        background: var(--primary-bg);
-        color: var(--text-primary);
-        border-color: var(--border-hover);
-    }
-    
-    .sidebar .nav-item.active {
-        background: var(--primary-gradient);
-        color: white;
-        box-shadow: 0 4px 16px rgba(108, 60, 225, 0.3);
-    }
-    
-    .sidebar .nav-item .icon {
-        width: 20px;
-        text-align: center;
-        font-size: 0.9rem;
-        flex-shrink: 0;
-    }
-    
-    .sidebar .nav-item .badge-nav {
-        margin-left: auto;
-        background: var(--danger);
-        color: white;
-        font-size: 0.5rem;
-        padding: 1px 8px;
-        border-radius: 9999px;
-        font-weight: 600;
-    }
-    
-    .sidebar .nav-item.active .badge-nav {
-        background: rgba(255, 255, 255, 0.2);
-    }
-
-    /* Mobile Sidebar */
-    @media (max-width: 768px) {
-        .sidebar {
-            transform: translateX(-100%);
-            width: 280px;
-            position: fixed;
-            height: 100vh;
-            z-index: 1000;
-        }
-        .sidebar.open {
-            transform: translateX(0);
-        }
-        .main-content {
-            margin-left: 0;
-            padding: 16px;
-            width: 100%;
-            max-width: 100%;
-        }
-        .app {
-            display: block;
-        }
-        #backdrop {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0, 0, 0, 0.5);
-            z-index: 999;
-        }
-        #backdrop.active {
-            display: block;
-        }
-    }
-
-    /* ============================================================
-       MAIN HEADER
-       ============================================================ */
-    .main-header {
-        display: flex;
-        justify-content: space-between;
-        align-items: center;
-        margin-bottom: 28px;
-        flex-wrap: wrap;
-        gap: 12px;
-    }
-    
-    .main-header .page-title {
-        font-size: 1.4rem;
-        font-weight: 700;
-        color: var(--text-primary);
-    }
-    
-    .main-header .page-title .sub {
-        font-size: 0.8rem;
-        font-weight: 400;
-        color: var(--text-muted);
-        display: block;
-        margin-top: 2px;
-    }
-    
-    .main-header .header-actions {
-        display: flex;
-        align-items: center;
-        gap: 12px;
-        flex-wrap: wrap;
-    }
-    
-    .main-header .header-actions .user-info {
-        display: flex;
-        align-items: center;
-        gap: 10px;
-        padding: 6px 14px 6px 6px;
-        background: var(--bg-card);
-        border-radius: 9999px;
-        border: 1px solid var(--border-color);
-    }
-    
-    .main-header .header-actions .user-info .avatar {
-        width: 32px;
-        height: 32px;
-        border-radius: 50%;
-        background: var(--primary-gradient);
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        color: white;
-        font-weight: 700;
-        font-size: 0.7rem;
-    }
-    
-    .main-header .header-actions .user-info .name {
-        font-size: 0.75rem;
-        font-weight: 600;
-        color: var(--text-primary);
-    }
-    
-    .main-header .header-actions .user-info .role {
-        font-size: 0.55rem;
-        color: var(--text-muted);
-    }
-    
-    .btn-header {
-        padding: 8px 16px;
-        border-radius: 9999px;
-        font-size: 0.7rem;
-        font-weight: 600;
-        border: 1px solid var(--border-color);
-        background: var(--bg-card);
-        color: var(--text-secondary);
-        cursor: pointer;
-        transition: var(--transition);
-        display: flex;
-        align-items: center;
-        gap: 6px;
-        text-decoration: none;
-    }
-    
-    .btn-header:hover {
-        background: var(--primary-bg);
-        border-color: var(--primary);
-        color: var(--primary-light);
-    }
-    
-    .btn-header.logout {
-        color: var(--danger);
-    }
-    
-    .btn-header.logout:hover {
-        background: var(--danger-bg);
-        border-color: var(--danger);
-        color: var(--danger);
-    }
-
-    /* ============================================================
-       STATS CARDS
-       ============================================================ */
+    /* Stats Cards */
     .stats-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -461,9 +162,7 @@
         margin-top: 4px;
     }
 
-    /* ============================================================
-       QUICK ACTIONS
-       ============================================================ */
+    /* Quick Actions */
     .quick-actions-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
@@ -494,9 +193,7 @@
     .quick-action-btn .icon { font-size: 1.4rem; display: block; margin-bottom: 4px; }
     .quick-action-btn .label { font-size: 0.55rem; font-weight: 600; }
 
-    /* ============================================================
-       GLASS CARDS
-       ============================================================ */
+    /* Glass Cards */
     .glass-card {
         background: var(--bg-card);
         border-radius: var(--radius);
@@ -530,18 +227,7 @@
     .glass-card .card-header .title .icon { color: var(--primary-light); }
     .glass-card .card-header .badge-time { font-size: 0.6rem; color: var(--text-muted); }
 
-    /* ============================================================
-       CHARTS
-       ============================================================ */
-    .chart-container {
-        position: relative;
-        height: 240px;
-        width: 100%;
-    }
-
-    /* ============================================================
-       LIVE TICKER
-       ============================================================ */
+    /* Live Ticker */
     .live-ticker {
         background: var(--bg-card);
         border-radius: var(--radius);
@@ -582,9 +268,7 @@
     .live-ticker .live-item .value.amber { color: var(--warning); }
     .live-ticker .live-item .value.purple { color: var(--primary-light); }
 
-    /* ============================================================
-       TABLES
-       ============================================================ */
+    /* Tables */
     .table-wrap {
         overflow-x: auto;
     }
@@ -620,9 +304,7 @@
     .table-wrap table tbody tr:hover { background: var(--bg-input); }
     .table-wrap table tbody .font-mono { font-family: monospace; font-weight: 600; color: var(--text-primary); }
 
-    /* ============================================================
-       BADGES
-       ============================================================ */
+    /* Badges */
     .badge {
         display: inline-block;
         padding: 2px 12px;
@@ -637,9 +319,7 @@
     .badge-info { background: var(--info-bg); color: var(--info); }
     .badge-purple { background: var(--primary-bg); color: var(--primary-light); }
 
-    /* ============================================================
-       FORMS
-       ============================================================ */
+    /* Forms */
     .form-input {
         width: 100%;
         padding: 8px 14px;
@@ -669,9 +349,7 @@
         margin-bottom: 4px;
     }
 
-    /* ============================================================
-       BUTTONS
-       ============================================================ */
+    /* Buttons */
     .btn-gradient {
         background: var(--primary-gradient);
         color: white;
@@ -757,9 +435,7 @@
         box-shadow: 0 8px 24px rgba(16, 185, 129, 0.3);
     }
 
-    /* ============================================================
-       PAGINATION
-       ============================================================ */
+    /* Pagination */
     .pagination {
         display: flex;
         gap: 4px;
@@ -796,9 +472,7 @@
     
     .page-link.disabled { opacity: 0.5; cursor: not-allowed; }
 
-    /* ============================================================
-       MODALS
-       ============================================================ */
+    /* MODALS - FIXED */
     .modal-overlay {
         position: fixed;
         inset: 0;
@@ -850,9 +524,7 @@
         gap: 10px;
     }
 
-    /* ============================================================
-       TOAST
-       ============================================================ */
+    /* Toast */
     .toast {
         position: fixed;
         bottom: 30px;
@@ -878,49 +550,21 @@
     .toast.info { background: linear-gradient(135deg, #1e3a5f, #2563eb); }
     .toast.warning { background: linear-gradient(135deg, #78350f, #d97706); }
 
-    /* ============================================================
-       RESPONSIVE
-       ============================================================ */
+    /* Responsive */
     @media (max-width: 768px) {
-        .sidebar {
-            transform: translateX(-100%);
-            width: 280px;
-        }
-        
-        .sidebar.open { transform: translateX(0); }
-        
-        .main-content {
-            margin-left: 0;
-            padding: 16px;
-            width: 100%;
-            max-width: 100%;
-        }
-        
         .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
         .quick-actions-grid { grid-template-columns: repeat(3, 1fr); }
-        .main-header .page-title { font-size: 1.1rem; }
-        .stat-card-modern .stat-value { font-size: 1.1rem; }
         .glass-card { padding: 14px 16px; }
+        .stat-card-modern .stat-value { font-size: 1.1rem; }
     }
     
     @media (max-width: 480px) {
         .stats-grid { grid-template-columns: 1fr; }
         .quick-actions-grid { grid-template-columns: repeat(2, 1fr); }
-        .main-header .header-actions .user-info .name { display: none; }
-        .main-content { padding: 12px; }
         .modal { padding: 20px; margin: 10px; }
     }
 
-    /* ============================================================
-       SCROLLBAR
-       ============================================================ */
-    ::-webkit-scrollbar { width: 4px; height: 4px; }
-    ::-webkit-scrollbar-track { background: var(--bg-input); border-radius: 10px; }
-    ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 10px; }
-
-    /* ============================================================
-       SYNC BAR
-       ============================================================ */
+    /* Sync Bar */
     #syncStatusBar {
         background: var(--bg-card);
         border: 1px solid var(--border-hover);
@@ -974,1112 +618,1017 @@
         display: flex;
         gap: 8px;
     }
+
+    /* Charts */
+    .chart-container {
+        position: relative;
+        height: 240px;
+        width: 100%;
+    }
+    
+    /* Scrollbar */
+    ::-webkit-scrollbar { width: 4px; height: 4px; }
+    ::-webkit-scrollbar-track { background: var(--bg-input); border-radius: 10px; }
+    ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 10px; }
 </style>
 
-<!-- ===== SIDEBAR ===== -->
-<nav class="sidebar" id="sidebar">
-    <div class="sidebar-brand">
-        <div class="logo">💰</div>
-        <div class="brand-text">
-            ACACIA<span class="highlight">MART</span>
-            <span class="version">v3.0</span>
-        </div>
-    </div>
-    
-    <div class="nav-section">Main</div>
-    
-    <div class="nav-item active" onclick="showSection('dashboard')">
-        <span class="icon">📊</span> Dashboard
-    </div>
-    
-    <div class="nav-item" onclick="showSection('orders')">
-        <span class="icon">📦</span> Orders
-        <span class="badge-nav">{{ stats.pending_orders|default(0) }}</span>
-    </div>
-    
-    <div class="nav-item" onclick="showSection('products')">
-        <span class="icon">📱</span> Products
-    </div>
-    
-    <div class="nav-item" onclick="showSection('analytics')">
-        <span class="icon">📈</span> Analytics
-    </div>
-    
-    <div class="nav-section">Management</div>
-    
-    <div class="nav-item" onclick="showSection('customers')">
-        <span class="icon">👥</span> Customers
-    </div>
-    
-    <div class="nav-item" onclick="showSection('credit')">
-        <span class="icon">💰</span> Credit
-        <span class="badge-nav" style="background: var(--warning);">{{ credit_summary.active_customers|default(0) }}</span>
-    </div>
-    
-    <div class="nav-item" onclick="showSection('suppliers')">
-        <span class="icon">🏢</span> Suppliers
-    </div>
-    
-    <div class="nav-section">Tools</div>
-    
-    <div class="nav-item" onclick="showSection('add-product')">
-        <span class="icon">➕</span> Add Product
-    </div>
-    
-    <div class="nav-item" onclick="showSection('pos')">
-        <span class="icon">🛒</span> Point of Sale
-    </div>
-</nav>
+<!-- ============================================================
+     DASHBOARD SECTION
+     ============================================================ -->
+<div id="dashboard-section" class="section">
 
-<!-- ===== BACKDROP ===== -->
-<div id="backdrop" onclick="closeSidebar()"></div>
-
-<!-- ===== MAIN CONTENT ===== -->
-<div class="main-content">
-
-    <!-- ===== HEADER ===== -->
-    <div class="main-header">
-        <div>
-            <div class="page-title" id="pageTitle">
-                Dashboard
-                <span class="sub">Welcome back, {{ session.user.name if session.user else 'Admin' }}</span>
-            </div>
-        </div>
-        <div class="header-actions">
-            <div class="user-info">
-                <div class="avatar">{{ (session.user.name if session.user else 'A')[0]|upper }}</div>
-                <div>
-                    <div class="name">{{ session.user.name if session.user else 'Admin' }}</div>
-                    <div class="role">{{ session.user.role if session.user else 'Administrator' }}</div>
+    <!-- Sync Status -->
+    <div id="syncStatusBar">
+        <div class="sync-content">
+            <div class="left">
+                <div class="icon-wrap">☁️</div>
+                <div class="info">
+                    <div class="count"><span id="offlineOrderCount">0</span> offline order(s) pending sync</div>
+                    <div class="desc" id="offlineOrderDetails">Click sync to upload to cloud</div>
                 </div>
             </div>
-            <button class="btn-header" onclick="toggleDarkMode()" title="Toggle Theme">
-                <span id="themeIcon">🌙</span>
-            </button>
-            <a href="/" target="_blank" class="btn-header">🏪 Store</a>
-            <a href="/logout" class="btn-header logout">🚪 Logout</a>
+            <div class="actions">
+                <button onclick="syncOfflineOrdersFromDashboard()" class="btn-gradient" style="font-size:0.7rem;padding:6px 16px;">
+                    <i class="fas fa-sync-alt"></i> Sync Now
+                </button>
+                <button onclick="dismissSyncBar()" class="btn-outline" style="font-size:0.7rem;padding:6px 16px;">✕</button>
+            </div>
         </div>
     </div>
 
-    <!-- ============================================================
-         DASHBOARD SECTION
-         ============================================================ -->
-    <div id="dashboard-section" class="section">
-
-        <!-- Sync Status -->
-        <div id="syncStatusBar">
-            <div class="sync-content">
-                <div class="left">
-                    <div class="icon-wrap">☁️</div>
-                    <div class="info">
-                        <div class="count"><span id="offlineOrderCount">0</span> offline order(s) pending sync</div>
-                        <div class="desc" id="offlineOrderDetails">Click sync to upload to cloud</div>
-                    </div>
-                </div>
-                <div class="actions">
-                    <button onclick="syncOfflineOrdersFromDashboard()" class="btn-gradient" style="font-size:0.7rem;padding:6px 16px;">
-                        <i class="fas fa-sync-alt"></i> Sync Now
-                    </button>
-                    <button onclick="dismissSyncBar()" class="btn-outline" style="font-size:0.7rem;padding:6px 16px;">✕</button>
-                </div>
-            </div>
+    <!-- Live Ticker -->
+    <div class="live-ticker">
+        <div class="live-item">
+            <span class="live-dot"></span>
+            <span>Live</span>
         </div>
+        <div class="live-item">
+            Revenue: <span class="value green" id="liveRevenue">KSh {{ "%.0f"|format(stats.today_revenue|default(0)) }}</span>
+        </div>
+        <div class="live-item">
+            Orders: <span class="value amber" id="liveOrders">{{ stats.today_orders|default(0) }}</span>
+        </div>
+        <div class="live-item">
+            Customers: <span class="value purple" id="liveCustomers">{{ stats.total_customers|default(0) }}</span>
+        </div>
+        <div class="live-item">
+            <span style="font-size:0.6rem;color:var(--text-muted);">
+                Updated: <span id="liveTime">Just now</span>
+            </span>
+        </div>
+    </div>
 
-        <!-- Live Ticker -->
-        <div class="live-ticker">
-            <div class="live-item">
-                <span class="live-dot"></span>
-                <span>Live</span>
-            </div>
-            <div class="live-item">
-                Revenue: <span class="value green" id="liveRevenue">KSh {{ "%.0f"|format(stats.today_revenue|default(0)) }}</span>
-            </div>
-            <div class="live-item">
-                Orders: <span class="value amber" id="liveOrders">{{ stats.today_orders|default(0) }}</span>
-            </div>
-            <div class="live-item">
-                Customers: <span class="value purple" id="liveCustomers">{{ stats.total_customers|default(0) }}</span>
-            </div>
-            <div class="live-item">
-                <span style="font-size:0.6rem;color:var(--text-muted);">
-                    Updated: <span id="liveTime">Just now</span>
+    <!-- Stats Grid -->
+    <div class="stats-grid">
+        <div class="stat-card-modern">
+            <div class="stat-top">
+                <div class="stat-icon-wrap purple">💰</div>
+                <span class="stat-change {% if stats.today_growth_pct|default(0) > 0 %}up{% elif stats.today_growth_pct|default(0) < 0 %}down{% else %}neutral{% endif %}">
+                    {% if stats.today_growth_pct|default(0) > 0 %}
+                        ↑ {{ stats.today_growth_pct|default(0) }}%
+                    {% elif stats.today_growth_pct|default(0) < 0 %}
+                        ↓ {{ stats.today_growth_pct|abs|default(0) }}%
+                    {% else %}
+                        → 0%
+                    {% endif %}
                 </span>
             </div>
+            <div class="stat-label">Today's Revenue</div>
+            <div class="stat-value" id="dashTodayRevenue">KSh {{ "%.0f"|format(stats.today_revenue|default(0)) }}</div>
+            <div class="stat-sub">Vs yesterday: KSh <span id="dashYesterdayRevenue">{{ "%.0f"|format(stats.yesterday_revenue|default(0)) }}</span></div>
         </div>
 
-        <!-- Stats Grid -->
-        <div class="stats-grid">
-            <div class="stat-card-modern">
-                <div class="stat-top">
-                    <div class="stat-icon-wrap purple">💰</div>
-                    <span class="stat-change {% if stats.today_growth_pct|default(0) > 0 %}up{% elif stats.today_growth_pct|default(0) < 0 %}down{% else %}neutral{% endif %}">
-                        {% if stats.today_growth_pct|default(0) > 0 %}
-                            ↑ {{ stats.today_growth_pct|default(0) }}%
-                        {% elif stats.today_growth_pct|default(0) < 0 %}
-                            ↓ {{ stats.today_growth_pct|abs|default(0) }}%
-                        {% else %}
-                            → 0%
-                        {% endif %}
-                    </span>
-                </div>
-                <div class="stat-label">Today's Revenue</div>
-                <div class="stat-value" id="dashTodayRevenue">KSh {{ "%.0f"|format(stats.today_revenue|default(0)) }}</div>
-                <div class="stat-sub">Vs yesterday: KSh <span id="dashYesterdayRevenue">{{ "%.0f"|format(stats.yesterday_revenue|default(0)) }}</span></div>
-            </div>
-
-            <div class="stat-card-modern">
-                <div class="stat-top">
-                    <div class="stat-icon-wrap green">📊</div>
-                    <span class="stat-change {% if stats.month_growth_pct|default(0) > 0 %}up{% elif stats.month_growth_pct|default(0) < 0 %}down{% else %}neutral{% endif %}">
-                        {% if stats.month_growth_pct|default(0) > 0 %}
-                            ↑ {{ stats.month_growth_pct|default(0) }}%
-                        {% elif stats.month_growth_pct|default(0) < 0 %}
-                            ↓ {{ stats.month_growth_pct|abs|default(0) }}%
-                        {% else %}
-                            → 0%
-                        {% endif %}
-                    </span>
-                </div>
-                <div class="stat-label">This Month</div>
-                <div class="stat-value" id="dashMonthRevenue">KSh {{ "%.0f"|format(stats.month_revenue|default(0)) }}</div>
-                <div class="stat-sub">Last month: KSh <span id="dashLastMonthRevenue">{{ "%.0f"|format(stats.last_month_revenue|default(0)) }}</span></div>
-            </div>
-
-            <div class="stat-card-modern">
-                <div class="stat-top">
-                    <div class="stat-icon-wrap blue">📦</div>
-                    <span class="stat-change neutral">Inventory</span>
-                </div>
-                <div class="stat-label">Total Products</div>
-                <div class="stat-value" id="dashTotalProducts">{{ stats.total_products|default(0) }}</div>
-                <div class="stat-sub">Bundles: <span id="dashTotalBundles">{{ stats.total_bundles|default(0) }}</span></div>
-            </div>
-
-            <div class="stat-card-modern">
-                <div class="stat-top">
-                    <div class="stat-icon-wrap amber">🛒</div>
-                    <span class="stat-change neutral">{{ stats.pending_orders|default(0) }} pending</span>
-                </div>
-                <div class="stat-label">Total Orders</div>
-                <div class="stat-value" id="dashTotalOrders">{{ stats.total_orders|default(0) }}</div>
-                <div class="stat-sub">
-                    Low Stock: <span id="dashLowStock">{{ stats.low_stock|default(0) }}</span> items
-                    {% if stats.out_of_stock|default(0) > 0 %}
-                    | Out: <span style="color:var(--danger);">{{ stats.out_of_stock|default(0) }}</span>
+        <div class="stat-card-modern">
+            <div class="stat-top">
+                <div class="stat-icon-wrap green">📊</div>
+                <span class="stat-change {% if stats.month_growth_pct|default(0) > 0 %}up{% elif stats.month_growth_pct|default(0) < 0 %}down{% else %}neutral{% endif %}">
+                    {% if stats.month_growth_pct|default(0) > 0 %}
+                        ↑ {{ stats.month_growth_pct|default(0) }}%
+                    {% elif stats.month_growth_pct|default(0) < 0 %}
+                        ↓ {{ stats.month_growth_pct|abs|default(0) }}%
+                    {% else %}
+                        → 0%
                     {% endif %}
-                </div>
+                </span>
             </div>
+            <div class="stat-label">This Month</div>
+            <div class="stat-value" id="dashMonthRevenue">KSh {{ "%.0f"|format(stats.month_revenue|default(0)) }}</div>
+            <div class="stat-sub">Last month: KSh <span id="dashLastMonthRevenue">{{ "%.0f"|format(stats.last_month_revenue|default(0)) }}</span></div>
         </div>
 
-        <!-- Quick Actions -->
-        <div class="quick-actions-grid">
-            <div class="quick-action-btn" onclick="showSection('add-product')">
-                <span class="icon">➕</span>
-                <span class="label">Add Product</span>
+        <div class="stat-card-modern">
+            <div class="stat-top">
+                <div class="stat-icon-wrap blue">📦</div>
+                <span class="stat-change neutral">Inventory</span>
             </div>
-            <div class="quick-action-btn" onclick="showSection('orders')">
-                <span class="icon">📦</span>
-                <span class="label">View Orders</span>
-            </div>
-            <div class="quick-action-btn" onclick="showSection('analytics')">
-                <span class="icon">📈</span>
-                <span class="label">Analytics</span>
-            </div>
-            <div class="quick-action-btn" onclick="showSection('products')">
-                <span class="icon">📱</span>
-                <span class="label">Products</span>
-            </div>
-            <div class="quick-action-btn" onclick="showSection('credit')">
-                <span class="icon">💰</span>
-                <span class="label">Credit</span>
-            </div>
-            <div class="quick-action-btn" onclick="location.href='/admin/pos'">
-                <span class="icon">🛒</span>
-                <span class="label">POS</span>
-            </div>
+            <div class="stat-label">Total Products</div>
+            <div class="stat-value" id="dashTotalProducts">{{ stats.total_products|default(0) }}</div>
+            <div class="stat-sub">Bundles: <span id="dashTotalBundles">{{ stats.total_bundles|default(0) }}</span></div>
         </div>
 
-        <!-- Charts -->
-        <div class="grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-bottom:24px;">
-            <div class="glass-card">
-                <div class="card-header">
-                    <div class="title">
-                        <span class="icon">📈</span> Revenue Trend
-                    </div>
-                    <span class="badge-time">Last 6 months</span>
-                </div>
-                <div class="chart-container">
-                    <canvas id="revenueChart"></canvas>
-                </div>
+        <div class="stat-card-modern">
+            <div class="stat-top">
+                <div class="stat-icon-wrap amber">🛒</div>
+                <span class="stat-change neutral">{{ stats.pending_orders|default(0) }} pending</span>
             </div>
-            <div class="glass-card">
-                <div class="card-header">
-                    <div class="title">
-                        <span class="icon">🎯</span> Sales by Category
-                    </div>
-                    <span class="badge-time">Distribution</span>
-                </div>
-                <div class="chart-container">
-                    <canvas id="categoryChart"></canvas>
-                </div>
+            <div class="stat-label">Total Orders</div>
+            <div class="stat-value" id="dashTotalOrders">{{ stats.total_orders|default(0) }}</div>
+            <div class="stat-sub">
+                Low Stock: <span id="dashLowStock">{{ stats.low_stock|default(0) }}</span> items
+                {% if stats.out_of_stock|default(0) > 0 %}
+                | Out: <span style="color:var(--danger);">{{ stats.out_of_stock|default(0) }}</span>
+                {% endif %}
             </div>
         </div>
+    </div>
 
-        <!-- Recent Activity -->
+    <!-- Quick Actions -->
+    <div class="quick-actions-grid">
+        <div class="quick-action-btn" onclick="showSection('add-product')">
+            <span class="icon">➕</span>
+            <span class="label">Add Product</span>
+        </div>
+        <div class="quick-action-btn" onclick="showSection('orders')">
+            <span class="icon">📦</span>
+            <span class="label">View Orders</span>
+        </div>
+        <div class="quick-action-btn" onclick="showSection('analytics')">
+            <span class="icon">📈</span>
+            <span class="label">Analytics</span>
+        </div>
+        <div class="quick-action-btn" onclick="showSection('products')">
+            <span class="icon">📱</span>
+            <span class="label">Products</span>
+        </div>
+        <div class="quick-action-btn" onclick="showSection('credit')">
+            <span class="icon">💰</span>
+            <span class="label">Credit</span>
+        </div>
+        <div class="quick-action-btn" onclick="location.href='/admin/pos'">
+            <span class="icon">🛒</span>
+            <span class="label">POS</span>
+        </div>
+    </div>
+
+    <!-- Charts -->
+    <div class="grid" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(300px,1fr));gap:16px;margin-bottom:24px;">
         <div class="glass-card">
             <div class="card-header">
                 <div class="title">
-                    <span class="icon">🕐</span> Recent Activity
+                    <span class="icon">📈</span> Revenue Trend
                 </div>
-                <span class="badge-time">Last 3 orders</span>
+                <span class="badge-time">Last 6 months</span>
             </div>
-            <div class="activity-list" style="max-height:300px;overflow-y:auto;">
-                {% if recent_orders and recent_orders|length > 0 %}
-                    {% for order in recent_orders %}
-                    <div class="activity-item" style="display:flex;align-items:center;gap:14px;padding:10px 14px;border-radius:var(--radius-sm);background:var(--bg-input);border:1px solid var(--border-color);margin-bottom:6px;">
-                        <div class="icon-wrap" style="width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--info-bg);color:var(--info);">
-                            <i class="fas fa-receipt"></i>
-                        </div>
-                        <div class="content" style="flex:1;min-width:0;">
-                            <div class="title" style="font-size:0.75rem;font-weight:600;color:var(--text-primary);">#{{ order.order_id or order.id }}</div>
-                            <div class="sub" style="font-size:0.6rem;color:var(--text-muted);">{{ order.customer.name if order.customer and order.customer.name else order.customer_name or 'Customer' }}</div>
-                        </div>
-                        <span class="amount" style="font-weight:700;font-size:0.8rem;color:var(--success);">KSh {{ "%.0f"|format(order.total|default(0)) }}</span>
-                        <span class="status-badge" style="font-size:0.5rem;padding:2px 10px;border-radius:9999px;font-weight:600;{% if order.status == 'delivered' %}background:var(--success-bg);color:var(--success);{% elif order.status == 'shipped' %}background:var(--info-bg);color:var(--info);{% elif order.status == 'pending' %}background:var(--warning-bg);color:var(--warning);{% else %}background:var(--bg-input);color:var(--text-muted);{% endif %}">
-                            {{ order.status or 'Pending' }}
-                        </span>
-                    </div>
-                    {% endfor %}
-                {% else %}
-                    <div style="text-align:center;padding:30px 0;color:var(--text-muted);">
-                        <div style="font-size:2rem;margin-bottom:8px;">📭</div>
-                        <p style="font-size:0.8rem;">No orders yet. Your store is ready to sell!</p>
-                    </div>
-                {% endif %}
+            <div class="chart-container">
+                <canvas id="revenueChart"></canvas>
             </div>
         </div>
-    </div>
-
-    <!-- ============================================================
-         ANALYTICS SECTION
-         ============================================================ -->
-    <div id="analytics-section" class="section hidden">
-        <div class="glass-card" style="margin-bottom:20px;">
-            <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;">
-                <div>
-                    <h2 style="font-size:1.2rem;font-weight:700;color:var(--text-primary);">
-                        📊 Analytics Dashboard
-                    </h2>
-                    <p style="font-size:0.75rem;color:var(--text-muted);">Comprehensive business intelligence</p>
-                </div>
-                <button onclick="refreshAnalytics()" class="btn-gradient" style="font-size:0.7rem;padding:6px 16px;">
-                    <i class="fas fa-sync-alt"></i> Refresh
-                </button>
-            </div>
-        </div>
-
-        <!-- KPI Cards -->
-        <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));">
-            <div class="stat-card-modern">
-                <div class="stat-label">Total Revenue</div>
-                <div class="stat-value" id="kpiRevenue">KSh 0</div>
-            </div>
-            <div class="stat-card-modern">
-                <div class="stat-label">Total Orders</div>
-                <div class="stat-value" id="kpiOrders">0</div>
-            </div>
-            <div class="stat-card-modern">
-                <div class="stat-label">Total Profit</div>
-                <div class="stat-value" id="kpiProfit">KSh 0</div>
-            </div>
-            <div class="stat-card-modern">
-                <div class="stat-label">Credit Sales</div>
-                <div class="stat-value" id="kpiCredit">KSh 0</div>
-            </div>
-        </div>
-
-        <!-- Charts Row -->
-        <div class="grid" style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:20px;">
-            <div class="glass-card">
-                <div class="card-header">
-                    <div class="title"><span class="icon">📈</span> Revenue & Profit Trend</div>
-                </div>
-                <div class="chart-container" style="height:220px;">
-                    <canvas id="advancedRevenueChart"></canvas>
-                </div>
-            </div>
-            <div class="glass-card">
-                <div class="card-header">
-                    <div class="title"><span class="icon">📊</span> Order Status</div>
-                </div>
-                <div class="chart-container" style="height:180px;">
-                    <canvas id="advancedStatusChart"></canvas>
-                </div>
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:0.6rem;margin-top:8px;">
-                    <div>⏳ Pending: <span id="statusPending" style="font-weight:600;">0</span></div>
-                    <div>✅ Completed: <span id="statusCompleted" style="font-weight:600;">0</span></div>
-                    <div>📦 Shipped: <span id="statusShipped" style="font-weight:600;">0</span></div>
-                    <div>❌ Cancelled: <span id="statusCancelled" style="font-weight:600;">0</span></div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Bottom Row -->
-        <div class="grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px;">
-            <div class="glass-card">
-                <div class="card-header">
-                    <div class="title"><span class="icon">🏆</span> Top Products</div>
-                </div>
-                <div id="topProductsList" style="max-height:200px;overflow-y:auto;">
-                    <div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.7rem;">Loading...</div>
-                </div>
-            </div>
-            <div class="glass-card">
-                <div class="card-header">
-                    <div class="title"><span class="icon">📁</span> Categories</div>
-                </div>
-                <div class="chart-container" style="height:160px;">
-                    <canvas id="advancedCategoryChart"></canvas>
-                </div>
-                <div id="categoryLegend" style="display:flex;flex-wrap:wrap;gap:4px;font-size:0.55rem;margin-top:8px;"></div>
-            </div>
-            <div class="glass-card">
-                <div class="card-header">
-                    <div class="title"><span class="icon">💳</span> Payment Methods</div>
-                </div>
-                <div id="paymentMethodsList">
-                    <div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.7rem;">Loading...</div>
-                </div>
-            </div>
-        </div>
-
-        <!-- Transactions Table -->
         <div class="glass-card">
             <div class="card-header">
-                <div class="title"><span class="icon">📋</span> Recent Transactions</div>
-                <button onclick="exportAnalyticsCSV()" class="btn-gradient" style="font-size:0.6rem;padding:4px 12px;">
-                    <i class="fas fa-file-export"></i> Export
-                </button>
+                <div class="title">
+                    <span class="icon">🎯</span> Sales by Category
+                </div>
+                <span class="badge-time">Distribution</span>
             </div>
-            <div class="table-wrap">
-                <table>
-                    <thead>
-                        <tr>
-                            <th>Order ID</th>
-                            <th style="display:none;" class="sm-table-cell">Customer</th>
-                            <th style="text-align:right;">Amount</th>
-                            <th style="text-align:center;">Payment</th>
-                            <th style="text-align:center;">Status</th>
-                            <th style="text-align:right;display:none;" class="lg-table-cell">Profit</th>
-                            <th style="text-align:center;">Time</th>
-                        </tr>
-                    </thead>
-                    <tbody id="recentTransactionsBody">
-                        <tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-muted);">Loading transactions...</td></tr>
-                    </tbody>
-                </table>
+            <div class="chart-container">
+                <canvas id="categoryChart"></canvas>
             </div>
         </div>
     </div>
 
-    <!-- ============================================================
-         PRODUCTS SECTION
-     ============================================================ -->
-    <div id="products-section" class="section hidden">
-        <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
-            <div style="flex:1;min-width:200px;">
-                <input type="text" id="productSearchInput" placeholder="🔍 Search products..." 
-                       class="form-input" style="font-size:0.8rem;" />
+    <!-- Recent Activity -->
+    <div class="glass-card">
+        <div class="card-header">
+            <div class="title">
+                <span class="icon">🕐</span> Recent Activity
             </div>
-            <select id="productFilterSelect" class="form-input" style="width:auto;min-width:140px;">
-                <option value="all">📦 All Products</option>
-                <option value="low_stock">⚠️ Low Stock</option>
-                <option value="out_of_stock">❌ Out of Stock</option>
-            </select>
-            <button onclick="clearProductFilters()" class="btn-outline" style="font-size:0.7rem;">✕ Clear</button>
-            <button onclick="showSection('add-product')" class="btn-gradient" style="font-size:0.7rem;">➕ Add Product</button>
+            <span class="badge-time">Last 3 orders</span>
         </div>
-
-        <div class="glass-card" style="padding:0;overflow:hidden;">
-            <div class="table-wrap" style="max-height:500px;overflow-y:auto;">
-                <table>
-                    <thead style="position:sticky;top:0;z-index:10;background:var(--bg-card);">
-                        <tr>
-                            <th>Product</th>
-                            <th style="display:none;" class="sm-table-cell">Category</th>
-                            <th style="text-align:right;">Price</th>
-                            <th style="text-align:center;">Stock</th>
-                            <th style="text-align:center;">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="productsTableBody">
-                        <tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text-muted);">Loading products...</td></tr>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-top:12px;">
-            <div style="font-size:0.65rem;color:var(--text-muted);">
-                Showing <span id="productsStart">0</span> to <span id="productsEnd">0</span> of <span id="productsTotal">0</span>
-            </div>
-            <div class="pagination" id="productsPaginationLinks"></div>
+        <div class="activity-list" style="max-height:300px;overflow-y:auto;">
+            {% if recent_orders and recent_orders|length > 0 %}
+                {% for order in recent_orders %}
+                <div class="activity-item" style="display:flex;align-items:center;gap:14px;padding:10px 14px;border-radius:var(--radius-sm);background:var(--bg-input);border:1px solid var(--border-color);margin-bottom:6px;">
+                    <div class="icon-wrap" style="width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--info-bg);color:var(--info);">
+                        <i class="fas fa-receipt"></i>
+                    </div>
+                    <div class="content" style="flex:1;min-width:0;">
+                        <div class="title" style="font-size:0.75rem;font-weight:600;color:var(--text-primary);">#{{ order.order_id or order.id }}</div>
+                        <div class="sub" style="font-size:0.6rem;color:var(--text-muted);">{{ order.customer.name if order.customer and order.customer.name else order.customer_name or 'Customer' }}</div>
+                    </div>
+                    <span class="amount" style="font-weight:700;font-size:0.8rem;color:var(--success);">KSh {{ "%.0f"|format(order.total|default(0)) }}</span>
+                    <span class="status-badge" style="font-size:0.5rem;padding:2px 10px;border-radius:9999px;font-weight:600;{% if order.status == 'delivered' %}background:var(--success-bg);color:var(--success);{% elif order.status == 'shipped' %}background:var(--info-bg);color:var(--info);{% elif order.status == 'pending' %}background:var(--warning-bg);color:var(--warning);{% else %}background:var(--bg-input);color:var(--text-muted);{% endif %}">
+                        {{ order.status or 'Pending' }}
+                    </span>
+                </div>
+                {% endfor %}
+            {% else %}
+                <div style="text-align:center;padding:30px 0;color:var(--text-muted);">
+                    <div style="font-size:2rem;margin-bottom:8px;">📭</div>
+                    <p style="font-size:0.8rem;">No orders yet. Your store is ready to sell!</p>
+                </div>
+            {% endif %}
         </div>
     </div>
+</div>
 
-    <!-- ============================================================
-         ADD PRODUCT SECTION
+<!-- ============================================================
+     ANALYTICS SECTION
      ============================================================ -->
-    <div id="add-product-section" class="section hidden">
-        <div class="glass-card">
-            <h3 style="font-size:1rem;font-weight:700;color:var(--text-primary);margin-bottom:16px;">➕ Add New Product</h3>
-            <form id="productForm" onsubmit="saveProduct(event)">
-                <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;">
-                    <div>
-                        <label class="form-label">Product ID</label>
-                        <input type="text" id="prodId" class="form-input" placeholder="product_id" required>
-                    </div>
-                    <div>
-                        <label class="form-label">Product Name</label>
-                        <input type="text" id="prodName" class="form-input" placeholder="Product Name" required>
-                    </div>
-                    <div>
-                        <label class="form-label">Category</label>
-                        <select id="prodCategory" class="form-input" required>
-                            <option value="">Select</option>
-                            <option value="Phones">📱 Phones</option>
-                            <option value="Laptops">💻 Laptops</option>
-                            <option value="Accessories">🎧 Accessories</option>
-                            <option value="Wearables">⌚ Wearables</option>
-                            <option value="Audio">🎵 Audio</option>
-                            <option value="Gaming">🎮 Gaming</option>
-                            <option value="General">📦 General</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="form-label">Price (KSh)</label>
-                        <input type="number" id="prodPrice" class="form-input" placeholder="1000" required>
-                    </div>
-                    <div>
-                        <label class="form-label">Stock</label>
-                        <input type="number" id="prodStock" class="form-input" placeholder="10" required>
-                    </div>
-                    <div>
-                        <label class="form-label">Barcode</label>
-                        <input type="text" id="prodBarcode" class="form-input" placeholder="123456789">
-                    </div>
-                </div>
-
-                <div style="margin-top:12px;">
-                    <label class="form-label">Image URL</label>
-                    <input type="url" id="prodImage" class="form-input" placeholder="https://example.com/image.jpg">
-                </div>
-
-                <div style="margin-top:12px;">
-                    <label class="form-label">Description</label>
-                    <textarea id="prodDesc" class="form-input" rows="2" placeholder="Product description..."></textarea>
-                </div>
-
-                <div style="display:flex;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border-color);">
-                    <button type="submit" class="btn-gradient">💾 Save Product</button>
-                    <button type="button" onclick="showSection('products')" class="btn-outline">Cancel</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- ============================================================
-         ORDERS SECTION
-     ============================================================ -->
-    <div id="orders-section" class="section hidden">
-        <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:16px;">
+<div id="analytics-section" class="section hidden">
+    <div class="glass-card" style="margin-bottom:20px;">
+        <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;">
             <div>
-                <h2 style="font-size:1.1rem;font-weight:700;color:var(--text-primary);">📦 Orders</h2>
-                <p style="font-size:0.7rem;color:var(--text-muted);">Manage all customer orders</p>
+                <h2 style="font-size:1.2rem;font-weight:700;color:var(--text-primary);">
+                    📊 Analytics Dashboard
+                </h2>
+                <p style="font-size:0.75rem;color:var(--text-muted);">Comprehensive business intelligence</p>
             </div>
-            <button onclick="loadOrders()" class="btn-outline" style="font-size:0.7rem;">
+            <button onclick="refreshAnalytics()" class="btn-gradient" style="font-size:0.7rem;padding:6px 16px;">
                 <i class="fas fa-sync-alt"></i> Refresh
             </button>
         </div>
-
-        <div class="glass-card" style="padding:0;overflow:hidden;">
-            <div class="table-wrap" style="max-height:500px;overflow-y:auto;">
-                <table>
-                    <thead style="position:sticky;top:0;z-index:10;background:var(--bg-card);">
-                        <tr>
-                            <th>Order ID</th>
-                            <th style="display:none;" class="sm-table-cell">Customer</th>
-                            <th style="text-align:right;">Total</th>
-                            <th style="text-align:center;">Status</th>
-                            <th style="display:none;" class="md-table-cell">Date</th>
-                            <th style="text-align:center;">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="ordersTableBody">
-                        {% for order in orders %}
-                        <tr>
-                            <td class="font-mono">#{{ (order.order_id or order.id)[:8] }}</td>
-                            <td style="display:none;" class="sm-table-cell">{{ order.customer_name or 'Customer' }}</td>
-                            <td style="text-align:right;font-weight:600;color:var(--success);">KSh {{ "%.0f"|format(order.total|default(0)) }}</td>
-                            <td style="text-align:center;">
-                                <select onchange="updateOrderStatus('{{ order.order_id }}', this.value)" 
-                                        class="badge" style="border:none;cursor:pointer;font-size:0.55rem;padding:2px 12px;background:var(--bg-input);color:var(--text-primary);">
-                                    <option value="pending" {% if order.status == 'pending' %}selected{% endif %}>⏳ Pending</option>
-                                    <option value="confirmed" {% if order.status == 'confirmed' %}selected{% endif %}>✅ Confirmed</option>
-                                    <option value="shipped" {% if order.status == 'shipped' %}selected{% endif %}>📦 Shipped</option>
-                                    <option value="delivered" {% if order.status == 'delivered' %}selected{% endif %}>🎯 Delivered</option>
-                                </select>
-                            </td>
-                            <td style="display:none;" class="md-table-cell">{{ (order.created_at or '')[:10] }}</td>
-                            <td style="text-align:center;">
-                                <button onclick="viewOrder('{{ order.order_id }}')" class="btn-outline" style="font-size:0.6rem;padding:2px 10px;">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
-        </div>
-
-        {% if total_orders > per_page %}
-        <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-top:12px;">
-            <div style="font-size:0.65rem;color:var(--text-muted);">
-                Showing <span id="ordersStart">{{ (orders_page - 1) * per_page + 1 }}</span>
-                to <span id="ordersEnd">{{ [orders_page * per_page, total_orders]|min }}</span>
-                of <span id="ordersTotal">{{ total_orders }}</span>
-            </div>
-            <div class="pagination" id="ordersPaginationLinks">
-                {% if orders_page > 1 %}
-                <a href="javascript:void(0)" class="page-link" onclick="loadOrdersPage({{ orders_page - 1 }})"><i class="fas fa-chevron-left"></i></a>
-                {% endif %}
-                {% for p in range(1, total_order_pages + 1) %}
-                    {% if p == orders_page %}
-                        <span class="page-link active">{{ p }}</span>
-                    {% elif p <= orders_page + 2 and p >= orders_page - 2 %}
-                        <a href="javascript:void(0)" class="page-link" onclick="loadOrdersPage({{ p }})">{{ p }}</a>
-                    {% endif %}
-                {% endfor %}
-                {% if orders_page < total_order_pages %}
-                <a href="javascript:void(0)" class="page-link" onclick="loadOrdersPage({{ orders_page + 1 }})"><i class="fas fa-chevron-right"></i></a>
-                {% endif %}
-            </div>
-        </div>
-        {% endif %}
     </div>
 
-    <!-- ============================================================
-         CUSTOMERS SECTION
-     ============================================================ -->
-    <div id="customers-section" class="section hidden">
-        <div class="glass-card" style="padding:0;overflow:hidden;">
-            <div class="table-wrap" style="max-height:500px;overflow-y:auto;">
-                <table>
-                    <thead style="position:sticky;top:0;z-index:10;background:var(--bg-card);">
-                        <tr>
-                            <th>Customer</th>
-                            <th style="display:none;" class="sm-table-cell">Email</th>
-                            <th style="display:none;" class="md-table-cell">Phone</th>
-                            <th style="text-align:center;">Orders</th>
-                            <th style="text-align:right;">Total Spent</th>
-                        </tr>
-                    </thead>
-                    <tbody id="customersTableBody">
-                        {% if customers and customers|length > 0 %}
-                            {% for customer in customers %}
-                            <tr>
-                                <td><span style="font-weight:600;">{{ customer.name }}</span></td>
-                                <td style="display:none;" class="sm-table-cell">{{ customer.email or 'N/A' }}</td>
-                                <td style="display:none;" class="md-table-cell">{{ customer.phone or 'N/A' }}</td>
-                                <td style="text-align:center;"><span class="badge badge-info">{{ customer.orders }}</span></td>
-                                <td style="text-align:right;font-weight:600;color:var(--success);">KSh {{ "%.0f"|format(customer.total_spent|default(0)) }}</td>
-                            </tr>
-                            {% endfor %}
-                        {% else %}
-                            <tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text-muted);">No customers yet</td></tr>
-                        {% endif %}
-                    </tbody>
-                </table>
+    <!-- KPI Cards -->
+    <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));">
+        <div class="stat-card-modern">
+            <div class="stat-label">Total Revenue</div>
+            <div class="stat-value" id="kpiRevenue">KSh 0</div>
+        </div>
+        <div class="stat-card-modern">
+            <div class="stat-label">Total Orders</div>
+            <div class="stat-value" id="kpiOrders">0</div>
+        </div>
+        <div class="stat-card-modern">
+            <div class="stat-label">Total Profit</div>
+            <div class="stat-value" id="kpiProfit">KSh 0</div>
+        </div>
+        <div class="stat-card-modern">
+            <div class="stat-label">Credit Sales</div>
+            <div class="stat-value" id="kpiCredit">KSh 0</div>
+        </div>
+    </div>
+
+    <!-- Charts Row -->
+    <div class="grid" style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:20px;">
+        <div class="glass-card">
+            <div class="card-header">
+                <div class="title"><span class="icon">📈</span> Revenue & Profit Trend</div>
+            </div>
+            <div class="chart-container" style="height:220px;">
+                <canvas id="advancedRevenueChart"></canvas>
+            </div>
+        </div>
+        <div class="glass-card">
+            <div class="card-header">
+                <div class="title"><span class="icon">📊</span> Order Status</div>
+            </div>
+            <div class="chart-container" style="height:180px;">
+                <canvas id="advancedStatusChart"></canvas>
+            </div>
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:4px;font-size:0.6rem;margin-top:8px;">
+                <div>⏳ Pending: <span id="statusPending" style="font-weight:600;">0</span></div>
+                <div>✅ Completed: <span id="statusCompleted" style="font-weight:600;">0</span></div>
+                <div>📦 Shipped: <span id="statusShipped" style="font-weight:600;">0</span></div>
+                <div>❌ Cancelled: <span id="statusCancelled" style="font-weight:600;">0</span></div>
             </div>
         </div>
     </div>
 
-    <!-- ============================================================
-         CREDIT SECTION WITH COLLECTION RATE
+    <!-- Bottom Row -->
+    <div class="grid" style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px;">
+        <div class="glass-card">
+            <div class="card-header">
+                <div class="title"><span class="icon">🏆</span> Top Products</div>
+            </div>
+            <div id="topProductsList" style="max-height:200px;overflow-y:auto;">
+                <div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.7rem;">Loading...</div>
+            </div>
+        </div>
+        <div class="glass-card">
+            <div class="card-header">
+                <div class="title"><span class="icon">📁</span> Categories</div>
+            </div>
+            <div class="chart-container" style="height:160px;">
+                <canvas id="advancedCategoryChart"></canvas>
+            </div>
+            <div id="categoryLegend" style="display:flex;flex-wrap:wrap;gap:4px;font-size:0.55rem;margin-top:8px;"></div>
+        </div>
+        <div class="glass-card">
+            <div class="card-header">
+                <div class="title"><span class="icon">💳</span> Payment Methods</div>
+            </div>
+            <div id="paymentMethodsList">
+                <div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.7rem;">Loading...</div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Transactions Table -->
+    <div class="glass-card">
+        <div class="card-header">
+            <div class="title"><span class="icon">📋</span> Recent Transactions</div>
+            <button onclick="exportAnalyticsCSV()" class="btn-gradient" style="font-size:0.6rem;padding:4px 12px;">
+                <i class="fas fa-file-export"></i> Export
+            </button>
+        </div>
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Order ID</th>
+                        <th style="display:none;" class="sm-table-cell">Customer</th>
+                        <th style="text-align:right;">Amount</th>
+                        <th style="text-align:center;">Payment</th>
+                        <th style="text-align:center;">Status</th>
+                        <th style="text-align:right;display:none;" class="lg-table-cell">Profit</th>
+                        <th style="text-align:center;">Time</th>
+                    </tr>
+                </thead>
+                <tbody id="recentTransactionsBody">
+                    <tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-muted);">Loading transactions...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================
+     PRODUCTS SECTION
      ============================================================ -->
-    <div id="credit-section" class="section hidden">
-        <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:16px;">
-            <div>
-                <h2 style="font-size:1.1rem;font-weight:700;color:var(--text-primary);">💰 Credit Management</h2>
-                <p style="font-size:0.7rem;color:var(--text-muted);">Manage customers who buy on credit</p>
-            </div>
-            <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                <button onclick="showAddCreditCustomerModal()" class="btn-gradient" style="font-size:0.7rem;">➕ Add Customer</button>
-                <button onclick="refreshCreditData()" class="btn-outline" style="font-size:0.7rem;">
-                    <i class="fas fa-sync-alt"></i> Refresh
-                </button>
-            </div>
+<div id="products-section" class="section hidden">
+    <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
+        <div style="flex:1;min-width:200px;">
+            <input type="text" id="productSearchInput" placeholder="🔍 Search products..." 
+                   class="form-input" style="font-size:0.8rem;" />
         </div>
+        <select id="productFilterSelect" class="form-input" style="width:auto;min-width:140px;">
+            <option value="all">📦 All Products</option>
+            <option value="low_stock">⚠️ Low Stock</option>
+            <option value="out_of_stock">❌ Out of Stock</option>
+        </select>
+        <button onclick="clearProductFilters()" class="btn-outline" style="font-size:0.7rem;">✕ Clear</button>
+        <button onclick="showSection('add-product')" class="btn-gradient" style="font-size:0.7rem;">➕ Add Product</button>
+    </div>
 
-        <!-- Credit Stats -->
-        <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));">
-            <div class="stat-card-modern">
-                <div class="stat-label">Total Customers</div>
-                <div class="stat-value">{{ credit_summary.total_customers|default(0) }}</div>
-            </div>
-            <div class="stat-card-modern">
-                <div class="stat-label">Active</div>
-                <div class="stat-value" style="color:var(--success);">{{ credit_summary.active_customers|default(0) }}</div>
-            </div>
-            <div class="stat-card-modern">
-                <div class="stat-label">Outstanding</div>
-                <div class="stat-value" style="color:var(--warning);">KSh {{ credit_summary.total_balance|default(0)|int }}</div>
-            </div>
-            <div class="stat-card-modern">
-                <div class="stat-label">Overdue</div>
-                <div class="stat-value" style="color:var(--danger);">{{ overdue_count|default(0) }}</div>
-            </div>
+    <div class="glass-card" style="padding:0;overflow:hidden;">
+        <div class="table-wrap" style="max-height:500px;overflow-y:auto;">
+            <table>
+                <thead style="position:sticky;top:0;z-index:10;background:var(--bg-card);">
+                    <tr>
+                        <th>Product</th>
+                        <th style="display:none;" class="sm-table-cell">Category</th>
+                        <th style="text-align:right;">Price</th>
+                        <th style="text-align:center;">Stock</th>
+                        <th style="text-align:center;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="productsTableBody">
+                    <tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text-muted);">Loading products...</td></tr>
+                </tbody>
+            </table>
         </div>
+    </div>
 
-        <!-- ✅ FIX: Collection Rate Bar -->
-        <div class="glass-card" style="margin-bottom:16px;">
-            <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+    <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-top:12px;">
+        <div style="font-size:0.65rem;color:var(--text-muted);">
+            Showing <span id="productsStart">0</span> to <span id="productsEnd">0</span> of <span id="productsTotal">0</span>
+        </div>
+        <div class="pagination" id="productsPaginationLinks"></div>
+    </div>
+</div>
+
+<!-- ============================================================
+     ADD PRODUCT SECTION
+     ============================================================ -->
+<div id="add-product-section" class="section hidden">
+    <div class="glass-card">
+        <h3 style="font-size:1rem;font-weight:700;color:var(--text-primary);margin-bottom:16px;">➕ Add New Product</h3>
+        <form id="productForm" onsubmit="saveProduct(event)">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(180px,1fr));gap:12px;">
                 <div>
-                    <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Collection Rate</div>
-                    <div style="font-size:1.5rem;font-weight:700;" id="creditCollectionRate">
-                        {% if credit_summary.total_purchases|default(0) > 0 %}
-                            {{ ((credit_summary.total_payments|default(0) / credit_summary.total_purchases|default(1)) * 100)|round(1) }}%
-                        {% else %}
-                            0%
-                        {% endif %}
-                    </div>
+                    <label class="form-label">Product ID</label>
+                    <input type="text" id="prodId" class="form-input" placeholder="product_id" required>
                 </div>
-                <div style="text-align:right;">
-                    <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Total Credit Sales</div>
-                    <div style="font-weight:700;">KSh {{ credit_summary.total_purchases|default(0)|int }}</div>
+                <div>
+                    <label class="form-label">Product Name</label>
+                    <input type="text" id="prodName" class="form-input" placeholder="Product Name" required>
                 </div>
-                <div style="text-align:right;">
-                    <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Total Payments</div>
-                    <div style="font-weight:700;color:var(--success);">KSh {{ credit_summary.total_payments|default(0)|int }}</div>
+                <div>
+                    <label class="form-label">Category</label>
+                    <select id="prodCategory" class="form-input" required>
+                        <option value="">Select</option>
+                        <option value="Phones">📱 Phones</option>
+                        <option value="Laptops">💻 Laptops</option>
+                        <option value="Accessories">🎧 Accessories</option>
+                        <option value="Wearables">⌚ Wearables</option>
+                        <option value="Audio">🎵 Audio</option>
+                        <option value="Gaming">🎮 Gaming</option>
+                        <option value="General">📦 General</option>
+                    </select>
                 </div>
-                <div style="text-align:right;">
-                    <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Profit Margin</div>
-                    <div style="font-weight:700;color:var(--primary-light);" id="creditProfitMargin">
-                        {% if credit_summary.total_purchases|default(0) > 0 %}
-                            {{ ((credit_summary.total_profit|default(0) / credit_summary.total_purchases|default(1)) * 100)|round(1) }}%
-                        {% else %}
-                            0%
-                        {% endif %}
-                    </div>
+                <div>
+                    <label class="form-label">Price (KSh)</label>
+                    <input type="number" id="prodPrice" class="form-input" placeholder="1000" required>
+                </div>
+                <div>
+                    <label class="form-label">Stock</label>
+                    <input type="number" id="prodStock" class="form-input" placeholder="10" required>
+                </div>
+                <div>
+                    <label class="form-label">Barcode</label>
+                    <input type="text" id="prodBarcode" class="form-input" placeholder="123456789">
                 </div>
             </div>
-            <div style="margin-top:8px;background:var(--bg-input);border-radius:9999px;height:8px;overflow:hidden;">
-                <div style="height:8px;border-radius:9999px;background:var(--primary-gradient);width:{% if credit_summary.total_purchases|default(0) > 0 %}{{ ((credit_summary.total_payments|default(0) / credit_summary.total_purchases|default(1)) * 100)|round(1) }}{% else %}0{% endif %}%;transition:width 0.5s ease;"></div>
-            </div>
-            <div style="display:flex;justify-content:space-between;font-size:0.5rem;color:var(--text-muted);margin-top:4px;">
-                <span>0%</span>
-                <span style="font-weight:600;color:{% if credit_summary.total_purchases|default(0) > 0 and ((credit_summary.total_payments|default(0) / credit_summary.total_purchases|default(1)) * 100) >= 80 %}var(--success){% elif credit_summary.total_purchases|default(0) > 0 and ((credit_summary.total_payments|default(0) / credit_summary.total_purchases|default(1)) * 100) >= 50 %}var(--warning){% else %}var(--danger){% endif %};">
-                    {{ ((credit_summary.total_payments|default(0) / credit_summary.total_purchases|default(1)) * 100)|round(1) }}%
-                </span>
-                <span>100%</span>
-            </div>
-        </div>
 
-        <!-- Credit Table -->
-        <div class="glass-card" style="padding:0;overflow:hidden;margin-top:16px;">
-            <div class="table-wrap" style="max-height:500px;overflow-y:auto;">
-                <table>
-                    <thead style="position:sticky;top:0;z-index:10;background:var(--bg-card);">
-                        <tr>
-                            <th>Customer</th>
-                            <th style="display:none;" class="sm-table-cell">Phone</th>
-                            <th style="text-align:center;">Balance</th>
-                            <th style="text-align:center;">Limit</th>
-                            <th style="text-align:center;">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="creditCustomersTableBody">
-                        {% for customer in credit_customers %}
-                        <tr>
-                            <td>
-                                <span style="font-weight:600;">{{ customer.full_name }}</span>
-                                <div style="font-size:0.55rem;color:var(--text-muted);font-family:monospace;">{{ customer.customer_id }}</div>
-                            </td>
-                            <td style="display:none;" class="sm-table-cell">{{ customer.phone }}</td>
-                            <td style="text-align:center;font-weight:700;{% if customer.current_balance|default(0) > customer.credit_limit|default(0) %}color:var(--danger);{% elif customer.current_balance|default(0) > 0 %}color:var(--warning);{% else %}color:var(--success);{% endif %}">
-                                KSh {{ customer.current_balance|default(0)|int }}
-                            </td>
-                            <td style="text-align:center;color:var(--text-muted);">KSh {{ customer.credit_limit|default(0)|int }}</td>
-                            <td style="text-align:center;">
-                                <button onclick="viewCreditCustomer('{{ customer.customer_id }}')" class="btn-outline" style="font-size:0.55rem;padding:2px 8px;" title="View">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                                <button onclick="editCreditCustomer('{{ customer.customer_id }}')" class="btn-outline" style="font-size:0.55rem;padding:2px 8px;color:var(--primary-light);" title="Edit">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button onclick="openRecordPaymentModal('{{ customer.customer_id }}', '{{ customer.full_name }}', '{{ customer.current_balance|default(0) }}')" class="btn-success" style="font-size:0.55rem;padding:2px 8px;" title="Pay">
-                                    <i class="fas fa-money-bill-wave"></i>
-                                </button>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
+            <div style="margin-top:12px;">
+                <label class="form-label">Image URL</label>
+                <input type="url" id="prodImage" class="form-input" placeholder="https://example.com/image.jpg">
             </div>
+
+            <div style="margin-top:12px;">
+                <label class="form-label">Description</label>
+                <textarea id="prodDesc" class="form-input" rows="2" placeholder="Product description..."></textarea>
+            </div>
+
+            <div style="display:flex;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border-color);">
+                <button type="submit" class="btn-gradient">💾 Save Product</button>
+                <button type="button" onclick="showSection('products')" class="btn-outline">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- ============================================================
+     ORDERS SECTION
+     ============================================================ -->
+<div id="orders-section" class="section hidden">
+    <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:16px;">
+        <div>
+            <h2 style="font-size:1.1rem;font-weight:700;color:var(--text-primary);">📦 Orders</h2>
+            <p style="font-size:0.7rem;color:var(--text-muted);">Manage all customer orders</p>
+        </div>
+        <button onclick="loadOrders()" class="btn-outline" style="font-size:0.7rem;">
+            <i class="fas fa-sync-alt"></i> Refresh
+        </button>
+    </div>
+
+    <div class="glass-card" style="padding:0;overflow:hidden;">
+        <div class="table-wrap" style="max-height:500px;overflow-y:auto;">
+            <table>
+                <thead style="position:sticky;top:0;z-index:10;background:var(--bg-card);">
+                    <tr>
+                        <th>Order ID</th>
+                        <th style="display:none;" class="sm-table-cell">Customer</th>
+                        <th style="text-align:right;">Total</th>
+                        <th style="text-align:center;">Status</th>
+                        <th style="display:none;" class="md-table-cell">Date</th>
+                        <th style="text-align:center;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="ordersTableBody">
+                    {% for order in orders %}
+                    <tr>
+                        <td class="font-mono">#{{ (order.order_id or order.id)[:8] }}</td>
+                        <td style="display:none;" class="sm-table-cell">{{ order.customer_name or 'Customer' }}</td>
+                        <td style="text-align:right;font-weight:600;color:var(--success);">KSh {{ "%.0f"|format(order.total|default(0)) }}</td>
+                        <td style="text-align:center;">
+                            <select onchange="updateOrderStatus('{{ order.order_id }}', this.value)" 
+                                    class="badge" style="border:none;cursor:pointer;font-size:0.55rem;padding:2px 12px;background:var(--bg-input);color:var(--text-primary);">
+                                <option value="pending" {% if order.status == 'pending' %}selected{% endif %}>⏳ Pending</option>
+                                <option value="confirmed" {% if order.status == 'confirmed' %}selected{% endif %}>✅ Confirmed</option>
+                                <option value="shipped" {% if order.status == 'shipped' %}selected{% endif %}>📦 Shipped</option>
+                                <option value="delivered" {% if order.status == 'delivered' %}selected{% endif %}>🎯 Delivered</option>
+                            </select>
+                        </td>
+                        <td style="display:none;" class="md-table-cell">{{ (order.created_at or '')[:10] }}</td>
+                        <td style="text-align:center;">
+                            <button onclick="viewOrder('{{ order.order_id }}')" class="btn-outline" style="font-size:0.6rem;padding:2px 10px;">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
 
-    <!-- ============================================================
-         SUPPLIERS SECTION
+    {% if total_orders > per_page %}
+    <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-top:12px;">
+        <div style="font-size:0.65rem;color:var(--text-muted);">
+            Showing <span id="ordersStart">{{ (orders_page - 1) * per_page + 1 }}</span>
+            to <span id="ordersEnd">{{ [orders_page * per_page, total_orders]|min }}</span>
+            of <span id="ordersTotal">{{ total_orders }}</span>
+        </div>
+        <div class="pagination" id="ordersPaginationLinks">
+            {% if orders_page > 1 %}
+            <a href="javascript:void(0)" class="page-link" onclick="loadOrdersPage({{ orders_page - 1 }})"><i class="fas fa-chevron-left"></i></a>
+            {% endif %}
+            {% for p in range(1, total_order_pages + 1) %}
+                {% if p == orders_page %}
+                    <span class="page-link active">{{ p }}</span>
+                {% elif p <= orders_page + 2 and p >= orders_page - 2 %}
+                    <a href="javascript:void(0)" class="page-link" onclick="loadOrdersPage({{ p }})">{{ p }}</a>
+                {% endif %}
+            {% endfor %}
+            {% if orders_page < total_order_pages %}
+            <a href="javascript:void(0)" class="page-link" onclick="loadOrdersPage({{ orders_page + 1 }})"><i class="fas fa-chevron-right"></i></a>
+            {% endif %}
+        </div>
+    </div>
+    {% endif %}
+</div>
+
+<!-- ============================================================
+     CUSTOMERS SECTION
      ============================================================ -->
-    <div id="suppliers-section" class="section hidden">
-        <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:16px;">
+<div id="customers-section" class="section hidden">
+    <div class="glass-card" style="padding:0;overflow:hidden;">
+        <div class="table-wrap" style="max-height:500px;overflow-y:auto;">
+            <table>
+                <thead style="position:sticky;top:0;z-index:10;background:var(--bg-card);">
+                    <tr>
+                        <th>Customer</th>
+                        <th style="display:none;" class="sm-table-cell">Email</th>
+                        <th style="display:none;" class="md-table-cell">Phone</th>
+                        <th style="text-align:center;">Orders</th>
+                        <th style="text-align:right;">Total Spent</th>
+                    </tr>
+                </thead>
+                <tbody id="customersTableBody">
+                    {% if customers and customers|length > 0 %}
+                        {% for customer in customers %}
+                        <tr>
+                            <td><span style="font-weight:600;">{{ customer.name }}</span></td>
+                            <td style="display:none;" class="sm-table-cell">{{ customer.email or 'N/A' }}</td>
+                            <td style="display:none;" class="md-table-cell">{{ customer.phone or 'N/A' }}</td>
+                            <td style="text-align:center;"><span class="badge badge-info">{{ customer.orders }}</span></td>
+                            <td style="text-align:right;font-weight:600;color:var(--success);">KSh {{ "%.0f"|format(customer.total_spent|default(0)) }}</td>
+                        </tr>
+                        {% endfor %}
+                    {% else %}
+                        <tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text-muted);">No customers yet</td></tr>
+                    {% endif %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================
+     CREDIT SECTION WITH COLLECTION RATE
+     ============================================================ -->
+<div id="credit-section" class="section hidden">
+    <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:16px;">
+        <div>
+            <h2 style="font-size:1.1rem;font-weight:700;color:var(--text-primary);">💰 Credit Management</h2>
+            <p style="font-size:0.7rem;color:var(--text-muted);">Manage customers who buy on credit</p>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button onclick="showAddCreditCustomerModal()" class="btn-gradient" style="font-size:0.7rem;">➕ Add Customer</button>
+            <button onclick="refreshCreditData()" class="btn-outline" style="font-size:0.7rem;">
+                <i class="fas fa-sync-alt"></i> Refresh
+            </button>
+        </div>
+    </div>
+
+    <!-- Credit Stats -->
+    <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));">
+        <div class="stat-card-modern">
+            <div class="stat-label">Total Customers</div>
+            <div class="stat-value">{{ credit_summary.total_customers|default(0) }}</div>
+        </div>
+        <div class="stat-card-modern">
+            <div class="stat-label">Active</div>
+            <div class="stat-value" style="color:var(--success);">{{ credit_summary.active_customers|default(0) }}</div>
+        </div>
+        <div class="stat-card-modern">
+            <div class="stat-label">Outstanding</div>
+            <div class="stat-value" style="color:var(--warning);">KSh {{ credit_summary.total_balance|default(0)|int }}</div>
+        </div>
+        <div class="stat-card-modern">
+            <div class="stat-label">Overdue</div>
+            <div class="stat-value" style="color:var(--danger);">{{ overdue_count|default(0) }}</div>
+        </div>
+    </div>
+
+    <!-- Collection Rate Bar -->
+    <div class="glass-card" style="margin-bottom:16px;">
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
             <div>
-                <h2 style="font-size:1.1rem;font-weight:700;color:var(--text-primary);">🏢 Supplier Management</h2>
-                <p style="font-size:0.7rem;color:var(--text-muted);">Manage your product suppliers</p>
+                <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Collection Rate</div>
+                <div style="font-size:1.5rem;font-weight:700;" id="creditCollectionRate">
+                    {% if credit_summary.total_purchases|default(0) > 0 %}
+                        {{ ((credit_summary.total_payments|default(0) / credit_summary.total_purchases|default(1)) * 100)|round(1) }}%
+                    {% else %}
+                        0%
+                    {% endif %}
+                </div>
             </div>
-            <div style="display:flex;gap:6px;flex-wrap:wrap;">
-                <button onclick="showAddSupplierModal()" class="btn-gradient" style="font-size:0.7rem;">➕ Add Supplier</button>
-                <button onclick="showLowStockModal()" class="btn-danger" style="font-size:0.7rem;">
-                    ⚠️ Low Stock (<span id="lowStockBadge">{{ low_stock_count|default(0) }}</span>)
-                </button>
+            <div style="text-align:right;">
+                <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Total Credit Sales</div>
+                <div style="font-weight:700;">KSh {{ credit_summary.total_purchases|default(0)|int }}</div>
+            </div>
+            <div style="text-align:right;">
+                <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Total Payments</div>
+                <div style="font-weight:700;color:var(--success);">KSh {{ credit_summary.total_payments|default(0)|int }}</div>
+            </div>
+            <div style="text-align:right;">
+                <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Profit Margin</div>
+                <div style="font-weight:700;color:var(--primary-light);" id="creditProfitMargin">
+                    {% if credit_summary.total_purchases|default(0) > 0 %}
+                        {{ ((credit_summary.total_profit|default(0) / credit_summary.total_purchases|default(1)) * 100)|round(1) }}%
+                    {% else %}
+                        0%
+                    {% endif %}
+                </div>
             </div>
         </div>
-
-        <!-- Supplier Stats -->
-        <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));">
-            <div class="stat-card-modern">
-                <div class="stat-label">Total Suppliers</div>
-                <div class="stat-value">{{ supplier_summary.total_suppliers|default(0) }}</div>
-            </div>
-            <div class="stat-card-modern">
-                <div class="stat-label">Active</div>
-                <div class="stat-value" style="color:var(--success);">{{ supplier_summary.active_suppliers|default(0) }}</div>
-            </div>
-            <div class="stat-card-modern">
-                <div class="stat-label">Low Stock Items</div>
-                <div class="stat-value" style="color:var(--danger);">{{ low_stock_count|default(0) }}</div>
-            </div>
+        <div style="margin-top:8px;background:var(--bg-input);border-radius:9999px;height:8px;overflow:hidden;">
+            <div style="height:8px;border-radius:9999px;background:var(--primary-gradient);width:{% if credit_summary.total_purchases|default(0) > 0 %}{{ ((credit_summary.total_payments|default(0) / credit_summary.total_purchases|default(1)) * 100)|round(1) }}{% else %}0{% endif %}%;transition:width 0.5s ease;"></div>
         </div>
-
-        <!-- Supplier Table -->
-        <div class="glass-card" style="padding:0;overflow:hidden;margin-top:16px;">
-            <div class="table-wrap" style="max-height:500px;overflow-y:auto;">
-                <table>
-                    <thead style="position:sticky;top:0;z-index:10;background:var(--bg-card);">
-                        <tr>
-                            <th>Business Name</th>
-                            <th style="display:none;" class="sm-table-cell">Contact</th>
-                            <th style="display:none;" class="md-table-cell">Phone</th>
-                            <th style="text-align:center;">Products</th>
-                            <th style="text-align:center;">Status</th>
-                            <th style="text-align:center;">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="suppliersTableBody">
-                        {% for supplier in suppliers %}
-                        <tr>
-                            <td>
-                                <span style="font-weight:600;">{{ supplier.business_name }}</span>
-                                <div style="font-size:0.55rem;color:var(--text-muted);font-family:monospace;">{{ supplier.supplier_id }}</div>
-                            </td>
-                            <td style="display:none;" class="sm-table-cell">{{ supplier.contact_person or 'N/A' }}</td>
-                            <td style="display:none;" class="md-table-cell">{{ supplier.phone }}</td>
-                            <td style="text-align:center;font-weight:600;color:var(--info);">{{ supplier.total_products|default(0) }}</td>
-                            <td style="text-align:center;">
-                                {% if supplier.status == 'active' %}
-                                <span class="badge badge-success">Active</span>
-                                {% else %}
-                                <span class="badge badge-danger">Inactive</span>
-                                {% endif %}
-                            </td>
-                            <td style="text-align:center;">
-                                <button onclick="editSupplier('{{ supplier.supplier_id }}')" class="btn-outline" style="font-size:0.55rem;padding:2px 8px;" title="Edit">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button onclick="viewSupplier('{{ supplier.supplier_id }}')" class="btn-outline" style="font-size:0.55rem;padding:2px 8px;" title="View">
-                                    <i class="fas fa-eye"></i>
-                                </button>
-                            </td>
-                        </tr>
-                        {% endfor %}
-                    </tbody>
-                </table>
-            </div>
+        <div style="display:flex;justify-content:space-between;font-size:0.5rem;color:var(--text-muted);margin-top:4px;">
+            <span>0%</span>
+            <span style="font-weight:600;color:{% if credit_summary.total_purchases|default(0) > 0 and ((credit_summary.total_payments|default(0) / credit_summary.total_purchases|default(1)) * 100) >= 80 %}var(--success){% elif credit_summary.total_purchases|default(0) > 0 and ((credit_summary.total_payments|default(0) / credit_summary.total_purchases|default(1)) * 100) >= 50 %}var(--warning){% else %}var(--danger){% endif %};">
+                {{ ((credit_summary.total_payments|default(0) / credit_summary.total_purchases|default(1)) * 100)|round(1) }}%
+            </span>
+            <span>100%</span>
         </div>
     </div>
 
-    <!-- ============================================================
-         POS SECTION
+    <!-- Credit Table -->
+    <div class="glass-card" style="padding:0;overflow:hidden;margin-top:16px;">
+        <div class="table-wrap" style="max-height:500px;overflow-y:auto;">
+            <table>
+                <thead style="position:sticky;top:0;z-index:10;background:var(--bg-card);">
+                    <tr>
+                        <th>Customer</th>
+                        <th style="display:none;" class="sm-table-cell">Phone</th>
+                        <th style="text-align:center;">Balance</th>
+                        <th style="text-align:center;">Limit</th>
+                        <th style="text-align:center;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="creditCustomersTableBody">
+                    {% for customer in credit_customers %}
+                    <tr>
+                        <td>
+                            <span style="font-weight:600;">{{ customer.full_name }}</span>
+                            <div style="font-size:0.55rem;color:var(--text-muted);font-family:monospace;">{{ customer.customer_id }}</div>
+                        </td>
+                        <td style="display:none;" class="sm-table-cell">{{ customer.phone }}</td>
+                        <td style="text-align:center;font-weight:700;{% if customer.current_balance|default(0) > customer.credit_limit|default(0) %}color:var(--danger);{% elif customer.current_balance|default(0) > 0 %}color:var(--warning);{% else %}color:var(--success);{% endif %}">
+                            KSh {{ customer.current_balance|default(0)|int }}
+                        </td>
+                        <td style="text-align:center;color:var(--text-muted);">KSh {{ customer.credit_limit|default(0)|int }}</td>
+                        <td style="text-align:center;">
+                            <button onclick="viewCreditCustomer('{{ customer.customer_id }}')" class="btn-outline" style="font-size:0.55rem;padding:2px 8px;" title="View">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                            <button onclick="editCreditCustomer('{{ customer.customer_id }}')" class="btn-outline" style="font-size:0.55rem;padding:2px 8px;color:var(--primary-light);" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="openRecordPaymentModal('{{ customer.customer_id }}', '{{ customer.full_name }}', '{{ customer.current_balance|default(0) }}')" class="btn-success" style="font-size:0.55rem;padding:2px 8px;" title="Pay">
+                                <i class="fas fa-money-bill-wave"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================
+     SUPPLIERS SECTION
      ============================================================ -->
-    <div id="pos-section" class="section hidden">
-        <div class="glass-card" style="text-align:center;padding:40px 20px;">
-            <div style="font-size:4rem;margin-bottom:12px;">🛒</div>
-            <h3 style="font-size:1.2rem;font-weight:700;color:var(--text-primary);">Point of Sale</h3>
-            <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:16px;">Launch the full POS interface to create orders for customers.</p>
-            <a href="/admin/pos" target="_blank" class="btn-gradient green" style="font-size:0.9rem;padding:10px 32px;">
-                <i class="fas fa-cash-register"></i> Launch POS
-            </a>
-            <p style="font-size:0.6rem;color:var(--text-muted);margin-top:10px;">Opens in a new tab</p>
+<div id="suppliers-section" class="section hidden">
+    <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:16px;">
+        <div>
+            <h2 style="font-size:1.1rem;font-weight:700;color:var(--text-primary);">🏢 Supplier Management</h2>
+            <p style="font-size:0.7rem;color:var(--text-muted);">Manage your product suppliers</p>
+        </div>
+        <div style="display:flex;gap:6px;flex-wrap:wrap;">
+            <button onclick="showAddSupplierModal()" class="btn-gradient" style="font-size:0.7rem;">➕ Add Supplier</button>
+            <button onclick="showLowStockModal()" class="btn-danger" style="font-size:0.7rem;">
+                ⚠️ Low Stock (<span id="lowStockBadge">{{ low_stock_count|default(0) }}</span>)
+            </button>
         </div>
     </div>
 
-    <!-- ============================================================
-         MODALS
+    <!-- Supplier Stats -->
+    <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(140px,1fr));">
+        <div class="stat-card-modern">
+            <div class="stat-label">Total Suppliers</div>
+            <div class="stat-value">{{ supplier_summary.total_suppliers|default(0) }}</div>
+        </div>
+        <div class="stat-card-modern">
+            <div class="stat-label">Active</div>
+            <div class="stat-value" style="color:var(--success);">{{ supplier_summary.active_suppliers|default(0) }}</div>
+        </div>
+        <div class="stat-card-modern">
+            <div class="stat-label">Low Stock Items</div>
+            <div class="stat-value" style="color:var(--danger);">{{ low_stock_count|default(0) }}</div>
+        </div>
+    </div>
+
+    <!-- Supplier Table -->
+    <div class="glass-card" style="padding:0;overflow:hidden;margin-top:16px;">
+        <div class="table-wrap" style="max-height:500px;overflow-y:auto;">
+            <table>
+                <thead style="position:sticky;top:0;z-index:10;background:var(--bg-card);">
+                    <tr>
+                        <th>Business Name</th>
+                        <th style="display:none;" class="sm-table-cell">Contact</th>
+                        <th style="display:none;" class="md-table-cell">Phone</th>
+                        <th style="text-align:center;">Products</th>
+                        <th style="text-align:center;">Status</th>
+                        <th style="text-align:center;">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="suppliersTableBody">
+                    {% for supplier in suppliers %}
+                    <tr>
+                        <td>
+                            <span style="font-weight:600;">{{ supplier.business_name }}</span>
+                            <div style="font-size:0.55rem;color:var(--text-muted);font-family:monospace;">{{ supplier.supplier_id }}</div>
+                        </td>
+                        <td style="display:none;" class="sm-table-cell">{{ supplier.contact_person or 'N/A' }}</td>
+                        <td style="display:none;" class="md-table-cell">{{ supplier.phone }}</td>
+                        <td style="text-align:center;font-weight:600;color:var(--info);">{{ supplier.total_products|default(0) }}</td>
+                        <td style="text-align:center;">
+                            {% if supplier.status == 'active' %}
+                            <span class="badge badge-success">Active</span>
+                            {% else %}
+                            <span class="badge badge-danger">Inactive</span>
+                            {% endif %}
+                        </td>
+                        <td style="text-align:center;">
+                            <button onclick="editSupplier('{{ supplier.supplier_id }}')" class="btn-outline" style="font-size:0.55rem;padding:2px 8px;" title="Edit">
+                                <i class="fas fa-edit"></i>
+                            </button>
+                            <button onclick="viewSupplier('{{ supplier.supplier_id }}')" class="btn-outline" style="font-size:0.55rem;padding:2px 8px;" title="View">
+                                <i class="fas fa-eye"></i>
+                            </button>
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<!-- ============================================================
+     POS SECTION
      ============================================================ -->
-    
-    <!-- Order View Modal -->
-    <div id="orderModal" class="modal-overlay hidden" onclick="closeModal(event, 'orderModal')">
-        <div class="modal" onclick="event.stopPropagation()">
-            <button class="close" onclick="document.getElementById('orderModal').classList.add('hidden')">✕</button>
-            <div class="title">📋 Order Details</div>
-            <div id="orderDetails"></div>
-        </div>
+<div id="pos-section" class="section hidden">
+    <div class="glass-card" style="text-align:center;padding:40px 20px;">
+        <div style="font-size:4rem;margin-bottom:12px;">🛒</div>
+        <h3 style="font-size:1.2rem;font-weight:700;color:var(--text-primary);">Point of Sale</h3>
+        <p style="font-size:0.8rem;color:var(--text-muted);margin-bottom:16px;">Launch the full POS interface to create orders for customers.</p>
+        <a href="/admin/pos" target="_blank" class="btn-gradient green" style="font-size:0.9rem;padding:10px 32px;">
+            <i class="fas fa-cash-register"></i> Launch POS
+        </a>
+        <p style="font-size:0.6rem;color:var(--text-muted);margin-top:10px;">Opens in a new tab</p>
     </div>
+</div>
 
-    <!-- Edit Product Modal - FULLY WORKING -->
-    <div id="editProductModal" class="modal-overlay hidden" onclick="closeModal(event, 'editProductModal')">
-        <div class="modal" onclick="event.stopPropagation()" style="max-width:600px;">
-            <button class="close" onclick="document.getElementById('editProductModal').classList.add('hidden')">✕</button>
-            <div class="title">✏️ Edit Product</div>
-            <form id="editProductForm" onsubmit="saveEditedProduct(event)">
-                <input type="hidden" id="editProdId">
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                    <div>
-                        <label class="form-label">Product ID</label>
-                        <input type="text" id="editProdIdDisplay" class="form-input" readonly style="background:var(--bg-input);">
-                    </div>
-                    <div>
-                        <label class="form-label">Name *</label>
-                        <input type="text" id="editProdName" class="form-input" required>
-                    </div>
-                    <div>
-                        <label class="form-label">Category</label>
-                        <select id="editProdCategory" class="form-input">
-                            <option value="">Select</option>
-                            <option value="Phones">📱 Phones</option>
-                            <option value="Laptops">💻 Laptops</option>
-                            <option value="Accessories">🎧 Accessories</option>
-                            <option value="Wearables">⌚ Wearables</option>
-                            <option value="Audio">🎵 Audio</option>
-                            <option value="Gaming">🎮 Gaming</option>
-                            <option value="General">📦 General</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="form-label">Barcode</label>
-                        <input type="text" id="editProdBarcode" class="form-input">
-                    </div>
-                    <div>
-                        <label class="form-label">Price (KSh) *</label>
-                        <input type="number" id="editProdPrice" class="form-input" required>
-                    </div>
-                    <div>
-                        <label class="form-label">Stock *</label>
-                        <input type="number" id="editProdStock" class="form-input" required>
-                    </div>
-                    <div>
-                        <label class="form-label">Badge</label>
-                        <select id="editProdBadge" class="form-input">
-                            <option value="">None</option>
-                            <option value="Best Seller">⭐ Best Seller</option>
-                            <option value="New">🌟 New</option>
-                            <option value="Trending">🔥 Trending</option>
-                        </select>
-                    </div>
-                </div>
-                <div style="margin-top:10px;">
-                    <label class="form-label">Image URL</label>
-                    <input type="url" id="editProdImage" class="form-input">
-                </div>
-                <div style="margin-top:10px;">
-                    <label class="form-label">Description</label>
-                    <textarea id="editProdDesc" class="form-input" rows="2"></textarea>
-                </div>
-                <div style="display:flex;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border-color);">
-                    <button type="submit" class="btn-gradient">💾 Update Product</button>
-                    <button type="button" onclick="document.getElementById('editProductModal').classList.add('hidden')" class="btn-outline">Cancel</button>
-                </div>
-            </form>
-        </div>
+<!-- ============================================================
+     MODALS
+     ============================================================ -->
+
+<!-- Order View Modal -->
+<div id="orderModal" class="modal-overlay hidden" onclick="closeModal(event, 'orderModal')">
+    <div class="modal" onclick="event.stopPropagation()">
+        <button class="close" onclick="document.getElementById('orderModal').classList.add('hidden')">✕</button>
+        <div class="title">📋 Order Details</div>
+        <div id="orderDetails"></div>
     </div>
+</div>
 
-    <!-- Edit Credit Customer Modal - FULLY WORKING -->
-    <div id="editCreditCustomerModal" class="modal-overlay hidden" onclick="closeModal(event, 'editCreditCustomerModal')">
-        <div class="modal" onclick="event.stopPropagation()" style="max-width:500px;">
-            <button class="close" onclick="document.getElementById('editCreditCustomerModal').classList.add('hidden')">✕</button>
-            <div class="title">✏️ Edit Credit Customer</div>
-            <form id="editCreditCustomerForm" onsubmit="saveEditedCreditCustomer(event)">
-                <input type="hidden" id="editCreditCustomerId">
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                    <div>
-                        <label class="form-label">Full Name *</label>
-                        <input type="text" id="editCreditFullName" class="form-input" required>
-                    </div>
-                    <div>
-                        <label class="form-label">Phone *</label>
-                        <input type="tel" id="editCreditPhone" class="form-input" required>
-                    </div>
-                    <div>
-                        <label class="form-label">Email</label>
-                        <input type="email" id="editCreditEmail" class="form-input">
-                    </div>
-                    <div>
-                        <label class="form-label">Credit Limit</label>
-                        <input type="number" id="editCreditLimit" class="form-input" value="0">
-                    </div>
-                    <div>
-                        <label class="form-label">Status</label>
-                        <select id="editCreditStatus" class="form-input">
-                            <option value="active">✅ Active</option>
-                            <option value="inactive">❌ Inactive</option>
-                        </select>
-                    </div>
+<!-- Edit Product Modal - FIXED -->
+<div id="editProductModal" class="modal-overlay hidden" onclick="closeModal(event, 'editProductModal')">
+    <div class="modal" onclick="event.stopPropagation()" style="max-width:600px;">
+        <button class="close" onclick="document.getElementById('editProductModal').classList.add('hidden')">✕</button>
+        <div class="title">✏️ Edit Product</div>
+        <form id="editProductForm" onsubmit="saveEditedProduct(event)">
+            <input type="hidden" id="editProdId">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                <div>
+                    <label class="form-label">Product ID</label>
+                    <input type="text" id="editProdIdDisplay" class="form-input" readonly style="background:var(--bg-input);">
                 </div>
-                <div style="display:flex;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border-color);">
-                    <button type="submit" class="btn-gradient">💾 Update Customer</button>
-                    <button type="button" onclick="document.getElementById('editCreditCustomerModal').classList.add('hidden')" class="btn-outline">Cancel</button>
+                <div>
+                    <label class="form-label">Name *</label>
+                    <input type="text" id="editProdName" class="form-input" required>
                 </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Credit Customer Modal -->
-    <div id="creditCustomerModal" class="modal-overlay hidden" onclick="closeModal(event, 'creditCustomerModal')">
-        <div class="modal" onclick="event.stopPropagation()" style="max-width:500px;">
-            <button class="close" onclick="document.getElementById('creditCustomerModal').classList.add('hidden')">✕</button>
-            <div class="title" id="creditModalTitle">👤 Add Credit Customer</div>
-            <form id="creditCustomerForm" onsubmit="saveCreditCustomer(event)">
-                <input type="hidden" id="editCreditCustomerId">
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                    <div>
-                        <label class="form-label">Full Name *</label>
-                        <input type="text" id="creditFullName" class="form-input" required>
-                    </div>
-                    <div>
-                        <label class="form-label">Phone *</label>
-                        <input type="tel" id="creditPhone" class="form-input" required>
-                    </div>
-                    <div>
-                        <label class="form-label">Email</label>
-                        <input type="email" id="creditEmail" class="form-input">
-                    </div>
-                    <div>
-                        <label class="form-label">Credit Limit</label>
-                        <input type="number" id="creditLimit" class="form-input" value="0">
-                    </div>
+                <div>
+                    <label class="form-label">Category</label>
+                    <select id="editProdCategory" class="form-input">
+                        <option value="">Select</option>
+                        <option value="Phones">📱 Phones</option>
+                        <option value="Laptops">💻 Laptops</option>
+                        <option value="Accessories">🎧 Accessories</option>
+                        <option value="Wearables">⌚ Wearables</option>
+                        <option value="Audio">🎵 Audio</option>
+                        <option value="Gaming">🎮 Gaming</option>
+                        <option value="General">📦 General</option>
+                    </select>
                 </div>
-                <div style="display:flex;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border-color);">
-                    <button type="submit" class="btn-gradient">💾 Save Customer</button>
-                    <button type="button" onclick="document.getElementById('creditCustomerModal').classList.add('hidden')" class="btn-outline">Cancel</button>
+                <div>
+                    <label class="form-label">Barcode</label>
+                    <input type="text" id="editProdBarcode" class="form-input">
                 </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- Payment Modal -->
-    <div id="paymentModal" class="modal-overlay hidden" onclick="closeModal(event, 'paymentModal')">
-        <div class="modal" onclick="event.stopPropagation()" style="max-width:400px;">
-            <button class="close" onclick="document.getElementById('paymentModal').classList.add('hidden')">✕</button>
-            <div class="title">💰 Record Payment</div>
-            <form id="paymentForm" onsubmit="savePayment(event)">
-                <input type="hidden" id="paymentCustomerId">
-                <div><p style="font-weight:600;" id="paymentCustomerName">-</p><p style="font-size:0.7rem;color:var(--text-muted);">Balance: <span id="paymentCurrentBalance">KSh 0</span></p></div>
-                <div style="margin-top:10px;"><label class="form-label">Amount</label><input type="number" id="paymentAmount" class="form-input" required min="1"></div>
-                <div style="display:flex;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border-color);">
-                    <button type="submit" class="btn-success">💵 Record Payment</button>
-                    <button type="button" onclick="document.getElementById('paymentModal').classList.add('hidden')" class="btn-outline">Cancel</button>
+                <div>
+                    <label class="form-label">Price (KSh) *</label>
+                    <input type="number" id="editProdPrice" class="form-input" required>
                 </div>
-            </form>
-        </div>
-    </div>
-
-    <!-- View Credit Modal -->
-    <div id="viewCreditModal" class="modal-overlay hidden" onclick="closeModal(event, 'viewCreditModal')">
-        <div class="modal" onclick="event.stopPropagation()" style="max-width:500px;">
-            <button class="close" onclick="document.getElementById('viewCreditModal').classList.add('hidden')">✕</button>
-            <div class="title">👤 Customer Details</div>
-            <div id="viewCreditContent"></div>
-        </div>
-    </div>
-
-    <!-- Supplier Modal -->
-    <div id="supplierModal" class="modal-overlay hidden" onclick="closeModal(event, 'supplierModal')">
-        <div class="modal" onclick="event.stopPropagation()" style="max-width:500px;">
-            <button class="close" onclick="document.getElementById('supplierModal').classList.add('hidden')">✕</button>
-            <div class="title" id="modalTitle">🏢 Add Supplier</div>
-            <form id="supplierForm" onsubmit="saveSupplier(event)">
-                <input type="hidden" id="editSupplierId">
-                <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                    <div>
-                        <label class="form-label">Business Name *</label>
-                        <input type="text" id="businessName" class="form-input" required>
-                    </div>
-                    <div>
-                        <label class="form-label">Contact Person *</label>
-                        <input type="text" id="contactPerson" class="form-input" required>
-                    </div>
-                    <div>
-                        <label class="form-label">Phone *</label>
-                        <input type="tel" id="phone" class="form-input" required>
-                    </div>
-                    <div>
-                        <label class="form-label">Email</label>
-                        <input type="email" id="email" class="form-input">
-                    </div>
-                    <div>
-                        <label class="form-label">Category</label>
-                        <select id="businessCategory" class="form-input">
-                            <option value="">Select</option>
-                            <option value="Electronics">📱 Electronics</option>
-                            <option value="Furniture">🪑 Furniture</option>
-                            <option value="Clothing">👕 Clothing</option>
-                            <option value="Food">🍔 Food</option>
-                            <option value="Hardware">🔧 Hardware</option>
-                            <option value="Other">📦 Other</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="form-label">Payment Terms</label>
-                        <select id="paymentTerms" class="form-input">
-                            <option value="Net 30">Net 30</option>
-                            <option value="Net 45">Net 45</option>
-                            <option value="Cash on Delivery">Cash on Delivery</option>
-                        </select>
-                    </div>
+                <div>
+                    <label class="form-label">Cost Price (KSh)</label>
+                    <input type="number" id="editProdCost" class="form-input" value="0">
                 </div>
-                <div style="display:flex;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border-color);">
-                    <button type="submit" class="btn-gradient">💾 Save Supplier</button>
-                    <button type="button" onclick="document.getElementById('supplierModal').classList.add('hidden')" class="btn-outline">Cancel</button>
+                <div>
+                    <label class="form-label">Original Price</label>
+                    <input type="number" id="editProdOriginal" class="form-input" value="0">
                 </div>
-            </form>
-        </div>
+                <div>
+                    <label class="form-label">Stock *</label>
+                    <input type="number" id="editProdStock" class="form-input" required>
+                </div>
+                <div>
+                    <label class="form-label">Rating</label>
+                    <input type="number" id="editProdRating" class="form-input" step="0.1" value="4.5">
+                </div>
+                <div>
+                    <label class="form-label">Badge</label>
+                    <select id="editProdBadge" class="form-input">
+                        <option value="">None</option>
+                        <option value="Best Seller">⭐ Best Seller</option>
+                        <option value="New">🌟 New</option>
+                        <option value="Trending">🔥 Trending</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">Specs</label>
+                    <input type="text" id="editProdSpecs" class="form-input" placeholder="comma, separated">
+                </div>
+            </div>
+            <div style="margin-top:10px;">
+                <label class="form-label">Image URL</label>
+                <input type="url" id="editProdImage" class="form-input">
+            </div>
+            <div style="margin-top:10px;">
+                <label class="form-label">Description</label>
+                <textarea id="editProdDesc" class="form-input" rows="2"></textarea>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border-color);">
+                <button type="submit" class="btn-gradient">💾 Update Product</button>
+                <button type="button" onclick="document.getElementById('editProductModal').classList.add('hidden')" class="btn-outline">Cancel</button>
+            </div>
+        </form>
     </div>
+</div>
 
-    <!-- View Supplier Modal -->
-    <div id="viewSupplierModal" class="modal-overlay hidden" onclick="closeModal(event, 'viewSupplierModal')">
-        <div class="modal" onclick="event.stopPropagation()" style="max-width:500px;">
-            <button class="close" onclick="document.getElementById('viewSupplierModal').classList.add('hidden')">✕</button>
-            <div class="title">🏢 Supplier Details</div>
-            <div id="viewSupplierContent"></div>
-        </div>
+<!-- Credit Customer Modal -->
+<div id="creditCustomerModal" class="modal-overlay hidden" onclick="closeModal(event, 'creditCustomerModal')">
+    <div class="modal" onclick="event.stopPropagation()" style="max-width:500px;">
+        <button class="close" onclick="document.getElementById('creditCustomerModal').classList.add('hidden')">✕</button>
+        <div class="title" id="creditModalTitle">👤 Add Credit Customer</div>
+        <form id="creditCustomerForm" onsubmit="saveCreditCustomer(event)">
+            <input type="hidden" id="editCreditCustomerId">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                <div>
+                    <label class="form-label">Full Name *</label>
+                    <input type="text" id="creditFullName" class="form-input" required>
+                </div>
+                <div>
+                    <label class="form-label">Phone *</label>
+                    <input type="tel" id="creditPhone" class="form-input" required>
+                </div>
+                <div>
+                    <label class="form-label">Email</label>
+                    <input type="email" id="creditEmail" class="form-input">
+                </div>
+                <div>
+                    <label class="form-label">Credit Limit</label>
+                    <input type="number" id="creditLimit" class="form-input" value="0">
+                </div>
+            </div>
+            <div style="margin-top:10px;">
+                <label class="form-label">Current Balance</label>
+                <p id="paymentCurrentBalance" style="font-weight:600;color:var(--warning);">KSh 0</p>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border-color);">
+                <button type="submit" class="btn-gradient">💾 Save Customer</button>
+                <button type="button" onclick="closeCreditCustomerModal()" class="btn-outline">Cancel</button>
+            </div>
+        </form>
     </div>
+</div>
 
-    <!-- Low Stock Modal -->
-    <div id="lowStockModal" class="modal-overlay hidden" onclick="closeModal(event, 'lowStockModal')">
-        <div class="modal" onclick="event.stopPropagation()" style="max-width:500px;">
-            <button class="close" onclick="document.getElementById('lowStockModal').classList.add('hidden')">✕</button>
-            <div class="title">⚠️ Low Stock Items</div>
-            <div id="lowStockContent"></div>
-        </div>
+<!-- Payment Modal -->
+<div id="paymentModal" class="modal-overlay hidden" onclick="closeModal(event, 'paymentModal')">
+    <div class="modal" onclick="event.stopPropagation()" style="max-width:400px;">
+        <button class="close" onclick="document.getElementById('paymentModal').classList.add('hidden')">✕</button>
+        <div class="title">💰 Record Payment</div>
+        <form id="paymentForm" onsubmit="savePayment(event)">
+            <input type="hidden" id="paymentCustomerId">
+            <div><p style="font-weight:600;" id="paymentCustomerName">-</p><p style="font-size:0.7rem;color:var(--text-muted);">Balance: <span id="paymentCurrentBalanceDisplay">KSh 0</span></p></div>
+            <div style="margin-top:10px;"><label class="form-label">Amount</label><input type="number" id="paymentAmount" class="form-input" required min="1"></div>
+            <div style="display:flex;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border-color);">
+                <button type="submit" class="btn-success">💵 Record Payment</button>
+                <button type="button" onclick="document.getElementById('paymentModal').classList.add('hidden')" class="btn-outline">Cancel</button>
+            </div>
+        </form>
     </div>
+</div>
 
-    <!-- Toast -->
-    <div id="toast" class="toast hidden">
-        <span id="toastMessage">Success!</span>
+<!-- View Credit Modal -->
+<div id="viewCreditModal" class="modal-overlay hidden" onclick="closeModal(event, 'viewCreditModal')">
+    <div class="modal" onclick="event.stopPropagation()" style="max-width:500px;">
+        <button class="close" onclick="document.getElementById('viewCreditModal').classList.add('hidden')">✕</button>
+        <div class="title">👤 Customer Details</div>
+        <div id="viewCreditContent"></div>
     </div>
+</div>
 
+<!-- Supplier Modal -->
+<div id="supplierModal" class="modal-overlay hidden" onclick="closeModal(event, 'supplierModal')">
+    <div class="modal" onclick="event.stopPropagation()" style="max-width:500px;">
+        <button class="close" onclick="document.getElementById('supplierModal').classList.add('hidden')">✕</button>
+        <div class="title" id="modalTitle">🏢 Add Supplier</div>
+        <form id="supplierForm" onsubmit="saveSupplier(event)">
+            <input type="hidden" id="editSupplierId">
+            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+                <div>
+                    <label class="form-label">Business Name *</label>
+                    <input type="text" id="businessName" class="form-input" required>
+                </div>
+                <div>
+                    <label class="form-label">Contact Person *</label>
+                    <input type="text" id="contactPerson" class="form-input" required>
+                </div>
+                <div>
+                    <label class="form-label">Phone *</label>
+                    <input type="tel" id="phone" class="form-input" required>
+                </div>
+                <div>
+                    <label class="form-label">Email</label>
+                    <input type="email" id="email" class="form-input">
+                </div>
+                <div>
+                    <label class="form-label">Category</label>
+                    <select id="businessCategory" class="form-input">
+                        <option value="">Select</option>
+                        <option value="Electronics">📱 Electronics</option>
+                        <option value="Furniture">🪑 Furniture</option>
+                        <option value="Clothing">👕 Clothing</option>
+                        <option value="Food">🍔 Food</option>
+                        <option value="Hardware">🔧 Hardware</option>
+                        <option value="Other">📦 Other</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">Payment Terms</label>
+                    <select id="paymentTerms" class="form-input">
+                        <option value="Net 30">Net 30</option>
+                        <option value="Net 45">Net 45</option>
+                        <option value="Cash on Delivery">Cash on Delivery</option>
+                    </select>
+                </div>
+            </div>
+            <div style="display:flex;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border-color);">
+                <button type="submit" class="btn-gradient">💾 Save Supplier</button>
+                <button type="button" onclick="document.getElementById('supplierModal').classList.add('hidden')" class="btn-outline">Cancel</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<!-- View Supplier Modal -->
+<div id="viewSupplierModal" class="modal-overlay hidden" onclick="closeModal(event, 'viewSupplierModal')">
+    <div class="modal" onclick="event.stopPropagation()" style="max-width:500px;">
+        <button class="close" onclick="document.getElementById('viewSupplierModal').classList.add('hidden')">✕</button>
+        <div class="title">🏢 Supplier Details</div>
+        <div id="viewSupplierContent"></div>
+    </div>
+</div>
+
+<!-- Low Stock Modal -->
+<div id="lowStockModal" class="modal-overlay hidden" onclick="closeModal(event, 'lowStockModal')">
+    <div class="modal" onclick="event.stopPropagation()" style="max-width:500px;">
+        <button class="close" onclick="document.getElementById('lowStockModal').classList.add('hidden')">✕</button>
+        <div class="title">⚠️ Low Stock Items</div>
+        <div id="lowStockContent"></div>
+    </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="toast hidden">
+    <span id="toastMessage">Success!</span>
 </div>
 
 <!-- ============================================================
@@ -2114,14 +1663,6 @@ function showSection(sectionName) {
     const target = document.getElementById(sectionName + '-section');
     if (target) target.classList.remove('hidden');
     
-    // Update sidebar
-    document.querySelectorAll('.sidebar .nav-item').forEach(item => item.classList.remove('active'));
-    document.querySelectorAll('.sidebar .nav-item').forEach(item => {
-        if (item.getAttribute('onclick') && item.getAttribute('onclick').includes("showSection('" + sectionName + "')")) {
-            item.classList.add('active');
-        }
-    });
-    
     // Update page title
     const titles = {
         'dashboard': 'Dashboard',
@@ -2141,59 +1682,6 @@ function showSection(sectionName) {
     if (sectionName === 'analytics') setTimeout(loadAnalyticsData, 300);
     if (sectionName === 'orders') setTimeout(loadOrders, 300);
     if (sectionName === 'credit') setTimeout(updateCreditStats, 300);
-    
-    // Close sidebar on mobile
-    closeSidebar();
-}
-
-// ============================================================
-// SIDEBAR
-// ============================================================
-function closeSidebar() {
-    document.getElementById('sidebar').classList.remove('open');
-    document.getElementById('backdrop').classList.remove('active');
-}
-
-function openSidebar() {
-    document.getElementById('sidebar').classList.add('open');
-    document.getElementById('backdrop').classList.add('active');
-}
-
-function toggleSidebar() {
-    const sidebar = document.getElementById('sidebar');
-    if (sidebar.classList.contains('open')) {
-        closeSidebar();
-    } else {
-        openSidebar();
-    }
-}
-
-// ============================================================
-// DARK MODE
-// ============================================================
-function toggleDarkMode() {
-    const html = document.documentElement;
-    const isDark = html.getAttribute('data-theme') === 'dark';
-    html.setAttribute('data-theme', isDark ? 'light' : 'dark');
-    localStorage.setItem('pos-theme', isDark ? 'light' : 'dark');
-    document.getElementById('themeIcon').textContent = isDark ? '🌙' : '☀️';
-}
-
-// Load saved theme or default to light
-if (localStorage.getItem('pos-theme') === 'dark') {
-    document.documentElement.setAttribute('data-theme', 'dark');
-    document.getElementById('themeIcon').textContent = '☀️';
-} else {
-    document.documentElement.setAttribute('data-theme', 'light');
-    document.getElementById('themeIcon').textContent = '🌙';
-}
-
-// ============================================================
-// MODALS
-// ============================================================
-function closeModal(event, modalId) {
-    if (event && event.target && !event.target.classList.contains('modal-overlay')) return;
-    document.getElementById(modalId).classList.add('hidden');
 }
 
 // ============================================================
@@ -2271,9 +1759,6 @@ function updateOrderStatus(orderId, status) {
     setTimeout(loadOrders, 1000);
 }
 
-// ============================================================
-// VIEW ORDER
-// ============================================================
 function viewOrder(orderId) {
     fetch('/admin/api/order/' + orderId + '?t=' + Date.now())
         .then(r => r.json())
@@ -2462,7 +1947,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ============================================================
-// EDIT PRODUCT - FULLY WORKING
+// EDIT PRODUCT - FIXED
 // ============================================================
 function editProduct(productId) {
     console.log('✏️ Editing product:', productId);
@@ -2472,15 +1957,17 @@ function editProduct(productId) {
         return;
     }
     
-    // ✅ FIX: Force modal to open using display:flex
     const modal = document.getElementById('editProductModal');
     if (!modal) {
         showToast('❌ Modal not found', 'error');
         return;
     }
+    
+    // ✅ FIX: Force open modal with display:flex
     modal.classList.remove('hidden');
     modal.style.display = 'flex';
     modal.style.zIndex = '99999';
+    console.log('✅ Modal opened with display:flex');
     
     showToast('🔄 Loading product data...', 'info');
     
@@ -2502,10 +1989,31 @@ function editProduct(productId) {
                 document.getElementById('editProdCategory').value = p.category || '';
                 document.getElementById('editProdBarcode').value = p.barcode || '';
                 document.getElementById('editProdPrice').value = p.price || 0;
+                document.getElementById('editProdCost').value = p.cost_price || 0;
+                document.getElementById('editProdOriginal').value = p.original_price || '';
                 document.getElementById('editProdStock').value = p.stock || 0;
+                document.getElementById('editProdRating').value = p.rating || 4.5;
                 document.getElementById('editProdBadge').value = p.badge || '';
                 document.getElementById('editProdImage').value = p.image || '';
                 document.getElementById('editProdDesc').value = p.description || '';
+                document.getElementById('editProdSpecs').value = (p.specs || []).join(', ');
+                
+                // Update profit preview
+                const price = parseFloat(p.price || 0);
+                const cost = parseFloat(p.cost_price || 0);
+                const profit = price - cost;
+                const editProfitDisplay = document.getElementById('editProfitDisplay');
+                const editMarginDisplay = document.getElementById('editMarginDisplay');
+                
+                if (editProfitDisplay) {
+                    editProfitDisplay.textContent = profit > 0 ? 'KSh ' + profit.toLocaleString() : 'KSh 0';
+                    editProfitDisplay.style.color = profit > 0 ? '#16a34a' : '#6b7280';
+                }
+                if (editMarginDisplay) {
+                    const margin = price > 0 ? ((profit / price) * 100).toFixed(1) : 0;
+                    editMarginDisplay.textContent = margin + '%';
+                    editMarginDisplay.style.color = profit > 0 ? '#16a34a' : '#6b7280';
+                }
                 
                 showToast('✅ Product loaded successfully', 'success');
             } else {
@@ -2520,26 +2028,36 @@ function editProduct(productId) {
         });
 }
 
+// ============================================================
+// SAVE EDITED PRODUCT - FIXED
+// ============================================================
 function saveEditedProduct(event) {
     event.preventDefault();
-    const id = document.getElementById('editProdId').value;
+    
+    const productId = document.getElementById('editProdId').value;
     const data = {
         name: document.getElementById('editProdName').value.trim(),
         category: document.getElementById('editProdCategory').value,
-        barcode: document.getElementById('editProdBarcode').value.trim(),
         price: parseFloat(document.getElementById('editProdPrice').value) || 0,
+        cost_price: parseFloat(document.getElementById('editProdCost').value) || 0,
+        original_price: parseFloat(document.getElementById('editProdOriginal').value) || null,
         stock: parseInt(document.getElementById('editProdStock').value) || 0,
+        rating: parseFloat(document.getElementById('editProdRating').value) || 4.5,
         badge: document.getElementById('editProdBadge').value,
         image: document.getElementById('editProdImage').value.trim(),
-        description: document.getElementById('editProdDesc').value.trim()
+        description: document.getElementById('editProdDesc').value.trim(),
+        specs: document.getElementById('editProdSpecs').value.split(',').map(s => s.trim()).filter(s => s),
+        barcode: document.getElementById('editProdBarcode').value.trim() || ''
     };
     
+    console.log('📦 Updating product:', data);
+    
     if (!data.name) {
-        showToast('⚠️ Product name is required', 'warning');
+        alert('❌ Please enter a product name');
         return;
     }
     if (data.price <= 0) {
-        showToast('⚠️ Price must be greater than 0', 'warning');
+        alert('❌ Please enter a valid price');
         return;
     }
     
@@ -2550,32 +2068,31 @@ function saveEditedProduct(event) {
         btn.disabled = true;
     }
     
-    fetch('/admin/api/product/' + id, {
+    fetch('/admin/api/product/' + productId, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
     })
-    .then(r => r.json())
+    .then(response => response.json())
     .then(result => {
-        if (btn) {
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-        }
+        console.log('📥 Result:', result);
         if (result.success) {
-            showToast('✅ Product updated successfully!', 'success');
+            alert('✅ Product updated successfully!');
             document.getElementById('editProductModal').classList.add('hidden');
-            loadProductsWithFilters();
+            setTimeout(() => location.reload(), 1000);
         } else {
-            showToast('❌ Error updating product: ' + (result.message || 'Unknown error'), 'error');
+            alert('❌ ' + (result.message || 'Failed to update'));
         }
     })
     .catch(err => {
-        console.error('Error saving product:', err);
+        console.error('❌ Error:', err);
+        alert('❌ Error saving product: ' + err.message);
+    })
+    .finally(() => {
         if (btn) {
             btn.innerHTML = originalText;
             btn.disabled = false;
         }
-        showToast('❌ Error saving product', 'error');
     });
 }
 
@@ -2974,7 +2491,7 @@ function updateAdvancedCharts(data) {
 }
 
 // ============================================================
-// CREDIT FUNCTIONS - FULLY WORKING
+// CREDIT FUNCTIONS - FIXED
 // ============================================================
 
 // Show Add Credit Customer Modal
@@ -2982,33 +2499,35 @@ function showAddCreditCustomerModal() {
     document.getElementById('creditModalTitle').textContent = '👤 Add Credit Customer';
     document.getElementById('creditCustomerForm').reset();
     document.getElementById('editCreditCustomerId').value = '';
-    // ✅ FIX: Force modal open
+    
     const modal = document.getElementById('creditCustomerModal');
     modal.classList.remove('hidden');
     modal.style.display = 'flex';
     modal.style.zIndex = '99999';
 }
 
-// Edit Credit Customer - FULLY WORKING
+// Edit Credit Customer - FIXED
 function editCreditCustomer(customerId) {
     console.log('✏️ Editing credit customer:', customerId);
     
     if (!customerId) {
-        showToast('❌ No customer ID provided', 'error');
+        alert('❌ No customer ID provided');
         return;
     }
     
-    // ✅ FIX: Force modal open
-    const modal = document.getElementById('editCreditCustomerModal');
+    const modal = document.getElementById('creditCustomerModal');
     if (!modal) {
-        showToast('❌ Modal not found', 'error');
+        alert('❌ Credit customer modal not found');
         return;
     }
+    
+    // ✅ FIX: Force open modal with display:flex
     modal.classList.remove('hidden');
     modal.style.display = 'flex';
     modal.style.zIndex = '99999';
+    console.log('✅ Credit modal opened with display:flex');
     
-    showToast('🔄 Loading customer data...', 'info');
+    document.getElementById('creditModalTitle').textContent = 'Loading...';
     
     fetch('/admin/api/credit/customers/' + customerId + '?t=' + Date.now())
         .then(response => {
@@ -3018,168 +2537,165 @@ function editCreditCustomer(customerId) {
             return response.json();
         })
         .then(data => {
+            console.log('📦 Customer data:', data);
+            
             if (data.success && data.customer) {
                 const c = data.customer;
-                console.log('👤 Customer loaded:', c);
+                console.log('✅ Customer loaded:', c.full_name);
                 
-                document.getElementById('editCreditCustomerId').value = c.customer_id || '';
-                document.getElementById('editCreditFullName').value = c.full_name || '';
-                document.getElementById('editCreditPhone').value = c.phone || '';
-                document.getElementById('editCreditEmail').value = c.email || '';
-                document.getElementById('editCreditLimit').value = c.credit_limit || 0;
-                document.getElementById('editCreditStatus').value = c.account_status || 'active';
+                document.getElementById('creditModalTitle').textContent = 'Edit Credit Customer';
                 
-                showToast('✅ Customer loaded successfully', 'success');
+                // ✅ Only set fields that exist
+                document.getElementById('editCreditCustomerId').value = customerId;
+                document.getElementById('creditFullName').value = c.full_name || '';
+                document.getElementById('creditPhone').value = c.phone || '';
+                document.getElementById('creditEmail').value = c.email || '';
+                document.getElementById('creditLimit').value = c.credit_limit || 0;
+                
+                // Show current balance
+                const balanceDisplay = document.getElementById('paymentCurrentBalance');
+                if (balanceDisplay) {
+                    balanceDisplay.textContent = 'Current Balance: KSh ' + (c.current_balance || 0).toLocaleString();
+                }
+                
+                console.log('✅ Form populated!');
+                console.log('  - Name:', document.getElementById('creditFullName').value);
+                console.log('  - Phone:', document.getElementById('creditPhone').value);
+                console.log('  - Limit:', document.getElementById('creditLimit').value);
+                
+                alert('✅ Customer loaded: ' + c.full_name);
+                
             } else {
-                showToast('❌ Customer not found', 'error');
+                alert('❌ ' + (data.message || 'Customer not found'));
                 modal.classList.add('hidden');
             }
         })
-        .catch(err => {
-            console.error('Error loading customer:', err);
-            showToast('❌ Error loading customer: ' + err.message, 'error');
+        .catch(e => {
+            console.error('❌ Error:', e);
+            alert('❌ Error loading customer: ' + e.message);
             modal.classList.add('hidden');
         });
-}
-
-// Save Edited Credit Customer
-function saveEditedCreditCustomer(event) {
-    event.preventDefault();
-    const id = document.getElementById('editCreditCustomerId').value;
-    const data = {
-        full_name: document.getElementById('editCreditFullName').value.trim(),
-        phone: document.getElementById('editCreditPhone').value.trim(),
-        email: document.getElementById('editCreditEmail').value.trim(),
-        credit_limit: parseFloat(document.getElementById('editCreditLimit').value) || 0,
-        account_status: document.getElementById('editCreditStatus').value
-    };
-    
-    if (!data.full_name || !data.phone) {
-        showToast('⚠️ Name and Phone are required', 'warning');
-        return;
-    }
-    
-    const btn = document.querySelector('#editCreditCustomerForm button[type="submit"]');
-    const originalText = btn ? btn.innerHTML : 'Update';
-    if (btn) {
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
-        btn.disabled = true;
-    }
-    
-    fetch('/admin/api/credit/customers/' + id, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-    })
-    .then(r => r.json())
-    .then(result => {
-        if (btn) {
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-        }
-        if (result.success) {
-            showToast('✅ Customer updated successfully!', 'success');
-            document.getElementById('editCreditCustomerModal').classList.add('hidden');
-            updateCreditStats();
-            setTimeout(() => location.reload(), 1000);
-        } else {
-            showToast('❌ Error updating customer: ' + (result.message || 'Unknown error'), 'error');
-        }
-    })
-    .catch(err => {
-        console.error('Error updating customer:', err);
-        if (btn) {
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-        }
-        showToast('❌ Error updating customer', 'error');
-    });
 }
 
 // Save Credit Customer - WITH DUPLICATE PREVENTION
 function saveCreditCustomer(event) {
     event.preventDefault();
+    
+    const editId = document.getElementById('editCreditCustomerId')?.value || '';
+    const url = editId ? '/admin/api/credit/customers/' + editId : '/admin/api/credit/customers';
+    const method = editId ? 'PUT' : 'POST';
+    
     const data = {
-        full_name: document.getElementById('creditFullName').value.trim(),
-        phone: document.getElementById('creditPhone').value.trim(),
-        email: document.getElementById('creditEmail').value.trim(),
-        credit_limit: parseFloat(document.getElementById('creditLimit').value) || 0
+        full_name: document.getElementById('creditFullName')?.value?.trim() || '',
+        phone: document.getElementById('creditPhone')?.value?.trim() || '',
+        email: document.getElementById('creditEmail')?.value?.trim() || '',
+        credit_limit: parseFloat(document.getElementById('creditLimit')?.value) || 0
     };
     
+    console.log('💾 Saving customer data:', data);
+    
     if (!data.full_name || !data.phone) {
-        showToast('⚠️ Name and Phone are required', 'warning');
+        alert('⚠️ Full name and phone are required');
         return;
     }
     
-    // ✅ FIX: Check for duplicates before adding
-    fetch('/admin/api/credit/customers')
-        .then(r => r.json())
-        .then(result => {
-            if (result.customers) {
-                const duplicate = result.customers.find(c => 
-                    c.full_name && c.full_name.toLowerCase() === data.full_name.toLowerCase() &&
-                    c.phone === data.phone
-                );
-                
-                if (duplicate) {
-                    showToast(`⚠️ Customer "${data.full_name}" with phone "${data.phone}" already exists!`, 'warning');
-                    editCreditCustomer(duplicate.customer_id);
-                    document.getElementById('creditCustomerModal').classList.add('hidden');
-                    return;
-                }
-            }
-            
-            // No duplicate, proceed with save
-            const btn = document.querySelector('#creditCustomerForm button[type="submit"]');
-            const originalText = btn ? btn.innerHTML : 'Save';
-            if (btn) {
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
-                btn.disabled = true;
-            }
-            
-            fetch('/admin/api/credit/customers', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(data)
-            })
+    // ✅ Check for duplicates before adding (only for new customers)
+    if (method === 'POST') {
+        fetch('/admin/api/credit/customers')
             .then(r => r.json())
             .then(result => {
-                if (btn) {
-                    btn.innerHTML = originalText;
-                    btn.disabled = false;
+                if (result.customers) {
+                    const duplicate = result.customers.find(c => 
+                        c.full_name && c.full_name.toLowerCase() === data.full_name.toLowerCase() &&
+                        c.phone === data.phone
+                    );
+                    
+                    if (duplicate) {
+                        alert(`⚠️ Customer "${data.full_name}" with phone "${data.phone}" already exists!\n\nEdit the existing customer instead.`);
+                        editCreditCustomer(duplicate.customer_id);
+                        closeCreditCustomerModal();
+                        return;
+                    }
                 }
-                if (result.success) {
-                    showToast('✅ Customer added successfully!', 'success');
-                    document.getElementById('creditCustomerModal').classList.add('hidden');
-                    updateCreditStats();
-                    setTimeout(() => location.reload(), 1000);
-                } else {
-                    showToast('❌ Error adding customer: ' + (result.message || 'Unknown error'), 'error');
-                }
+                
+                // No duplicate, proceed with save
+                saveCustomerData(url, method, data);
             })
             .catch(err => {
-                console.error('Error adding customer:', err);
-                if (btn) {
-                    btn.innerHTML = originalText;
-                    btn.disabled = false;
-                }
-                showToast('❌ Error adding customer', 'error');
+                console.error('❌ Error checking duplicates:', err);
+                saveCustomerData(url, method, data);
             });
-        })
-        .catch(err => {
-            console.error('Error checking duplicates:', err);
-            showToast('❌ Error checking for duplicates', 'error');
-        });
+    } else {
+        // Editing - skip duplicate check
+        saveCustomerData(url, method, data);
+    }
+}
+
+// Helper function for saving customer data
+function saveCustomerData(url, method, data) {
+    console.log('💾 Saving customer:', data);
+    
+    const btn = document.querySelector('#creditCustomerForm button[type="submit"]');
+    const originalText = btn ? btn.innerHTML : 'Save';
+    if (btn) {
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        btn.disabled = true;
+    }
+    
+    fetch(url, {
+        method: method,
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(response => {
+        if (!response.ok) {
+            return response.text().then(text => {
+                throw new Error(text || 'Server error');
+            });
+        }
+        return response.json();
+    })
+    .then(result => {
+        if (btn) {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+        console.log('📥 Result:', result);
+        if (result.success) {
+            alert(method === 'PUT' ? '✅ Customer updated successfully!' : '✅ Customer added successfully!');
+            closeCreditCustomerModal();
+            setTimeout(() => location.reload(), 1500);
+        } else {
+            alert('❌ Error: ' + (result.message || 'Unknown error'));
+        }
+    })
+    .catch(e => {
+        console.error('❌ Error:', e);
+        if (btn) {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+        alert('❌ Error saving customer: ' + e.message);
+    });
+}
+
+// Close Credit Customer Modal - FIXED
+function closeCreditCustomerModal() {
+    const modal = document.getElementById('creditCustomerModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+    }
 }
 
 // View Credit Customer
 function viewCreditCustomer(customerId) {
-    // ✅ FIX: Force modal open
     const modal = document.getElementById('viewCreditModal');
     if (!modal) {
-        showToast('❌ Modal not found', 'error');
+        alert('❌ View credit modal not found');
         return;
     }
+    
     modal.classList.remove('hidden');
     modal.style.display = 'flex';
     modal.style.zIndex = '99999';
@@ -3227,9 +2743,10 @@ function viewCreditCustomer(customerId) {
 function openRecordPaymentModal(customerId, customerName, balance) {
     document.getElementById('paymentCustomerId').value = customerId;
     document.getElementById('paymentCustomerName').textContent = customerName || 'Customer';
-    document.getElementById('paymentCurrentBalance').textContent = 'KSh ' + parseFloat(balance || 0).toLocaleString();
+    document.getElementById('paymentCurrentBalanceDisplay').textContent = 'KSh ' + parseFloat(balance || 0).toLocaleString();
     document.getElementById('paymentAmount').value = '';
     document.getElementById('paymentModal').classList.remove('hidden');
+    document.getElementById('paymentModal').style.display = 'flex';
 }
 
 // Save Payment
@@ -3239,7 +2756,7 @@ function savePayment(event) {
     const amount = parseFloat(document.getElementById('paymentAmount').value);
     
     if (!customerId || !amount || amount <= 0) {
-        showToast('⚠️ Enter a valid amount', 'warning');
+        alert('⚠️ Enter a valid amount');
         return;
     }
     
@@ -3267,25 +2784,25 @@ function savePayment(event) {
             btn.disabled = false;
         }
         if (result.success) {
-            showToast('✅ Payment recorded successfully!', 'success');
+            alert('✅ Payment recorded successfully!');
             document.getElementById('paymentModal').classList.add('hidden');
             updateCreditStats();
             setTimeout(() => location.reload(), 1000);
         } else {
-            showToast('❌ Error recording payment: ' + (result.message || 'Unknown error'), 'error');
+            alert('❌ Error recording payment: ' + (result.message || 'Unknown error'));
         }
     })
     .catch(err => {
-        console.error('Error recording payment:', err);
+        console.error('❌ Error:', err);
         if (btn) {
             btn.innerHTML = originalText;
             btn.disabled = false;
         }
-        showToast('❌ Error recording payment', 'error');
+        alert('❌ Error recording payment: ' + err.message);
     });
 }
 
-// Update Credit Stats - INCLUDES COLLECTION RATE
+// Update Credit Stats
 function updateCreditStats() {
     fetch('/admin/api/credit/summary?t=' + Date.now())
         .then(r => r.json())
@@ -3294,52 +2811,16 @@ function updateCreditStats() {
                 const s = data.summary;
                 const totalPurchases = s.total_purchases || 0;
                 const totalPayments = s.total_payments || 0;
-                const totalProfit = s.total_profit || 0;
                 
-                // Calculate collection rate (capped at 100%)
                 let collectionRate = 0;
                 if (totalPurchases > 0) {
                     collectionRate = Math.min((totalPayments / totalPurchases) * 100, 100);
                 }
                 
-                // Calculate profit margin
-                let profitMargin = 0;
-                if (totalPurchases > 0) {
-                    profitMargin = (totalProfit / totalPurchases) * 100;
-                }
-                
-                // Update collection rate display
                 const rateEl = document.getElementById('creditCollectionRate');
                 if (rateEl) {
                     rateEl.textContent = collectionRate.toFixed(1) + '%';
-                    if (collectionRate >= 80) {
-                        rateEl.style.color = 'var(--success)';
-                    } else if (collectionRate >= 50) {
-                        rateEl.style.color = 'var(--warning)';
-                    } else {
-                        rateEl.style.color = 'var(--danger)';
-                    }
                 }
-                
-                // Update profit margin
-                const marginEl = document.getElementById('creditProfitMargin');
-                if (marginEl) {
-                    marginEl.textContent = profitMargin.toFixed(1) + '%';
-                }
-                
-                // Update the progress bar
-                const barEl = document.querySelector('#credit-section .w-full.bg-gray-200 .bg-primary-gradient');
-                if (barEl) {
-                    barEl.style.width = collectionRate + '%';
-                }
-                
-                console.log('📊 Credit Stats:', {
-                    purchases: totalPurchases,
-                    payments: totalPayments,
-                    profit: totalProfit,
-                    collectionRate: collectionRate + '%',
-                    profitMargin: profitMargin + '%'
-                });
             }
         })
         .catch(err => console.error('❌ Error updating credit stats:', err));
@@ -3359,10 +2840,16 @@ function showAddSupplierModal() {
     document.getElementById('supplierForm').reset();
     document.getElementById('editSupplierId').value = '';
     document.getElementById('supplierModal').classList.remove('hidden');
+    document.getElementById('supplierModal').style.display = 'flex';
 }
 
 function editSupplier(supplierId) {
     console.log('✏️ Editing supplier:', supplierId);
+    
+    const modal = document.getElementById('supplierModal');
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+    modal.style.zIndex = '99999';
     
     fetch('/admin/api/suppliers/' + supplierId + '?t=' + Date.now())
         .then(r => r.json())
@@ -3377,7 +2864,6 @@ function editSupplier(supplierId) {
                 document.getElementById('email').value = s.email || '';
                 document.getElementById('businessCategory').value = s.business_category || '';
                 document.getElementById('paymentTerms').value = s.payment_terms || 'Net 30';
-                document.getElementById('supplierModal').classList.remove('hidden');
                 showToast('✅ Supplier loaded', 'success');
             } else {
                 showToast('❌ Supplier not found', 'error');
@@ -3390,6 +2876,11 @@ function editSupplier(supplierId) {
 }
 
 function viewSupplier(supplierId) {
+    const modal = document.getElementById('viewSupplierModal');
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+    modal.style.zIndex = '99999';
+    
     fetch('/admin/api/suppliers/' + supplierId + '?t=' + Date.now())
         .then(r => r.json())
         .then(data => {
@@ -3408,7 +2899,6 @@ function viewSupplier(supplierId) {
                         </div>
                     </div>
                 `;
-                document.getElementById('viewSupplierModal').classList.remove('hidden');
             } else {
                 showToast('❌ Supplier not found', 'error');
             }
@@ -3477,6 +2967,7 @@ function showLowStockModal() {
         <div style="text-align:center;padding:20px;color:var(--text-muted);">Loading low stock items...</div>
     `;
     document.getElementById('lowStockModal').classList.remove('hidden');
+    document.getElementById('lowStockModal').style.display = 'flex';
     
     fetch('/admin/api/suppliers/low-stock?t=' + Date.now())
         .then(r => r.json())
@@ -3521,6 +3012,18 @@ function dismissSyncBar() {
 }
 
 // ============================================================
+// MODAL CLOSE HELPER
+// ============================================================
+function closeModal(event, modalId) {
+    if (event && event.target && !event.target.classList.contains('modal-overlay')) return;
+    const modal = document.getElementById(modalId);
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+    }
+}
+
+// ============================================================
 // LIVE TIME
 // ============================================================
 function updateLiveTime() {
@@ -3528,17 +3031,6 @@ function updateLiveTime() {
 }
 setInterval(updateLiveTime, 30000);
 updateLiveTime();
-
-// ============================================================
-// KEYBOARD SHORTCUTS
-// ============================================================
-document.addEventListener('keydown', function(e) {
-    if (e.key === 'Escape') closeSidebar();
-    if (e.ctrlKey && e.key === 'b') {
-        e.preventDefault();
-        toggleSidebar();
-    }
-});
 
 // ============================================================
 // INIT
@@ -3560,7 +3052,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 console.log('✅ AcaciaMart Admin v3.0 - Fully Working!');
-console.log('📌 Features: Edit Product, Edit Credit Customer, Collection Rate');
+console.log('📌 Features: Edit Product, Edit Credit Customer, Collection Rate, No Duplicate Sidebar');
 </script>
 
 {% endblock %}
