@@ -1,7 +1,8 @@
 import traceback
-from datetime import datetime
+from datetime import datetime, timedelta
 import json
 import requests
+import re
 
 from flask import Blueprint, flash, jsonify, redirect, render_template, request, session, url_for
 from werkzeug.utils import secure_filename
@@ -501,7 +502,7 @@ def checkout_page():
 
 
 # ============================================================
-# PLACE ORDER - FIXED (Removed shipping_distance)
+# ✅ COMPLETE FIXED PLACE ORDER - Handles everything!
 # ============================================================
 @shop_bp.route('/place-order', methods=['POST'])
 def place_order():
@@ -526,9 +527,9 @@ def place_order():
         customer_address = data.get('customer_address') or data.get('address') or 'Online Order'
 
         # Get shipping from frontend (calculated by geolocation)
-        shipping = data.get('shipping', 0)
-        total = data.get('total', 0)
-        subtotal = data.get('subtotal', 0)
+        shipping = float(data.get('shipping', 0) or 0)
+        total = float(data.get('total', 0) or 0)
+        subtotal = float(data.get('subtotal', 0) or 0)
 
         # If subtotal not sent, calculate from cart
         if subtotal == 0:
@@ -538,12 +539,12 @@ def place_order():
             for item_id, quantity in cart.items():
                 for product in products:
                     if str(product.get('id')) == str(item_id):
-                        subtotal += product.get('price', 0) * quantity
+                        subtotal += float(product.get('price', 0) or 0) * int(quantity)
                         break
                 else:
                     for bundle in bundles:
                         if str(bundle.get('id')) == str(item_id):
-                            subtotal += bundle.get('price', 0) * quantity
+                            subtotal += float(bundle.get('price', 0) or 0) * int(quantity)
                             break
 
         # Calculate total if not provided
@@ -571,34 +572,34 @@ def place_order():
             item_found = False
             for product in products:
                 if str(product.get('id')) == str(item_id):
-                    current_stock = product.get('stock', 0)
-                    if current_stock < quantity:
+                    current_stock = int(product.get('stock', 0) or 0)
+                    if current_stock < int(quantity):
                         return jsonify({
                             'success': False, 
                             'message': f'Not enough stock for {product.get("name")}. Available: {current_stock}'
                         }), 400
-                    item_total = product.get('price', 0) * quantity
+                    item_total = float(product.get('price', 0) or 0) * int(quantity)
                     order_items.append({
                         'product_id': str(item_id),
-                        'name': product.get('name', 'Product'),
-                        'price': float(product.get('price', 0)),
+                        'name': str(product.get('name', 'Product')),
+                        'price': float(product.get('price', 0) or 0),
                         'quantity': int(quantity),
                         'total': float(item_total),
                         'type': 'product',
                     })
                     item_found = True
-                    new_stock = max(0, current_stock - quantity)
+                    new_stock = max(0, current_stock - int(quantity))
                     update_product_stock(item_id, new_stock)
                     break
 
             if not item_found:
                 for bundle in bundles:
                     if str(bundle.get('id')) == str(item_id):
-                        item_total = bundle.get('price', 0) * quantity
+                        item_total = float(bundle.get('price', 0) or 0) * int(quantity)
                         order_items.append({
                             'product_id': str(item_id),
-                            'name': bundle.get('name', 'Bundle'),
-                            'price': float(bundle.get('price', 0)),
+                            'name': str(bundle.get('name', 'Bundle')),
+                            'price': float(bundle.get('price', 0) or 0),
                             'quantity': int(quantity),
                             'total': float(item_total),
                             'type': 'bundle',
@@ -612,7 +613,34 @@ def place_order():
         order_id = data.get('order_id') or f'ELEC-{datetime.utcnow().strftime("%Y%m%d%H%M%S")}'
 
         # ============================================================
-        # ✅ ORDER DATA - NO shipping_distance
+        # ✅ FIX: Handle estimated_delivery properly - convert to timestamp
+        # ============================================================
+        estimated_delivery = data.get('estimated_delivery', '')
+        
+        # If it's a string like "4-5 days", convert to a date
+        if estimated_delivery and isinstance(estimated_delivery, str):
+            # Try to parse as date if it's a date string
+            try:
+                # If it's already a date format like "2026-09-08"
+                if '-' in estimated_delivery and not estimated_delivery.lower().startswith('4-5'):
+                    # Try to parse as date
+                    dt = datetime.strptime(estimated_delivery, '%Y-%m-%d')
+                    estimated_delivery = dt.isoformat()
+                else:
+                    # It's a text description like "4-5 days" - calculate delivery date
+                    days_match = re.search(r'(\d+)\s*-?\s*(\d+)?', estimated_delivery)
+                    if days_match:
+                        days = int(days_match.group(1)) if days_match.group(1) else 3
+                        estimated_delivery = (datetime.utcnow() + timedelta(days=days)).isoformat()
+                    else:
+                        # Default to 3 days from now
+                        estimated_delivery = (datetime.utcnow() + timedelta(days=3)).isoformat()
+            except:
+                # If parsing fails, use 3 days from now
+                estimated_delivery = (datetime.utcnow() + timedelta(days=3)).isoformat()
+
+        # ============================================================
+        # ✅ ORDER DATA - NO shipping_distance (column doesn't exist)
         # ============================================================
         order_data = {
             'order_id': str(order_id),
@@ -633,8 +661,7 @@ def place_order():
                 'phone': str(customer_phone),
                 'address': str(customer_address),
             },
-            # ✅ shipping_distance REMOVED - column doesn't exist in database
-            'estimated_delivery': str(data.get('estimated_delivery', '')),
+            'estimated_delivery': estimated_delivery,
             'delivery_notes': str(data.get('delivery_notes', '')),
         }
 
@@ -737,3 +764,4 @@ def api_categories():
     all_categories.update(categories)
     
     return jsonify(all_categories)
+    
