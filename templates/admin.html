@@ -1638,64 +1638,6 @@
      ============================================================ -->
 <script>
 // ============================================================
-// TOAST NOTIFICATION - FIXED
-// ============================================================
-function showToast(msg, type) {
-    type = type || 'success';
-    console.log('🔔 Toast:', msg, type);
-    
-    // Remove old toast
-    const oldToast = document.getElementById('dynamicToast');
-    if (oldToast) {
-        oldToast.remove();
-    }
-    
-    // Create new toast
-    const toast = document.createElement('div');
-    toast.id = 'dynamicToast';
-    toast.style.position = 'fixed';
-    toast.style.bottom = '30px';
-    toast.style.left = '50%';
-    toast.style.transform = 'translateX(-50%)';
-    toast.style.padding = '12px 28px';
-    toast.style.borderRadius = '12px';
-    toast.style.color = 'white';
-    toast.style.fontWeight = '500';
-    toast.style.fontSize = '0.85rem';
-    toast.style.zIndex = '99999';
-    toast.style.boxShadow = '0 20px 60px rgba(0,0,0,0.3)';
-    toast.style.maxWidth = '90%';
-    toast.style.transition = 'all 0.3s ease';
-    toast.style.display = 'flex';
-    toast.style.alignItems = 'center';
-    toast.style.gap = '10px';
-    
-    const colors = {
-        'success': 'linear-gradient(135deg, #065f46, #047857)',
-        'error': 'linear-gradient(135deg, #991b1b, #dc2626)',
-        'info': 'linear-gradient(135deg, #1e3a5f, #2563eb)',
-        'warning': 'linear-gradient(135deg, #78350f, #d97706)'
-    };
-    toast.style.background = colors[type] || colors.success;
-    toast.textContent = msg;
-    document.body.appendChild(toast);
-    
-    // Auto dismiss
-    if (window.toastTimeout) {
-        clearTimeout(window.toastTimeout);
-    }
-    
-    window.toastTimeout = setTimeout(function() {
-        toast.style.opacity = '0';
-        setTimeout(function() {
-            if (toast.parentNode) {
-                toast.remove();
-            }
-        }, 300);
-    }, 3000);
-}
-
-// ============================================================
 // SHOW SECTION
 // ============================================================
 function showSection(sectionName) {
@@ -1831,7 +1773,7 @@ function loadOrdersPage(page) {
 }
 
 function updateOrderStatus(orderId, status) {
-    showToast('📦 Status updated to ' + status, 'info');
+    alert('📦 Status updated to ' + status);
     setTimeout(loadOrders, 1000);
 }
 
@@ -1871,10 +1813,10 @@ function viewOrder(orderId) {
                 document.getElementById('orderModal').classList.remove('hidden');
                 document.getElementById('orderModal').style.display = 'flex';
             } else {
-                showToast('❌ Order not found', 'error');
+                alert('❌ Order not found');
             }
         })
-        .catch(() => showToast('❌ Error loading order', 'error'));
+        .catch(() => alert('❌ Error loading order'));
 }
 
 // ============================================================
@@ -1922,6 +1864,7 @@ function renderProductsTable(products) {
     
     let html = '';
     products.forEach(p => {
+        // ✅ FIX: Use product_id fallback
         const productId = p.id || p.product_id || '';
         const stock = p.stock || 0;
         let stockColor = stock > 20 ? 'var(--success)' : stock > 0 ? 'var(--warning)' : 'var(--danger)';
@@ -2025,27 +1968,17 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ============================================================
-// EDIT PRODUCT - COMPLETE FIX
+// EDIT PRODUCT - BULLETPROOF PROMPT APPROACH ✅
 // ============================================================
 function editProduct(productId) {
     console.log('✏️ EDIT PRODUCT:', productId);
 
     if (!productId) {
-        showToast('❌ No product ID', 'error');
+        alert('❌ No product ID found');
         return;
     }
 
-    const modal = document.getElementById('editProductModal');
-    if (!modal) {
-        showToast('❌ Modal not found', 'error');
-        return;
-    }
-
-    // Open modal
-    modal.style.display = 'flex';
-    modal.classList.remove('hidden');
-
-    showToast('🔄 Loading...', 'info');
+    alert('🔄 Loading product... Please wait');
 
     fetch('/admin/api/product/' + encodeURIComponent(productId) + '?t=' + Date.now())
         .then(response => {
@@ -2053,90 +1986,62 @@ function editProduct(productId) {
             return response.json();
         })
         .then(data => {
+            console.log('📦 Product data:', data);
+            
             if (data.success && data.product) {
                 const p = data.product;
                 
-                document.getElementById('editProdId').value = p.id || p.product_id || productId;
-                document.getElementById('editProdIdDisplay').value = p.id || p.product_id || productId;
-                document.getElementById('editProdName').value = p.name || '';
-                document.getElementById('editProdCategory').value = p.category || '';
-                document.getElementById('editProdBarcode').value = p.barcode || '';
-                document.getElementById('editProdPrice').value = p.price || 0;
-                document.getElementById('editProdCost').value = p.cost_price || 0;
-                document.getElementById('editProdOriginal').value = p.original_price || '';
-                document.getElementById('editProdStock').value = p.stock || 0;
-                document.getElementById('editProdRating').value = p.rating || 4.5;
-                document.getElementById('editProdBadge').value = p.badge || '';
-                document.getElementById('editProdImage').value = p.image || '';
-                document.getElementById('editProdDesc').value = p.description || '';
-                document.getElementById('editProdSpecs').value = (p.specs || []).join(', ');
-
-                showToast('✅ Loaded: ' + p.name, 'success');
+                // Use prompt() to edit - SIMPLE AND ALWAYS WORKS
+                const newName = prompt('Edit Product Name:', p.name || '');
+                if (newName === null) return; // User cancelled
+                
+                const newPrice = prompt('Edit Price (KSh):', p.price || 0);
+                if (newPrice === null) return;
+                
+                const newStock = prompt('Edit Stock:', p.stock || 0);
+                if (newStock === null) return;
+                
+                const newCategory = prompt('Edit Category:', p.category || '');
+                if (newCategory === null) return;
+                
+                // Prepare data for update
+                const updateData = {
+                    name: newName || p.name,
+                    price: parseFloat(newPrice) || p.price,
+                    stock: parseInt(newStock) || p.stock,
+                    category: newCategory || p.category,
+                    barcode: p.barcode || '',
+                    cost_price: p.cost_price || 0,
+                    original_price: p.original_price || null,
+                    rating: p.rating || 4.5,
+                    badge: p.badge || '',
+                    image: p.image || '',
+                    description: p.description || '',
+                    specs: (p.specs || []).join(', ')
+                };
+                
+                // Confirm update
+                if (confirm(`✅ Update product "${updateData.name}"?\n\nPrice: KSh ${updateData.price}\nStock: ${updateData.stock}\nCategory: ${updateData.category}`)) {
+                    saveProductWithPrompt(productId, updateData);
+                }
             } else {
-                showToast('❌ Product not found', 'error');
-                modal.style.display = 'none';
+                alert('❌ Product not found');
             }
         })
         .catch(err => {
-            console.error('Error:', err);
-            showToast('❌ Error: ' + err.message, 'error');
-            modal.style.display = 'none';
+            console.error('❌ Error:', err);
+            alert('❌ Error loading product: ' + err.message);
         });
 }
 
-function closeEditModal() {
-    const modal = document.getElementById('editProductModal');
-    if (modal) {
-        modal.classList.add('hidden');
-        modal.style.display = 'none';
-    }
-}
-
 // ============================================================
-// SAVE EDITED PRODUCT
+// SAVE PRODUCT - BULLETPROOF
 // ============================================================
-function saveEditedProduct(event) {
-    event.preventDefault();
+function saveProductWithPrompt(productId, data) {
+    console.log('💾 Saving product:', productId, data);
     
-    const productId = document.getElementById('editProdId').value;
-    
-    if (!productId) {
-        showToast('❌ Missing product ID', 'error');
-        return;
-    }
-    
-    const data = {
-        name: document.getElementById('editProdName').value.trim(),
-        category: document.getElementById('editProdCategory').value,
-        price: parseFloat(document.getElementById('editProdPrice').value) || 0,
-        cost_price: parseFloat(document.getElementById('editProdCost').value) || 0,
-        original_price: parseFloat(document.getElementById('editProdOriginal').value) || null,
-        stock: parseInt(document.getElementById('editProdStock').value) || 0,
-        rating: parseFloat(document.getElementById('editProdRating').value) || 4.5,
-        badge: document.getElementById('editProdBadge').value,
-        image: document.getElementById('editProdImage').value.trim(),
-        description: document.getElementById('editProdDesc').value.trim(),
-        specs: document.getElementById('editProdSpecs').value.split(',').map(s => s.trim()).filter(s => s),
-        barcode: document.getElementById('editProdBarcode').value.trim() || ''
-    };
-    
-    console.log('📦 Updating product:', productId, data);
-    
-    if (!data.name) {
-        showToast('⚠️ Please enter a product name', 'warning');
-        return;
-    }
-    if (data.price <= 0) {
-        showToast('⚠️ Please enter a valid price', 'warning');
-        return;
-    }
-    
-    const btn = document.querySelector('#editProductForm button[type="submit"]');
-    const originalText = btn ? btn.innerHTML : 'Update';
-    if (btn) {
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
-        btn.disabled = true;
-    }
+    const btn = document.querySelector('#productForm button[type="submit"]');
+    const originalText = btn ? btn.innerHTML : 'Save';
     
     fetch('/admin/api/product/' + encodeURIComponent(productId), {
         method: 'PUT',
@@ -2145,56 +2050,62 @@ function saveEditedProduct(event) {
     })
     .then(response => response.json())
     .then(result => {
+        console.log('📥 Result:', result);
         if (result.success) {
-            showToast('✅ Product updated successfully!', 'success');
-            document.getElementById('editProductModal').classList.add('hidden');
-            document.getElementById('editProductModal').style.display = 'none';
-            setTimeout(() => {
-                if (document.getElementById('products-section') && 
-                    !document.getElementById('products-section').classList.contains('hidden')) {
-                    loadProductsWithFilters();
-                } else {
-                    location.reload();
-                }
-            }, 800);
+            alert('✅ Product updated successfully!');
+            // Reload the products list
+            if (typeof loadProductsWithFilters === 'function') {
+                loadProductsWithFilters();
+            } else {
+                location.reload();
+            }
         } else {
-            showToast('❌ ' + (result.message || 'Failed to update'), 'error');
+            alert('❌ Failed to update: ' + (result.message || 'Unknown error'));
         }
     })
     .catch(err => {
         console.error('❌ Error:', err);
-        showToast('❌ Error saving product: ' + err.message, 'error');
-    })
-    .finally(() => {
-        if (btn) {
-            btn.innerHTML = originalText;
-            btn.disabled = false;
-        }
+        alert('❌ Error saving: ' + err.message);
     });
 }
 
+// ============================================================
+// DELETE PRODUCT - BULLETPROOF
+// ============================================================
 function deleteProduct(productId) {
     if (!productId) {
-        showToast('❌ No product ID', 'error');
+        alert('❌ No product ID');
         return;
     }
-    if (!confirm('⚠️ Delete this product?')) return;
     
-    fetch('/admin/api/product/' + encodeURIComponent(productId), { method: 'DELETE' })
-        .then(r => r.json())
-        .then(result => {
-            if (result.success) {
-                showToast('✅ Product deleted', 'success');
+    if (!confirm(`⚠️ Are you sure you want to delete product ${productId}?`)) return;
+    
+    console.log('🗑️ Deleting product:', productId);
+    
+    fetch('/admin/api/product/' + encodeURIComponent(productId), { 
+        method: 'DELETE' 
+    })
+    .then(r => r.json())
+    .then(result => {
+        if (result.success) {
+            alert('✅ Product deleted successfully!');
+            if (typeof loadProductsWithFilters === 'function') {
                 loadProductsWithFilters();
             } else {
-                showToast('❌ ' + (result.message || 'Error deleting product'), 'error');
+                location.reload();
             }
-        })
-        .catch(() => showToast('❌ Error deleting product', 'error'));
+        } else {
+            alert('❌ Failed to delete: ' + (result.message || 'Unknown error'));
+        }
+    })
+    .catch(err => {
+        console.error('❌ Error:', err);
+        alert('❌ Error deleting: ' + err.message);
+    });
 }
 
 // ============================================================
-// SAVE PRODUCT
+// SAVE PRODUCT (Add New)
 // ============================================================
 function saveProduct(event) {
     event.preventDefault();
@@ -2211,14 +2122,14 @@ function saveProduct(event) {
     };
     
     if (!data.id || !data.name || !data.category || data.price <= 0) {
-        showToast('⚠️ Please fill all required fields', 'warning');
+        alert('⚠️ Please fill all required fields');
         return;
     }
     
     const btn = document.querySelector('#productForm button[type="submit"]');
     const originalText = btn ? btn.innerHTML : 'Save';
     if (btn) {
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        btn.innerHTML = '⏳ Saving...';
         btn.disabled = true;
     }
     
@@ -2234,12 +2145,12 @@ function saveProduct(event) {
             btn.disabled = false;
         }
         if (result.success) {
-            showToast('✅ Product added successfully!', 'success');
+            alert('✅ Product added successfully!');
             document.getElementById('productForm').reset();
             showSection('products');
             loadProductsWithFilters();
         } else {
-            showToast('❌ Error adding product: ' + (result.message || 'Unknown error'), 'error');
+            alert('❌ Error adding product: ' + (result.message || 'Unknown error'));
         }
     })
     .catch(err => {
@@ -2248,7 +2159,7 @@ function saveProduct(event) {
             btn.innerHTML = originalText;
             btn.disabled = false;
         }
-        showToast('❌ Error saving product', 'error');
+        alert('❌ Error saving product');
     });
 }
 
@@ -2527,7 +2438,7 @@ function loadAnalyticsData() {
         })
         .catch(err => {
             console.error('❌ Error loading analytics:', err);
-            showToast('❌ Error loading analytics', 'error');
+            alert('❌ Error loading analytics');
         });
 }
 
@@ -2592,8 +2503,8 @@ function updateCategoryLegend(categories) {
 }
 
 function exportAnalyticsCSV() {
-    showToast('📊 Exporting analytics...', 'info');
-    setTimeout(() => showToast('✅ Export complete!', 'success'), 1500);
+    alert('📊 Exporting analytics...');
+    setTimeout(() => alert('✅ Export complete!'), 1500);
 }
 
 // ============================================================
@@ -2617,20 +2528,19 @@ function editCreditCustomer(customerId) {
     console.log('✏️ Editing credit customer:', customerId);
     
     if (!customerId) {
-        showToast('❌ No customer ID provided', 'error');
+        alert('❌ No customer ID provided');
         return;
     }
     
     const modal = document.getElementById('creditCustomerModal');
     if (!modal) {
-        showToast('❌ Credit customer modal not found', 'error');
+        alert('❌ Credit customer modal not found');
         return;
     }
     
     modal.classList.remove('hidden');
     modal.style.display = 'flex';
     modal.style.zIndex = '99999';
-    console.log('✅ Credit modal opened');
     
     document.getElementById('creditModalTitle').textContent = 'Loading...';
     
@@ -2646,7 +2556,6 @@ function editCreditCustomer(customerId) {
             
             if (data.success && data.customer) {
                 const c = data.customer;
-                console.log('✅ Customer loaded:', c.full_name);
                 
                 document.getElementById('creditModalTitle').textContent = 'Edit Credit Customer';
                 document.getElementById('editCreditCustomerId').value = customerId;
@@ -2660,15 +2569,15 @@ function editCreditCustomer(customerId) {
                     balanceDisplay.textContent = 'Current Balance: KSh ' + (c.current_balance || 0).toLocaleString();
                 }
                 
-                showToast('✅ Customer loaded: ' + c.full_name, 'success');
+                alert('✅ Customer loaded: ' + c.full_name);
             } else {
-                showToast('❌ ' + (data.message || 'Customer not found'), 'error');
+                alert('❌ ' + (data.message || 'Customer not found'));
                 modal.classList.add('hidden');
             }
         })
         .catch(e => {
             console.error('❌ Error:', e);
-            showToast('❌ Error loading customer: ' + e.message, 'error');
+            alert('❌ Error loading customer: ' + e.message);
             modal.classList.add('hidden');
         });
 }
@@ -2690,7 +2599,7 @@ function saveCreditCustomer(event) {
     console.log('💾 Saving customer data:', data);
     
     if (!data.full_name || !data.phone) {
-        showToast('⚠️ Full name and phone are required', 'warning');
+        alert('⚠️ Full name and phone are required');
         return;
     }
     
@@ -2705,7 +2614,7 @@ function saveCreditCustomer(event) {
                     );
                     
                     if (duplicate) {
-                        showToast(`⚠️ Customer "${data.full_name}" already exists!`, 'warning');
+                        alert(`⚠️ Customer "${data.full_name}" already exists!`);
                         editCreditCustomer(duplicate.customer_id);
                         closeCreditCustomerModal();
                         return;
@@ -2728,7 +2637,7 @@ function saveCustomerData(url, method, data) {
     const btn = document.querySelector('#creditCustomerForm button[type="submit"]');
     const originalText = btn ? btn.innerHTML : 'Save';
     if (btn) {
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        btn.innerHTML = '⏳ Saving...';
         btn.disabled = true;
     }
     
@@ -2752,11 +2661,11 @@ function saveCustomerData(url, method, data) {
         }
         console.log('📥 Result:', result);
         if (result.success) {
-            showToast(method === 'PUT' ? '✅ Customer updated successfully!' : '✅ Customer added successfully!', 'success');
+            alert(method === 'PUT' ? '✅ Customer updated successfully!' : '✅ Customer added successfully!');
             closeCreditCustomerModal();
             setTimeout(() => location.reload(), 1500);
         } else {
-            showToast('❌ Error: ' + (result.message || 'Unknown error'), 'error');
+            alert('❌ Error: ' + (result.message || 'Unknown error'));
         }
     })
     .catch(e => {
@@ -2765,7 +2674,7 @@ function saveCustomerData(url, method, data) {
             btn.innerHTML = originalText;
             btn.disabled = false;
         }
-        showToast('❌ Error saving customer: ' + e.message, 'error');
+        alert('❌ Error saving customer: ' + e.message);
     });
 }
 
@@ -2780,7 +2689,7 @@ function closeCreditCustomerModal() {
 function viewCreditCustomer(customerId) {
     const modal = document.getElementById('viewCreditModal');
     if (!modal) {
-        showToast('❌ View credit modal not found', 'error');
+        alert('❌ View credit modal not found');
         return;
     }
     
@@ -2843,14 +2752,14 @@ function savePayment(event) {
     const amount = parseFloat(document.getElementById('paymentAmount').value);
     
     if (!customerId || !amount || amount <= 0) {
-        showToast('⚠️ Enter a valid amount', 'warning');
+        alert('⚠️ Enter a valid amount');
         return;
     }
     
     const btn = document.querySelector('#paymentForm button[type="submit"]');
     const originalText = btn ? btn.innerHTML : 'Record';
     if (btn) {
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        btn.innerHTML = '⏳ Saving...';
         btn.disabled = true;
     }
     
@@ -2871,12 +2780,12 @@ function savePayment(event) {
             btn.disabled = false;
         }
         if (result.success) {
-            showToast('✅ Payment recorded successfully!', 'success');
+            alert('✅ Payment recorded successfully!');
             document.getElementById('paymentModal').classList.add('hidden');
             updateCreditStats();
             setTimeout(() => location.reload(), 1000);
         } else {
-            showToast('❌ Error recording payment: ' + (result.message || 'Unknown error'), 'error');
+            alert('❌ Error recording payment: ' + (result.message || 'Unknown error'));
         }
     })
     .catch(err => {
@@ -2885,7 +2794,7 @@ function savePayment(event) {
             btn.innerHTML = originalText;
             btn.disabled = false;
         }
-        showToast('❌ Error recording payment: ' + err.message, 'error');
+        alert('❌ Error recording payment: ' + err.message);
     });
 }
 
@@ -2913,7 +2822,7 @@ function updateCreditStats() {
 }
 
 function refreshCreditData() {
-    showToast('🔄 Refreshing credit data...', 'info');
+    alert('🔄 Refreshing credit data...');
     updateCreditStats();
     setTimeout(() => location.reload(), 1000);
 }
@@ -2952,14 +2861,14 @@ function editSupplier(supplierId) {
                 document.getElementById('email').value = s.email || '';
                 document.getElementById('businessCategory').value = s.business_category || '';
                 document.getElementById('paymentTerms').value = s.payment_terms || 'Net 30';
-                showToast('✅ Supplier loaded', 'success');
+                alert('✅ Supplier loaded');
             } else {
-                showToast('❌ Supplier not found', 'error');
+                alert('❌ Supplier not found');
             }
         })
         .catch(err => {
             console.error('Error loading supplier:', err);
-            showToast('❌ Error loading supplier', 'error');
+            alert('❌ Error loading supplier');
         });
 }
 
@@ -2990,10 +2899,10 @@ function viewSupplier(supplierId) {
                     </div>
                 `;
             } else {
-                showToast('❌ Supplier not found', 'error');
+                alert('❌ Supplier not found');
             }
         })
-        .catch(() => showToast('❌ Error loading supplier', 'error'));
+        .catch(() => alert('❌ Error loading supplier'));
 }
 
 function saveSupplier(event) {
@@ -3009,7 +2918,7 @@ function saveSupplier(event) {
     };
     
     if (!data.business_name || !data.contact_person || !data.phone) {
-        showToast('⚠️ Business Name, Contact Person and Phone are required', 'warning');
+        alert('⚠️ Business Name, Contact Person and Phone are required');
         return;
     }
     
@@ -3020,7 +2929,7 @@ function saveSupplier(event) {
     const btn = document.querySelector('#supplierForm button[type="submit"]');
     const originalText = btn ? btn.innerHTML : 'Save';
     if (btn) {
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        btn.innerHTML = '⏳ Saving...';
         btn.disabled = true;
     }
     
@@ -3036,11 +2945,11 @@ function saveSupplier(event) {
             btn.disabled = false;
         }
         if (result.success) {
-            showToast('✅ Supplier saved successfully!', 'success');
+            alert('✅ Supplier saved successfully!');
             document.getElementById('supplierModal').classList.add('hidden');
             setTimeout(() => location.reload(), 1000);
         } else {
-            showToast('❌ Error saving supplier: ' + (result.message || 'Unknown error'), 'error');
+            alert('❌ Error saving supplier: ' + (result.message || 'Unknown error'));
         }
     })
     .catch(err => {
@@ -3049,7 +2958,7 @@ function saveSupplier(event) {
             btn.innerHTML = originalText;
             btn.disabled = false;
         }
-        showToast('❌ Error saving supplier', 'error');
+        alert('❌ Error saving supplier');
     });
 }
 
@@ -3091,9 +3000,9 @@ function showLowStockModal() {
 // SYNC FUNCTIONS
 // ============================================================
 function syncOfflineOrdersFromDashboard() {
-    showToast('🔄 Syncing offline orders...', 'info');
+    alert('🔄 Syncing offline orders...');
     setTimeout(() => {
-        showToast('✅ All orders synced!', 'success');
+        alert('✅ All orders synced!');
         document.getElementById('syncStatusBar').style.display = 'none';
     }, 2000);
 }
@@ -3123,7 +3032,7 @@ document.addEventListener('DOMContentLoaded', function() {
     updateCreditStats();
 });
 
-console.log('✅ AcaciaMart Admin - Fixed!');
+console.log('✅ AcaciaMart Admin - Bulletproof Version!');
 </script>
 
 {% endblock %}
