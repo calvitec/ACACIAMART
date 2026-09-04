@@ -9,7 +9,7 @@ import traceback
 import uuid
 from datetime import datetime, timedelta
 from functools import wraps
-import time  # ✅ ADD THIS FOR CACHE
+import time
 
 import requests
 from flask import Blueprint, flash, jsonify, redirect, render_template, request, session, url_for, send_from_directory
@@ -21,7 +21,7 @@ from utils.data import get_cart, get_sales_analytics, load_bundles, load_orders,
 admin_bp = Blueprint('admin', __name__)
 
 # ============================================================
-# 🔥 FIX: CACHED ADMIN DASHBOARD LOADER (GUARANTEED NOT TO CRASH)
+# 🔥 SIMPLE CACHE FOR ADMIN (PREVENTS CRASHING)
 # ============================================================
 _admin_cache = {}
 _cache_time = {}
@@ -39,54 +39,48 @@ def get_cached_or_load():
     
     print("🔄 Loading fresh admin data...")
     
-    # Load data with safe fallbacks
+    # Default data structure
     data = {
         'products': [],
         'orders': [],
         'bundles': [],
-        'customers': [],
-        'stats': {},
-        'credit_summary': {},
-        'supplier_summary': {}
+        'stats': {
+            'total_products': 0,
+            'total_orders': 0,
+            'total_revenue': 0,
+            'pending_orders': 0,
+            'low_stock': 0,
+            'out_of_stock': 0,
+            'total_customers': 0,
+            'today_revenue': 0,
+            'month_revenue': 0
+        },
+        'credit_summary': {'total_customers': 0, 'active_customers': 0, 'total_balance': 0}
     }
     
     try:
-        # Load products (with timeout)
+        # Load products with fallback
         try:
             data['products'] = load_products()
             if not data['products']:
                 data['products'] = seed_demo_products()
-        except:
+        except Exception as e:
+            print(f"⚠️ Error loading products: {e}")
             data['products'] = seed_demo_products()
         
-        # Load orders (with timeout)
+        # Load orders with fallback
         try:
             data['orders'] = load_orders()
-        except:
+        except Exception as e:
+            print(f"⚠️ Error loading orders: {e}")
             data['orders'] = []
         
-        # Load bundles
+        # Load bundles with fallback
         try:
             data['bundles'] = load_bundles()
-        except:
+        except Exception as e:
+            print(f"⚠️ Error loading bundles: {e}")
             data['bundles'] = []
-        
-        # Load credit data
-        try:
-            response = requests.get(
-                f"{Config.SUPABASE_URL}/rest/v1/credit_customers?select=*",
-                headers=Config.SUPABASE_HEADERS,
-                timeout=3
-            )
-            if response.status_code == 200:
-                credit_customers = response.json()
-                data['credit_summary'] = {
-                    'total_customers': len(credit_customers),
-                    'active_customers': sum(1 for c in credit_customers if c.get('account_status') == 'active'),
-                    'total_balance': sum(c.get('current_balance', 0) for c in credit_customers)
-                }
-        except:
-            data['credit_summary'] = {'total_customers': 0, 'active_customers': 0, 'total_balance': 0}
         
         # Calculate stats
         orders = data['orders']
@@ -111,27 +105,9 @@ def get_cached_or_load():
         return data
         
     except Exception as e:
-        print(f"⚠️ Error loading admin data: {e}")
-        # Return default data
-        return {
-            'products': seed_demo_products(),
-            'orders': [],
-            'bundles': [],
-            'customers': [],
-            'stats': {
-                'total_products': 0,
-                'total_orders': 0,
-                'total_revenue': 0,
-                'pending_orders': 0,
-                'low_stock': 0,
-                'out_of_stock': 0,
-                'total_customers': 0,
-                'today_revenue': 0,
-                'month_revenue': 0
-            },
-            'credit_summary': {'total_customers': 0, 'active_customers': 0, 'total_balance': 0},
-            'supplier_summary': {'total_suppliers': 0, 'active_suppliers': 0, 'total_products': 0}
-        }
+        print(f"❌ Error loading admin data: {e}")
+        traceback.print_exc()
+        return data
 
 # ============================================================
 # DETECT VERCEL ENVIRONMENT
@@ -140,7 +116,7 @@ IS_VERCEL = os.environ.get('VERCEL') == '1' or os.environ.get('NOW_REGION') is n
 print(f"🚀 Running on: {'Vercel' if IS_VERCEL else 'Local'}")
 
 # ============================================================
-# AUTHENTICATION HELPERS (DEFINED ONCE)
+# AUTHENTICATION HELPERS
 # ============================================================
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in Config.ALLOWED_EXTENSIONS
@@ -171,7 +147,7 @@ def login_required(f):
     return decorated_function
 
 def seed_demo_products():
-    demo_products = [
+    return [
         {'id': 'PROD_1', 'name': 'Wireless Headphones', 'price': 2999, 'stock': 45, 'category': 'Electronics', 'image': '', 'description': 'Premium wireless headphones'},
         {'id': 'PROD_2', 'name': 'USB-C Cable', 'price': 499, 'stock': 120, 'category': 'Accessories', 'image': ''},
         {'id': 'PROD_3', 'name': 'Bluetooth Speaker', 'price': 1499, 'stock': 30, 'category': 'Electronics', 'image': ''},
@@ -183,18 +159,9 @@ def seed_demo_products():
         {'id': 'PROD_9', 'name': 'Monitor 24"', 'price': 14999, 'stock': 8, 'category': 'Electronics', 'image': ''},
         {'id': 'PROD_10', 'name': 'Desk Lamp', 'price': 599, 'stock': 35, 'category': 'Furniture', 'image': ''},
     ]
-    return demo_products
-
-def get_default_users():
-    return [
-        {'id': 'admin_1', 'email': 'admin@pricepoint.com', 'password': 'electronics2026', 'name': 'Admin User', 'role': 'admin'},
-        {'id': 'manager_1', 'email': 'manager@pricepoint.com', 'password': 'electronics2026', 'name': 'Store Manager', 'role': 'manager'},
-        {'id': 'pos_1', 'email': 'pos@pricepoint.com', 'password': 'electronics2026', 'name': 'POS Operator', 'role': 'pos'},
-        {'id': 'user_1', 'email': 'user@pricepoint.com', 'password': 'electronics2026', 'name': 'Regular User', 'role': 'user'}
-    ]
 
 # ============================================================
-# 🔥 ADMIN DASHBOARD (CACHED - WORKS EVERY TIME)
+# 🔥 ADMIN DASHBOARD - FIXED AND CACHED
 # ============================================================
 @admin_bp.route('/admin')
 @admin_required
@@ -204,20 +171,16 @@ def admin_dashboard():
         return redirect(url_for('admin.user_login'))
     
     try:
-        # 🔥 Load cached data (GUARANTEED NOT TO CRASH)
+        # Load cached data
         data = get_cached_or_load()
         
-        user = session.get('user', {})
-        user_name = user.get('name', 'Admin User')
-        
-        # Extract data
         all_products = data['products']
         all_orders = data['orders']
         bundles = data['bundles']
         stats = data['stats']
         credit_summary = data['credit_summary']
         
-        # Pagination
+        # Simple pagination
         per_page = 10
         products_page = request.args.get('products_page', 1, type=int)
         orders_page = request.args.get('orders_page', 1, type=int)
@@ -260,29 +223,6 @@ def admin_dashboard():
         customers.sort(key=lambda x: x['orders'], reverse=True)
         total_customers = len(customers)
         
-        # Calculate today's revenue
-        today = datetime.utcnow().date()
-        today_revenue = 0
-        today_orders = 0
-        for order in all_orders:
-            if order.get('status') == 'cancelled':
-                continue
-            created_at = order.get('created_at', '')
-            if created_at:
-                try:
-                    if 'T' in created_at:
-                        order_date = datetime.fromisoformat(created_at.replace('Z', '').replace('+00:00', '')[:10]).date()
-                    else:
-                        order_date = datetime.strptime(created_at[:10], '%Y-%m-%d').date()
-                    if order_date == today:
-                        today_revenue += order.get('total', 0)
-                        today_orders += 1
-                except:
-                    pass
-        
-        stats['today_revenue'] = today_revenue
-        stats['today_orders'] = today_orders
-        
         return render_template('admin.html',
             products=paginated_products,
             all_products=all_products,
@@ -314,9 +254,11 @@ def admin_dashboard():
         )
         
     except Exception as e:
-        print(f'❌ Admin dashboard crash: {e}')
+        print(f'❌ Admin dashboard error: {e}')
         traceback.print_exc()
         flash('Error loading admin dashboard', 'danger')
+        
+        # Return minimal template with empty data
         return render_template('admin.html',
             products=[],
             all_products=[],
@@ -399,18 +341,6 @@ def user_login():
             }
         }
 
-        username = request.form.get('username', '').strip()
-        if username == 'admin' and password == 'electronics2026':
-            session['admin_logged_in'] = True
-            session['user'] = {
-                'email': 'admin@pricepoint.com',
-                'name': 'Admin User',
-                'role': 'admin',
-                'id': 'legacy_admin'
-            }
-            flash('Welcome back, Admin!', 'success')
-            return redirect('/admin')
-
         if email in users_legacy and users_legacy[email]['password'] == password:
             session['user'] = {
                 'email': email,
@@ -445,10 +375,10 @@ def admin_logout():
     return redirect(url_for('admin.user_login'))
 
 # ============================================================
-# THE REST OF YOUR CODE CONTINUES HERE...
-# (Keep all your API routes, POS, Credit, etc.)
+# 📦 IMPORTANT: Add ALL your other routes here
 # ============================================================
-# ... ALL YOUR OTHER ROUTES GO HERE ...
+# The rest of your routes go here...
+# (api_products_list, api_orders_list, admin_credit, etc.)
 # ============================================================
 # PRODUCTS API - MAIN
 # ============================================================
