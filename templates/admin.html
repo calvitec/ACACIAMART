@@ -1644,13 +1644,15 @@ function showToast(msg, type) {
     type = type || 'success';
     console.log('🔔 Toast:', msg, type);
     
-    const oldToast = document.getElementById('toast');
+    // Remove old toast
+    const oldToast = document.getElementById('dynamicToast');
     if (oldToast) {
         oldToast.remove();
     }
     
+    // Create new toast
     const toast = document.createElement('div');
-    toast.id = 'toast';
+    toast.id = 'dynamicToast';
     toast.style.position = 'fixed';
     toast.style.bottom = '30px';
     toast.style.left = '50%';
@@ -1678,6 +1680,7 @@ function showToast(msg, type) {
     toast.textContent = msg;
     document.body.appendChild(toast);
     
+    // Auto dismiss
     if (window.toastTimeout) {
         clearTimeout(window.toastTimeout);
     }
@@ -1702,7 +1705,6 @@ function showSection(sectionName) {
     const target = document.getElementById(sectionName + '-section');
     if (target) target.classList.remove('hidden');
     
-    // Update page title
     const titles = {
         'dashboard': 'Dashboard',
         'orders': 'Orders',
@@ -1717,7 +1719,6 @@ function showSection(sectionName) {
     const titleEl = document.getElementById('pageTitle');
     if (titleEl) titleEl.innerHTML = titles[sectionName] || 'Dashboard';
     
-    // Load data when section is shown
     if (sectionName === 'products') setTimeout(loadProductsWithFilters, 300);
     if (sectionName === 'analytics') setTimeout(loadAnalyticsData, 300);
     if (sectionName === 'orders') setTimeout(loadOrders, 300);
@@ -1921,7 +1922,6 @@ function renderProductsTable(products) {
     
     let html = '';
     products.forEach(p => {
-        // ✅ FIX: Use product_id fallback like your orders code
         const productId = p.id || p.product_id || '';
         const stock = p.stock || 0;
         let stockColor = stock > 20 ? 'var(--success)' : stock > 0 ? 'var(--warning)' : 'var(--danger)';
@@ -2025,134 +2025,65 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ============================================================
-// EDIT PRODUCT - COMPLETE FIX ✅✅✅
+// EDIT PRODUCT - COMPLETE FIX
 // ============================================================
 function editProduct(productId) {
-    console.log('✏️✏️✏️ EDIT PRODUCT:', productId);
-    
+    console.log('✏️ EDIT PRODUCT:', productId);
+
     if (!productId) {
-        showToast('❌ No product ID provided', 'error');
+        showToast('❌ No product ID', 'error');
         return;
     }
-    
-    // Get the existing modal from HTML
-    let modal = document.getElementById('editProductModal');
-    
+
+    const modal = document.getElementById('editProductModal');
     if (!modal) {
-        showToast('❌ Edit modal not found in HTML', 'error');
+        showToast('❌ Modal not found', 'error');
         return;
     }
-    
-    // ✅ FORCE OPEN the modal - using display:flex
+
+    // Open modal
     modal.style.display = 'flex';
-    modal.style.position = 'fixed';
-    modal.style.top = '0';
-    modal.style.left = '0';
-    modal.style.right = '0';
-    modal.style.bottom = '0';
-    modal.style.backgroundColor = 'rgba(0,0,0,0.6)';
-    modal.style.zIndex = '99999';
-    modal.style.alignItems = 'center';
-    modal.style.justifyContent = 'center';
-    modal.style.padding = '20px';
-    modal.style.visibility = 'visible';
-    modal.style.opacity = '1';
-    modal.style.backdropFilter = 'blur(4px)';
     modal.classList.remove('hidden');
-    
-    // Make sure modal content is visible
-    const modalContent = modal.querySelector('.modal');
-    if (modalContent) {
-        modalContent.style.display = 'block';
-        modalContent.style.background = 'white';
-        modalContent.style.borderRadius = '16px';
-        modalContent.style.padding = '28px';
-        modalContent.style.maxWidth = '600px';
-        modalContent.style.width = '100%';
-        modalContent.style.maxHeight = '90vh';
-        modalContent.style.overflowY = 'auto';
-        modalContent.style.position = 'relative';
-        modalContent.style.boxShadow = '0 20px 60px rgba(0,0,0,0.3)';
-    }
-    
-    console.log('✅ Modal forced open');
-    showToast('🔄 Loading product...', 'info');
-    
-    // Clear stale values
-    const fieldIds = [
-        'editProdId', 'editProdIdDisplay', 'editProdName', 'editProdCategory',
-        'editProdBarcode', 'editProdPrice', 'editProdCost', 'editProdOriginal',
-        'editProdStock', 'editProdRating', 'editProdBadge', 'editProdImage',
-        'editProdDesc', 'editProdSpecs'
-    ];
-    fieldIds.forEach(id => {
-        const el = document.getElementById(id);
-        if (el) el.value = '';
-    });
-    
+
+    showToast('🔄 Loading...', 'info');
+
     fetch('/admin/api/product/' + encodeURIComponent(productId) + '?t=' + Date.now())
         .then(response => {
-            if (!response.ok) {
-                throw new Error('HTTP ' + response.status);
-            }
+            if (!response.ok) throw new Error('HTTP ' + response.status);
             return response.json();
         })
         .then(data => {
-            console.log('📦 Product data:', data);
-            
             if (data.success && data.product) {
                 const p = data.product;
-                console.log('✅ Product loaded:', p.name);
                 
-                // Resolve ID with fallback
-                const resolvedId = p.id || p.product_id || productId;
-                
-                // Populate all fields
-                const fields = {
-                    'editProdId': resolvedId,
-                    'editProdIdDisplay': resolvedId,
-                    'editProdName': p.name || '',
-                    'editProdCategory': p.category || '',
-                    'editProdBarcode': p.barcode || '',
-                    'editProdPrice': p.price || 0,
-                    'editProdCost': p.cost_price || 0,
-                    'editProdOriginal': p.original_price || '',
-                    'editProdStock': p.stock || 0,
-                    'editProdRating': p.rating || 4.5,
-                    'editProdBadge': p.badge || '',
-                    'editProdImage': p.image || '',
-                    'editProdDesc': p.description || '',
-                    'editProdSpecs': (p.specs || []).join(', ')
-                };
-                
-                let count = 0;
-                Object.keys(fields).forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) {
-                        el.value = fields[id];
-                        count++;
-                        console.log(`  ✅ Set ${id} = ${fields[id]}`);
-                    } else {
-                        console.log(`  ⚠️ ${id} not found`);
-                    }
-                });
-                
-                console.log(`✅ Form populated with ${count} fields`);
+                document.getElementById('editProdId').value = p.id || p.product_id || productId;
+                document.getElementById('editProdIdDisplay').value = p.id || p.product_id || productId;
+                document.getElementById('editProdName').value = p.name || '';
+                document.getElementById('editProdCategory').value = p.category || '';
+                document.getElementById('editProdBarcode').value = p.barcode || '';
+                document.getElementById('editProdPrice').value = p.price || 0;
+                document.getElementById('editProdCost').value = p.cost_price || 0;
+                document.getElementById('editProdOriginal').value = p.original_price || '';
+                document.getElementById('editProdStock').value = p.stock || 0;
+                document.getElementById('editProdRating').value = p.rating || 4.5;
+                document.getElementById('editProdBadge').value = p.badge || '';
+                document.getElementById('editProdImage').value = p.image || '';
+                document.getElementById('editProdDesc').value = p.description || '';
+                document.getElementById('editProdSpecs').value = (p.specs || []).join(', ');
+
                 showToast('✅ Loaded: ' + p.name, 'success');
             } else {
                 showToast('❌ Product not found', 'error');
                 modal.style.display = 'none';
-                modal.classList.add('hidden');
             }
         })
         .catch(err => {
-            console.error('❌ Error loading product:', err);
-            showToast('❌ Error loading product: ' + err.message, 'error');
+            console.error('Error:', err);
+            showToast('❌ Error: ' + err.message, 'error');
             modal.style.display = 'none';
-            modal.classList.add('hidden');
         });
 }
-        
+
 function closeEditModal() {
     const modal = document.getElementById('editProductModal');
     if (modal) {
@@ -2162,7 +2093,7 @@ function closeEditModal() {
 }
 
 // ============================================================
-// SAVE EDITED PRODUCT - COMPLETE FIX ✅
+// SAVE EDITED PRODUCT
 // ============================================================
 function saveEditedProduct(event) {
     event.preventDefault();
@@ -2214,13 +2145,11 @@ function saveEditedProduct(event) {
     })
     .then(response => response.json())
     .then(result => {
-        console.log('📥 Result:', result);
         if (result.success) {
             showToast('✅ Product updated successfully!', 'success');
             document.getElementById('editProductModal').classList.add('hidden');
             document.getElementById('editProductModal').style.display = 'none';
             setTimeout(() => {
-                // Reload products without full page refresh if on products section
                 if (document.getElementById('products-section') && 
                     !document.getElementById('products-section').classList.contains('hidden')) {
                     loadProductsWithFilters();
@@ -2324,10 +2253,9 @@ function saveProduct(event) {
 }
 
 // ============================================================
-// ANALYTICS - COMPLETE FIXED ✅
+// ANALYTICS - COMPLETE
 // ============================================================
 
-// Load ALL transactions from ALL pages
 async function loadAllTransactions() {
     const container = document.getElementById('recentTransactionsBody');
     if (!container) return;
@@ -2394,14 +2322,12 @@ async function loadAllTransactions() {
     }
 }
 
-// Update charts with REAL data
 function updateChartsWithRealData(data) {
     if (typeof Chart === 'undefined') {
         setTimeout(() => updateChartsWithRealData(data), 500);
         return;
     }
     
-    // Destroy existing charts safely
     try {
         if (window.advancedRevenueChart && typeof window.advancedRevenueChart.destroy === 'function') {
             window.advancedRevenueChart.destroy();
@@ -2423,7 +2349,6 @@ function updateChartsWithRealData(data) {
         }
     } catch(e) {}
     
-    // Revenue Chart - REAL monthly data
     const revenueCtx = document.getElementById('advancedRevenueChart');
     if (revenueCtx) {
         const monthlyData = data.monthly_data || {};
@@ -2478,10 +2403,9 @@ function updateChartsWithRealData(data) {
                 }
             }
         });
-        console.log('✅ Revenue chart updated with real monthly data');
+        console.log('✅ Revenue chart updated');
     }
     
-    // Category Chart - REAL category data
     const categoryCtx = document.getElementById('advancedCategoryChart');
     if (categoryCtx) {
         const categoryData = data.category_sales || {};
@@ -2512,10 +2436,9 @@ function updateChartsWithRealData(data) {
                 }
             }
         });
-        console.log('✅ Category chart updated with real data');
+        console.log('✅ Category chart updated');
     }
     
-    // Dashboard Revenue Chart
     const dashRevenueCtx = document.getElementById('revenueChart');
     if (dashRevenueCtx) {
         const monthlyData = data.monthly_data || {};
@@ -2544,7 +2467,6 @@ function updateChartsWithRealData(data) {
         console.log('✅ Dashboard revenue chart updated');
     }
     
-    // Dashboard Category Chart
     const dashCategoryCtx = document.getElementById('categoryChart');
     if (dashCategoryCtx) {
         const categoryData = data.category_sales || {};
@@ -2571,7 +2493,6 @@ function updateChartsWithRealData(data) {
     }
 }
 
-// Load analytics data
 function loadAnalyticsData() {
     console.log('🔄 Loading analytics...');
     
@@ -2580,7 +2501,6 @@ function loadAnalyticsData() {
         .then(data => {
             console.log('📊 Analytics data loaded');
             
-            // Update KPIs
             const kpiRevenue = document.getElementById('kpiRevenue');
             const kpiOrders = document.getElementById('kpiOrders');
             const kpiProfit = document.getElementById('kpiProfit');
@@ -2591,7 +2511,6 @@ function loadAnalyticsData() {
             if (kpiProfit) kpiProfit.textContent = 'KSh ' + (data.total_profit || 0).toLocaleString();
             if (kpiCredit) kpiCredit.textContent = 'KSh ' + (data.credit_sales || 0).toLocaleString();
             
-            // Update status counts
             if (data.status_counts) {
                 document.getElementById('statusPending').textContent = data.status_counts.pending || 0;
                 document.getElementById('statusCompleted').textContent = data.status_counts.completed || 0;
@@ -2599,14 +2518,9 @@ function loadAnalyticsData() {
                 document.getElementById('statusCancelled').textContent = data.status_counts.cancelled || 0;
             }
             
-            // Update top products
             updateTopProducts(data.product_sales || {});
             updateCategoryLegend(data.category_sales || {});
-            
-            // Update charts with real data
             updateChartsWithRealData(data);
-            
-            // Load all transactions
             loadAllTransactions();
             
             console.log('✅ Analytics loaded with real data!');
@@ -2683,23 +2597,7 @@ function exportAnalyticsCSV() {
 }
 
 // ============================================================
-// CHARTS INIT
-// ============================================================
-let revenueChart = null;
-let categoryChart = null;
-let advancedRevenueChart = null;
-let advancedCategoryChart = null;
-
-function initCharts() {
-    if (typeof Chart === 'undefined') {
-        setTimeout(initCharts, 500);
-        return;
-    }
-    // Charts will be updated by loadAnalyticsData
-}
-
-// ============================================================
-// CREDIT FUNCTIONS - FIXED ✅
+// CREDIT FUNCTIONS
 // ============================================================
 
 function showAddCreditCustomerModal() {
@@ -2729,11 +2627,10 @@ function editCreditCustomer(customerId) {
         return;
     }
     
-    // ✅ FIX: Force open modal with display:flex
     modal.classList.remove('hidden');
     modal.style.display = 'flex';
     modal.style.zIndex = '99999';
-    console.log('✅ Credit modal opened with display:flex');
+    console.log('✅ Credit modal opened');
     
     document.getElementById('creditModalTitle').textContent = 'Loading...';
     
@@ -2763,7 +2660,6 @@ function editCreditCustomer(customerId) {
                     balanceDisplay.textContent = 'Current Balance: KSh ' + (c.current_balance || 0).toLocaleString();
                 }
                 
-                console.log('✅ Form populated!');
                 showToast('✅ Customer loaded: ' + c.full_name, 'success');
             } else {
                 showToast('❌ ' + (data.message || 'Customer not found'), 'error');
@@ -2798,7 +2694,6 @@ function saveCreditCustomer(event) {
         return;
     }
     
-    // ✅ Check for duplicates before adding (only for new customers)
     if (method === 'POST') {
         fetch('/admin/api/credit/customers')
             .then(r => r.json())
@@ -2816,8 +2711,6 @@ function saveCreditCustomer(event) {
                         return;
                     }
                 }
-                
-                // No duplicate, proceed with save
                 saveCustomerData(url, method, data);
             })
             .catch(err => {
@@ -2825,7 +2718,6 @@ function saveCreditCustomer(event) {
                 saveCustomerData(url, method, data);
             });
     } else {
-        // Editing - skip duplicate check
         saveCustomerData(url, method, data);
     }
 }
@@ -3226,14 +3118,12 @@ updateLiveTime();
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 Admin dashboard loaded');
     loadProductsWithFilters();
-    initCharts();
     loadAnalyticsData();
     loadOrders();
     updateCreditStats();
 });
 
-console.log('✅ AcaciaMart Admin v3.0 - Fully Working!');
-console.log('📌 Features: Edit Product, Edit Credit Customer, Collection Rate, Real Charts');
+console.log('✅ AcaciaMart Admin - Fixed!');
 </script>
 
 {% endblock %}
