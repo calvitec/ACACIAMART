@@ -5,7 +5,6 @@
 {% block content %}
 
 <style>
-    /* Minimal styles */
     body { background: #f0f2f5; }
     .container { max-width: 1400px; margin: 0 auto; padding: 20px; }
     .card { background: white; border-radius: 12px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
@@ -25,6 +24,7 @@
     .badge-success { background: #d1fae5; color: #065f46; }
     .badge-warning { background: #fef3c7; color: #92400e; }
     .badge-danger { background: #fee2e2; color: #991b1b; }
+    .text-muted { color: #8A8AAA; font-size: 0.75rem; }
     
     /* MODAL */
     #modalFix { display: none; position: fixed; top:0; left:0; right:0; bottom:0; background: rgba(0,0,0,0.7); z-index: 999999; align-items: center; justify-content: center; padding: 20px; }
@@ -38,7 +38,6 @@
     #modalFix .btn-cancel { background: #f5f5f5; border: 1px solid #ddd; padding: 10px 24px; border-radius: 8px; cursor: pointer; }
     #modalFix .btns { display: flex; gap: 12px; margin-top: 20px; padding-top: 16px; border-top: 1px solid #eee; }
     .mb-2 { margin-bottom: 12px; }
-    .text-muted { color: #8A8AAA; font-size: 0.75rem; }
 </style>
 
 <div class="container">
@@ -79,7 +78,7 @@
 </div>
 
 <!-- ============================================================
-     MODAL FIX - WORKING EDIT
+     MODAL - WORKING EDIT
      ============================================================ -->
 <div id="modalFix">
     <div class="modal-inner">
@@ -166,6 +165,8 @@ function loadProducts() {
             if (data.success) {
                 products = data.products || [];
                 renderTable();
+                // ✅ FIX BUTTONS AFTER RENDERING
+                setTimeout(fixAllButtons, 200);
             } else {
                 tbody.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:40px;color:red;">Error loading</td></tr>';
             }
@@ -198,8 +199,8 @@ function renderTable() {
                     <td style="text-align:right;font-weight:600;">KSh ${(p.price || 0).toLocaleString()}</td>
                     <td style="text-align:center;"><span class="badge ${stockBadge}">${stock}</span></td>
                     <td style="text-align:center;">
-                        <button class="btn-edit" onclick="editProduct('${p.id}')">✏️</button>
-                        <button class="btn-delete" onclick="deleteProduct('${p.id}')">🗑️</button>
+                        <button class="btn-edit" data-id="${p.id}">✏️ Edit</button>
+                        <button class="btn-delete" data-id="${p.id}">🗑️ Delete</button>
                     </td>
                 </tr>
             `;
@@ -220,7 +221,7 @@ function renderPagination() {
     
     let html = '';
     for (let i = 1; i <= totalPages; i++) {
-        html += `<button onclick="currentPage=${i};renderTable();" style="padding:4px 12px;border:1px solid #ddd;border-radius:4px;cursor:pointer;background:${i===currentPage?'#6C3CE1':'white'};color:${i===currentPage?'white':'#333'};">${i}</button>`;
+        html += `<button onclick="currentPage=${i};renderTable();setTimeout(fixAllButtons,200);" style="padding:4px 12px;border:1px solid #ddd;border-radius:4px;cursor:pointer;background:${i===currentPage?'#6C3CE1':'white'};color:${i===currentPage?'white':'#333'};">${i}</button>`;
     }
     container.innerHTML = html;
 }
@@ -246,10 +247,48 @@ function loadAll() {
 }
 
 // ============================================================
+// ✅ FIX ALL BUTTONS - THIS IS THE KEY!
+// ============================================================
+function fixAllButtons() {
+    console.log('🔧 Fixing buttons...');
+    
+    // Fix EDIT buttons
+    document.querySelectorAll('#productsBody .btn-edit').forEach(btn => {
+        const productId = btn.getAttribute('data-id');
+        if (productId) {
+            // Remove any existing onclick
+            btn.removeAttribute('onclick');
+            // Add click event
+            btn.onclick = function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('🖱️ Edit clicked:', productId);
+                window.editProduct(productId);
+            };
+        }
+    });
+    
+    // Fix DELETE buttons
+    document.querySelectorAll('#productsBody .btn-delete').forEach(btn => {
+        const productId = btn.getAttribute('data-id');
+        if (productId) {
+            btn.removeAttribute('onclick');
+            btn.onclick = function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                deleteProduct(productId);
+            };
+        }
+    });
+    
+    console.log('✅ All buttons fixed!');
+}
+
+// ============================================================
 // EDIT PRODUCT - WORKING!
 // ============================================================
 window.editProduct = function(productId) {
-    console.log('✏️ EDIT:', productId);
+    console.log('✏️ EDIT PRODUCT:', productId);
     if (!productId) { alert('❌ No product ID'); return; }
     
     const modal = document.getElementById('modalFix');
@@ -348,30 +387,14 @@ function deleteProduct(id) {
 }
 
 // ============================================================
-// FIX ALL EDIT BUTTONS ON PAGE LOAD
-// ============================================================
-function fixEditButtons() {
-    document.querySelectorAll('[onclick*="editProduct"]').forEach(btn => {
-        const onclick = btn.getAttribute('onclick');
-        const match = onclick && onclick.match(/editProduct\('([^']+)'\)/);
-        if (match) {
-            const id = match[1];
-            btn.onclick = function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                window.editProduct(id);
-            };
-            btn.removeAttribute('onclick');
-        }
-    });
-}
-
-// ============================================================
 // INIT
 // ============================================================
 document.addEventListener('DOMContentLoaded', function() {
     loadProducts();
-    setTimeout(fixEditButtons, 1500);
+    // Fix buttons after load
+    setTimeout(fixAllButtons, 500);
+    setTimeout(fixAllButtons, 1500);
+    setTimeout(fixAllButtons, 3000);
 });
 
 console.log('✅ Admin loaded - Edit works!');
