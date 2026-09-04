@@ -65,9 +65,7 @@
         --shadow-glow: 0 0 40px rgba(108, 60, 225, 0.15);
     }
 
-    /* ============================================================
-       STATS CARDS
-       ============================================================ */
+    /* Stats Cards */
     .stats-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
@@ -161,9 +159,7 @@
         margin-top: 4px;
     }
 
-    /* ============================================================
-       QUICK ACTIONS
-       ============================================================ */
+    /* Quick Actions */
     .quick-actions-grid {
         display: grid;
         grid-template-columns: repeat(auto-fit, minmax(100px, 1fr));
@@ -194,9 +190,7 @@
     .quick-action-btn .icon { font-size: 1.4rem; display: block; margin-bottom: 4px; }
     .quick-action-btn .label { font-size: 0.55rem; font-weight: 600; }
 
-    /* ============================================================
-       GLASS CARDS
-       ============================================================ */
+    /* Glass Cards */
     .glass-card {
         background: var(--bg-card);
         border-radius: var(--radius);
@@ -230,9 +224,7 @@
     .glass-card .card-header .title .icon { color: var(--primary-light); }
     .glass-card .card-header .badge-time { font-size: 0.6rem; color: var(--text-muted); }
 
-    /* ============================================================
-       LIVE TICKER
-       ============================================================ */
+    /* Live Ticker */
     .live-ticker {
         background: var(--bg-card);
         border-radius: var(--radius);
@@ -273,9 +265,7 @@
     .live-ticker .live-item .value.amber { color: var(--warning); }
     .live-ticker .live-item .value.purple { color: var(--primary-light); }
 
-    /* ============================================================
-       TABLES
-       ============================================================ */
+    /* Tables */
     .table-wrap {
         overflow-x: auto;
     }
@@ -310,7 +300,7 @@
     .table-wrap table tbody tr { transition: var(--transition); }
     .table-wrap table tbody tr:hover { background: var(--bg-input); }
     .table-wrap table tbody .font-mono { font-family: monospace; font-weight: 600; color: var(--text-primary); }
-    
+
     /* Inline Edit Row */
     .edit-row td {
         background: var(--primary-bg) !important;
@@ -361,9 +351,7 @@
         background: var(--border-color);
     }
 
-    /* ============================================================
-       BADGES
-       ============================================================ */
+    /* Badges */
     .badge {
         display: inline-block;
         padding: 2px 12px;
@@ -378,9 +366,7 @@
     .badge-info { background: var(--info-bg); color: var(--info); }
     .badge-purple { background: var(--primary-bg); color: var(--primary-light); }
 
-    /* ============================================================
-       FORMS
-       ============================================================ */
+    /* Forms */
     .form-input {
         width: 100%;
         padding: 8px 14px;
@@ -410,9 +396,7 @@
         margin-bottom: 4px;
     }
 
-    /* ============================================================
-       BUTTONS
-       ============================================================ */
+    /* Buttons */
     .btn-gradient {
         background: var(--primary-gradient);
         color: white;
@@ -498,9 +482,7 @@
         box-shadow: 0 8px 24px rgba(16, 185, 129, 0.3);
     }
 
-    /* ============================================================
-       PAGINATION
-       ============================================================ */
+    /* Pagination */
     .pagination {
         display: flex;
         gap: 4px;
@@ -537,9 +519,7 @@
     
     .page-link.disabled { opacity: 0.5; cursor: not-allowed; }
 
-    /* ============================================================
-       MODALS - FIXED
-       ============================================================ */
+    /* Modals */
     .modal-overlay {
         position: fixed;
         inset: 0;
@@ -593,9 +573,7 @@
         gap: 10px;
     }
 
-    /* ============================================================
-       TOAST
-       ============================================================ */
+    /* Toast */
     .toast {
         position: fixed;
         bottom: 30px;
@@ -621,9 +599,7 @@
     .toast.info { background: linear-gradient(135deg, #1e3a5f, #2563eb); }
     .toast.warning { background: linear-gradient(135deg, #78350f, #d97706); }
 
-    /* ============================================================
-       RESPONSIVE
-       ============================================================ */
+    /* Responsive */
     @media (max-width: 768px) {
         .stats-grid { grid-template-columns: repeat(2, 1fr); gap: 10px; }
         .quick-actions-grid { grid-template-columns: repeat(3, 1fr); }
@@ -639,9 +615,7 @@
         .modal { padding: 20px; margin: 10px; }
     }
 
-    /* ============================================================
-       SYNC BAR
-       ============================================================ */
+    /* Sync Bar */
     #syncStatusBar {
         background: var(--bg-card);
         border: 1px solid var(--border-hover);
@@ -696,33 +670,25 @@
         gap: 8px;
     }
 
-    /* ============================================================
-       CHARTS
-       ============================================================ */
+    /* Charts */
     .chart-container {
         position: relative;
         height: 240px;
         width: 100%;
     }
     
-    /* ============================================================
-       SCROLLBAR
-       ============================================================ */
     ::-webkit-scrollbar { width: 4px; height: 4px; }
     ::-webkit-scrollbar-track { background: var(--bg-input); border-radius: 10px; }
     ::-webkit-scrollbar-thumb { background: var(--text-muted); border-radius: 10px; }
 </style>
 
-<!-- ============================================================
-     PAGE TITLE (Updated by JS)
-     ============================================================ -->
+<!-- PAGE TITLE -->
 <div id="pageTitle" style="display:none;"></div>
 
 <!-- ============================================================
      DASHBOARD SECTION
      ============================================================ -->
 <div id="dashboard-section" class="section">
-
     <!-- Sync Status -->
     <div id="syncStatusBar">
         <div class="sync-content">
@@ -1263,7 +1229,7 @@
 </div>
 
 <!-- ============================================================
-     CREDIT SECTION WITH COLLECTION RATE
+     CREDIT SECTION
      ============================================================ -->
 <div id="credit-section" class="section hidden">
     <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:10px;margin-bottom:16px;">
@@ -1635,7 +1601,7 @@
 </div>
 
 <!-- ============================================================
-     SCRIPTS - COMPLETE FINAL VERSION
+     SCRIPTS - COMPLETE WORKING VERSION
      ============================================================ -->
 <script>
 // ============================================================
@@ -1643,7 +1609,11 @@
 function showToast(message, type = 'success') {
     const toast = document.getElementById('toast');
     const messageEl = document.getElementById('toastMessage');
-    if (!toast || !messageEl) return;
+    if (!toast || !messageEl) {
+        console.log('🔔 Toast fallback:', message);
+        alert(message);
+        return;
+    }
     
     toast.className = 'toast ' + type;
     messageEl.textContent = message;
@@ -1676,24 +1646,17 @@ function closeCreditCustomerModal() {
 }
 
 // ============================================================
-// INLINE PRODUCT EDITING - NEW APPROACH ✅
+// INLINE PRODUCT EDITING - WORKING ✅
 // ============================================================
-
-// Track which product is being edited
-let editingProductId = null;
-
 function startEditProduct(productId) {
     console.log('✏️ Starting inline edit for:', productId);
-    editingProductId = productId;
     
-    // Get the product row and convert to edit mode
     const row = document.querySelector(`tr[data-product-id="${productId}"]`);
     if (!row) {
         showToast('❌ Product not found in table', 'error');
         return;
     }
     
-    // Fetch product data
     showToast('🔄 Loading product...', 'info');
     
     fetch('/admin/api/product/' + productId + '?t=' + Date.now())
@@ -1706,21 +1669,20 @@ function startEditProduct(productId) {
                 const p = data.product;
                 console.log('✅ Product loaded:', p.name);
                 
-                // Replace row with edit row
                 row.innerHTML = `
-                    <td colspan="5" style="padding:6px 8px;">
+                    <td colspan="5" style="padding:6px 8px;background:var(--primary-bg);">
                         <div style="display:grid;grid-template-columns:2fr 1fr 1fr 1fr auto;gap:6px;align-items:center;">
                             <div style="display:flex;align-items:center;gap:6px;">
-                                <div style="width:28px;height:28px;border-radius:6px;background:var(--bg-input);display:flex;align-items:center;justify-content:center;font-size:0.8rem;flex-shrink:0;">
-                                    ${p.image ? `<img src="${p.image}" style="width:100%;height:100%;object-fit:contain;border-radius:6px;" onerror="this.parentElement.innerHTML='📦'">` : '📦'}
+                                <div style="width:28px;height:28px;border-radius:6px;background:#f0f0f0;display:flex;align-items:center;justify-content:center;font-size:0.8rem;flex-shrink:0;">
+                                    📦
                                 </div>
                                 <div>
-                                    <input type="text" id="editName_${p.id}" value="${p.name || ''}" class="form-input" style="font-size:0.7rem;padding:2px 6px;width:120px;" placeholder="Name">
-                                    <input type="text" id="editId_${p.id}" value="${p.id || ''}" class="form-input" style="font-size:0.55rem;padding:2px 6px;width:100px;background:var(--bg-input);" readonly>
+                                    <input type="text" id="editName_${p.id}" value="${p.name || ''}" style="font-size:0.7rem;padding:4px 8px;border:1px solid #ddd;border-radius:4px;width:120px;background:white;color:#333;">
+                                    <div style="font-size:0.55rem;color:#999;margin-top:2px;">${p.id || ''}</div>
                                 </div>
                             </div>
                             <div>
-                                <select id="editCategory_${p.id}" class="form-input" style="font-size:0.65rem;padding:2px 6px;width:100px;">
+                                <select id="editCategory_${p.id}" style="font-size:0.65rem;padding:4px 8px;border:1px solid #ddd;border-radius:4px;width:100px;background:white;color:#333;">
                                     <option value="">Select</option>
                                     <option value="Phones" ${p.category == 'Phones' ? 'selected' : ''}>Phones</option>
                                     <option value="Laptops" ${p.category == 'Laptops' ? 'selected' : ''}>Laptops</option>
@@ -1732,44 +1694,53 @@ function startEditProduct(productId) {
                                 </select>
                             </div>
                             <div>
-                                <input type="number" id="editPrice_${p.id}" value="${p.price || 0}" class="form-input" style="font-size:0.7rem;padding:2px 6px;width:80px;" step="1">
+                                <input type="number" id="editPrice_${p.id}" value="${p.price || 0}" style="font-size:0.7rem;padding:4px 8px;border:1px solid #ddd;border-radius:4px;width:80px;background:white;color:#333;" step="1">
                             </div>
                             <div>
-                                <input type="number" id="editStock_${p.id}" value="${p.stock || 0}" class="form-input" style="font-size:0.7rem;padding:2px 6px;width:60px;" min="0">
+                                <input type="number" id="editStock_${p.id}" value="${p.stock || 0}" style="font-size:0.7rem;padding:4px 8px;border:1px solid #ddd;border-radius:4px;width:60px;background:white;color:#333;" min="0">
                             </div>
                             <div style="display:flex;gap:4px;white-space:nowrap;">
-                                <button onclick="saveInlineEdit('${p.id}')" class="btn-sm btn-save" title="Save">
-                                    <i class="fas fa-check"></i>
+                                <button onclick="saveInlineEdit('${p.id}')" style="padding:4px 12px;font-size:0.6rem;border-radius:4px;border:none;cursor:pointer;font-weight:600;background:#10B981;color:white;">
+                                    💾 Save
                                 </button>
-                                <button onclick="cancelInlineEdit('${p.id}')" class="btn-sm btn-cancel" title="Cancel">
-                                    <i class="fas fa-times"></i>
+                                <button onclick="cancelInlineEdit('${p.id}')" style="padding:4px 12px;font-size:0.6rem;border-radius:4px;border:none;cursor:pointer;font-weight:600;background:#e5e7eb;color:#4A4A6A;">
+                                    ✕ Cancel
                                 </button>
                             </div>
                         </div>
                     </td>
                 `;
-                row.className = 'edit-row';
                 row.style.background = 'var(--primary-bg)';
+                row.className = 'edit-row';
                 
-                showToast('✏️ Editing: ' + p.name, 'info');
-                editingProductId = null;
+                showToast('✏️ Editing: ' + p.name, 'success');
             } else {
                 showToast('❌ Product not found', 'error');
             }
         })
         .catch(err => {
             console.error('❌ Error:', err);
-            showToast('❌ Error loading product: ' + err.message, 'error');
+            showToast('❌ Error: ' + err.message, 'error');
         });
 }
 
 function saveInlineEdit(productId) {
     console.log('💾 Saving inline edit for:', productId);
     
-    const name = document.getElementById('editName_' + productId)?.value?.trim();
-    const category = document.getElementById('editCategory_' + productId)?.value;
-    const price = parseFloat(document.getElementById('editPrice_' + productId)?.value) || 0;
-    const stock = parseInt(document.getElementById('editStock_' + productId)?.value) || 0;
+    const nameInput = document.getElementById('editName_' + productId);
+    const categorySelect = document.getElementById('editCategory_' + productId);
+    const priceInput = document.getElementById('editPrice_' + productId);
+    const stockInput = document.getElementById('editStock_' + productId);
+    
+    if (!nameInput) {
+        showToast('❌ Edit form not found - please start edit again', 'error');
+        return;
+    }
+    
+    const name = nameInput.value.trim();
+    const category = categorySelect ? categorySelect.value : 'General';
+    const price = parseFloat(priceInput ? priceInput.value : 0) || 0;
+    const stock = parseInt(stockInput ? stockInput.value : 0) || 0;
     
     if (!name) {
         showToast('⚠️ Product name is required', 'warning');
@@ -1795,10 +1766,10 @@ function saveInlineEdit(productId) {
         barcode: ''
     };
     
-    const btn = document.querySelector(`#editName_${productId}`)?.closest('.edit-row')?.querySelector('.btn-save');
-    if (btn) {
-        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-        btn.disabled = true;
+    const saveBtn = document.querySelector(`#editName_${productId}`)?.closest('td')?.querySelector('button:first-child');
+    if (saveBtn) {
+        saveBtn.textContent = '⏳ Saving...';
+        saveBtn.disabled = true;
     }
     
     fetch('/admin/api/product/' + productId, {
@@ -1810,34 +1781,33 @@ function saveInlineEdit(productId) {
     .then(result => {
         if (result.success) {
             showToast('✅ Product updated: ' + name, 'success');
-            // Reload the table
-            loadProductsWithFilters();
+            setTimeout(() => loadProductsWithFilters(), 500);
         } else {
             showToast('❌ ' + (result.message || 'Failed to update'), 'error');
-            if (btn) {
-                btn.innerHTML = '<i class="fas fa-check"></i>';
-                btn.disabled = false;
+            if (saveBtn) {
+                saveBtn.textContent = '💾 Save';
+                saveBtn.disabled = false;
             }
         }
     })
     .catch(err => {
         console.error('❌ Error:', err);
-        showToast('❌ Error saving: ' + err.message, 'error');
-        if (btn) {
-            btn.innerHTML = '<i class="fas fa-check"></i>';
-            btn.disabled = false;
+        showToast('❌ Error: ' + err.message, 'error');
+        if (saveBtn) {
+            saveBtn.textContent = '💾 Save';
+            saveBtn.disabled = false;
         }
     });
 }
 
 function cancelInlineEdit(productId) {
     console.log('❌ Cancelling edit for:', productId);
-    loadProductsWithFilters();
     showToast('❌ Edit cancelled', 'info');
+    setTimeout(() => loadProductsWithFilters(), 300);
 }
 
 // ============================================================
-// EDIT CREDIT CUSTOMER - MODAL BASED ✅
+// EDIT CREDIT CUSTOMER
 // ============================================================
 function editCreditCustomer(customerId) {
     console.log('✏️ EDIT CREDIT CUSTOMER:', customerId);
@@ -1853,7 +1823,6 @@ function editCreditCustomer(customerId) {
         return;
     }
     
-    // Force open modal
     modal.classList.remove('hidden');
     modal.style.display = 'flex';
     modal.style.position = 'fixed';
@@ -1894,7 +1863,6 @@ function editCreditCustomer(customerId) {
                     balanceDisplay.textContent = 'Current Balance: KSh ' + (c.current_balance || 0).toLocaleString();
                 }
                 
-                console.log('✅ Form populated!');
                 showToast('✅ Customer loaded: ' + c.full_name, 'success');
             } else {
                 showToast('❌ Customer not found', 'error');
@@ -1924,8 +1892,6 @@ function saveCreditCustomer(event) {
         email: document.getElementById('creditEmail').value.trim(),
         credit_limit: parseFloat(document.getElementById('creditLimit').value) || 0
     };
-    
-    console.log('💾 Saving customer data:', data);
     
     if (!data.full_name || !data.phone) {
         showToast('⚠️ Full name and phone are required', 'warning');
@@ -1957,7 +1923,6 @@ function saveCreditCustomer(event) {
             btn.innerHTML = originalText;
             btn.disabled = false;
         }
-        console.log('📥 Result:', result);
         if (result.success) {
             showToast(method === 'PUT' ? '✅ Customer updated!' : '✅ Customer added!', 'success');
             closeCreditCustomerModal();
@@ -2134,7 +2099,6 @@ function showSection(sectionName) {
     const target = document.getElementById(sectionName + '-section');
     if (target) target.classList.remove('hidden');
     
-    // Load data when section is shown
     if (sectionName === 'products') setTimeout(loadProductsWithFilters, 300);
     if (sectionName === 'analytics') setTimeout(loadAnalyticsData, 300);
     if (sectionName === 'orders') setTimeout(loadOrders, 300);
@@ -2151,7 +2115,6 @@ function toggleDarkMode() {
     localStorage.setItem('pos-theme', isDark ? 'light' : 'dark');
 }
 
-// Load saved theme
 if (localStorage.getItem('pos-theme') === 'dark') {
     document.documentElement.setAttribute('data-theme', 'dark');
 }
@@ -2510,13 +2473,11 @@ function loadAnalyticsData() {
         .then(data => {
             console.log('📊 Analytics data loaded');
             
-            // Update KPIs
             document.getElementById('kpiRevenue').textContent = 'KSh ' + (data.total_revenue || 0).toLocaleString();
             document.getElementById('kpiOrders').textContent = data.total_orders || 0;
             document.getElementById('kpiProfit').textContent = 'KSh ' + (data.total_profit || 0).toLocaleString();
             document.getElementById('kpiCredit').textContent = 'KSh ' + (data.credit_sales || 0).toLocaleString();
             
-            // Update status counts
             if (data.status_counts) {
                 document.getElementById('statusPending').textContent = data.status_counts.pending || 0;
                 document.getElementById('statusCompleted').textContent = data.status_counts.completed || 0;
@@ -2524,14 +2485,9 @@ function loadAnalyticsData() {
                 document.getElementById('statusCancelled').textContent = data.status_counts.cancelled || 0;
             }
             
-            // Update top products
             updateTopProducts(data.product_sales || {});
             updateCategoryLegend(data.category_sales || {});
-            
-            // Update charts
             updateChartsWithRealData(data);
-            
-            // Load transactions
             loadAllTransactions();
             
             showToast('✅ Analytics loaded!', 'success');
@@ -2608,7 +2564,6 @@ function updateChartsWithRealData(data) {
         return;
     }
     
-    // Destroy existing charts
     try { if (window.advancedRevenueChart) { window.advancedRevenueChart.destroy(); } } catch(e) {}
     try { if (window.advancedCategoryChart) { window.advancedCategoryChart.destroy(); } } catch(e) {}
     try { if (window.revenueChart) { window.revenueChart.destroy(); } } catch(e) {}
@@ -3051,8 +3006,8 @@ document.addEventListener('DOMContentLoaded', function() {
     updateCreditStats();
 });
 
-console.log('✅ AcaciaMart Admin v5.0 - Inline Editing!');
-console.log('📌 Features: Inline Product Edit ✅, Edit Credit Customer ✅, All Graphs ✅');
+console.log('✅ AcaciaMart Admin v5.0 - Inline Editing Working!');
+console.log('📌 Features: Inline Edit ✅, Edit Credit Customer ✅, All Graphs ✅');
 </script>
 
 {% endblock %}
