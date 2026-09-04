@@ -259,7 +259,7 @@ def product_detail(product_id):
 
 
 # ============================================================
-# ✅ FIXED: CART PAGE - NO HARDCODED 800
+# CART PAGE
 # ============================================================
 @shop_bp.route('/cart')
 def cart_page():
@@ -351,9 +351,6 @@ def add_to_cart(item_id):
         return jsonify({'success': False, 'message': f'Error: {str(exc)}'}), 500
 
 
-# ============================================================
-# ✅ FIXED: UPDATE CART - NO HARDCODED 800
-# ============================================================
 @shop_bp.route('/update-cart/<item_id>/<action>', methods=['POST'])
 def update_cart_item(item_id, action):
     try:
@@ -438,7 +435,7 @@ def remove_from_cart(item_id):
 
 
 # ============================================================
-# ✅ FIXED: CHECKOUT PAGE - PASSES SUBTOTAL TO FRONTEND
+# CHECKOUT PAGE
 # ============================================================
 @shop_bp.route('/checkout')
 def checkout_page():
@@ -504,7 +501,7 @@ def checkout_page():
 
 
 # ============================================================
-# ✅ COMPLETELY FIXED: PLACE ORDER - RECEIVES SHIPPING FROM FRONTEND
+# PLACE ORDER - FIXED (Removed shipping_distance)
 # ============================================================
 @shop_bp.route('/place-order', methods=['POST'])
 def place_order():
@@ -528,9 +525,8 @@ def place_order():
         customer_phone = data.get('customer_phone') or data.get('phone') or 'N/A'
         customer_address = data.get('customer_address') or data.get('address') or 'Online Order'
 
-        # ✅ Get shipping from frontend (calculated by geolocation)
+        # Get shipping from frontend (calculated by geolocation)
         shipping = data.get('shipping', 0)
-        shipping_distance = data.get('shipping_distance', 0)
         total = data.get('total', 0)
         subtotal = data.get('subtotal', 0)
 
@@ -616,7 +612,7 @@ def place_order():
         order_id = data.get('order_id') or f'ELEC-{datetime.utcnow().strftime("%Y%m%d%H%M%S")}'
 
         # ============================================================
-        # ✅ PROPER SUPABASE FORMAT - ALL FIELDS CLEAN
+        # ✅ ORDER DATA - NO shipping_distance
         # ============================================================
         order_data = {
             'order_id': str(order_id),
@@ -637,7 +633,7 @@ def place_order():
                 'phone': str(customer_phone),
                 'address': str(customer_address),
             },
-            'shipping_distance': float(shipping_distance) if shipping_distance else 0,
+            # ✅ shipping_distance REMOVED - column doesn't exist in database
             'estimated_delivery': str(data.get('estimated_delivery', '')),
             'delivery_notes': str(data.get('delivery_notes', '')),
         }
@@ -650,10 +646,9 @@ def place_order():
         print(f"📦 Order data: {json.dumps(order_data, indent=2, default=str)}")
 
         # ============================================================
-        # ✅ SAVE TO SUPABASE
+        # SAVE TO SUPABASE
         # ============================================================
         try:
-            # Try inserting directly with proper headers
             response = requests.post(
                 f"{Config.SUPABASE_URL}/rest/v1/orders",
                 headers={
@@ -666,7 +661,7 @@ def place_order():
             )
 
             print(f"📥 Supabase response status: {response.status_code}")
-            print(f"📥 Supabase response body: {response.text[:500]}")  # Truncate for readability
+            print(f"📥 Supabase response body: {response.text[:500]}")
 
             if response.status_code in [200, 201, 204]:
                 print(f"✅ Order saved: {order_id}")
