@@ -3,6 +3,7 @@ from datetime import datetime, timedelta
 import json
 import requests
 import re
+import urllib.parse
 
 from flask import Blueprint, flash, jsonify, redirect, render_template, request, session, url_for
 from werkzeug.utils import secure_filename
@@ -20,6 +21,70 @@ from utils.data import (
 )
 
 shop_bp = Blueprint('shop', __name__)
+
+
+# ============================================================
+# WHATSAPP NOTIFICATION HELPER
+# ============================================================
+
+def send_whatsapp_notification(order_data, customer_name, order_id, total):
+    """Send order notification via WhatsApp"""
+    try:
+        # Format the order items for WhatsApp
+        items_text = ""
+        for item in order_data.get('items', []):
+            items_text += f"  • {item.get('name')} x{item.get('quantity')} = KSh {item.get('total', 0):,.2f}\n"
+        
+        # Create the WhatsApp message
+        message = f"""
+🛍️ *NEW ORDER ALERT!*
+
+📋 *Order ID:* {order_id}
+👤 *Customer:* {customer_name}
+📧 *Email:* {order_data.get('customer_email', 'N/A')}
+📱 *Phone:* {order_data.get('customer_phone', 'N/A')}
+📍 *Address:* {order_data.get('customer_address', 'N/A')}
+
+📦 *Items:*
+{items_text}
+
+💰 *Subtotal:* KSh {order_data.get('subtotal', 0):,.2f}
+🚚 *Shipping:* KSh {order_data.get('shipping', 0):,.2f}
+💳 *Total:* KSh {total:,.2f}
+
+📅 *Order Date:* {datetime.utcnow().strftime('%Y-%m-%d %H:%M')}
+
+🔗 *View Order:* https://acaciamart.shop/admin/orders
+
+✅ *Thank you for your order!*
+        """.strip()
+        
+        # Encode the message for URL
+        encoded_message = urllib.parse.quote(message)
+        
+        # ============================================================
+        # WHATSAPP NUMBER (YOUR STORE NUMBER)
+        # ============================================================
+        # Replace this with YOUR WhatsApp number (with country code, no +)
+        WHATSAPP_PHONE = "254745793237"  # ← CHANGE THIS TO YOUR NUMBER
+        
+        # Create WhatsApp API URL
+        whatsapp_url = f"https://api.whatsapp.com/send?phone={WHATSAPP_PHONE}&text={encoded_message}"
+        
+        print(f"📱 WhatsApp notification generated")
+        
+        return {
+            'success': True,
+            'whatsapp_url': whatsapp_url,
+            'message': message
+        }
+        
+    except Exception as e:
+        print(f"❌ Error sending WhatsApp notification: {e}")
+        return {
+            'success': False,
+            'error': str(e)
+        }
 
 
 # ============================================================
@@ -162,6 +227,10 @@ def build_categories(products_list):
     return sorted_categories
 
 
+# ============================================================
+# ROUTES
+# ============================================================
+
 @shop_bp.route('/')
 def index():
     products_list = load_products()
@@ -259,9 +328,6 @@ def product_detail(product_id):
     return render_template('product.html', product=product, related=related_dict)
 
 
-# ============================================================
-# CART PAGE
-# ============================================================
 @shop_bp.route('/cart')
 def cart_page():
     try:
@@ -435,9 +501,6 @@ def remove_from_cart(item_id):
         return jsonify({'success': False, 'message': str(exc)}), 500
 
 
-# ============================================================
-# CHECKOUT PAGE
-# ============================================================
 @shop_bp.route('/checkout')
 def checkout_page():
     try:
@@ -502,7 +565,7 @@ def checkout_page():
 
 
 # ============================================================
-# ✅ COMPLETE FIXED PLACE ORDER - Handles everything!
+# ✅ COMPLETE FIXED PLACE ORDER - Saves to DB AND sends WhatsApp
 # ============================================================
 @shop_bp.route('/place-order', methods=['POST'])
 def place_order():
@@ -613,34 +676,27 @@ def place_order():
         order_id = data.get('order_id') or f'ELEC-{datetime.utcnow().strftime("%Y%m%d%H%M%S")}'
 
         # ============================================================
-        # ✅ FIX: Handle estimated_delivery properly - convert to timestamp
+        # ✅ FIX: Handle estimated_delivery properly
         # ============================================================
         estimated_delivery = data.get('estimated_delivery', '')
         
-        # If it's a string like "4-5 days", convert to a date
         if estimated_delivery and isinstance(estimated_delivery, str):
-            # Try to parse as date if it's a date string
             try:
-                # If it's already a date format like "2026-09-08"
                 if '-' in estimated_delivery and not estimated_delivery.lower().startswith('4-5'):
-                    # Try to parse as date
                     dt = datetime.strptime(estimated_delivery, '%Y-%m-%d')
                     estimated_delivery = dt.isoformat()
                 else:
-                    # It's a text description like "4-5 days" - calculate delivery date
                     days_match = re.search(r'(\d+)\s*-?\s*(\d+)?', estimated_delivery)
                     if days_match:
                         days = int(days_match.group(1)) if days_match.group(1) else 3
                         estimated_delivery = (datetime.utcnow() + timedelta(days=days)).isoformat()
                     else:
-                        # Default to 3 days from now
                         estimated_delivery = (datetime.utcnow() + timedelta(days=3)).isoformat()
             except:
-                # If parsing fails, use 3 days from now
                 estimated_delivery = (datetime.utcnow() + timedelta(days=3)).isoformat()
 
         # ============================================================
-        # ✅ ORDER DATA - NO shipping_distance (column doesn't exist)
+        # ✅ ORDER DATA - NO shipping_distance
         # ============================================================
         order_data = {
             'order_id': str(order_id),
@@ -665,7 +721,6 @@ def place_order():
             'delivery_notes': str(data.get('delivery_notes', '')),
         }
 
-        # Add location data if present
         if data.get('location'):
             order_data['location'] = data.get('location')
 
@@ -699,12 +754,25 @@ def place_order():
                 import utils.data
                 utils.data.orders_cache = []
 
+                # ============================================================
+                # ✅ SEND WHATSAPP NOTIFICATION (BOTH TO SYSTEM AND WHATSAPP)
+                # ============================================================
+                whatsapp_result = send_whatsapp_notification(order_data, customer_name, order_id, total)
+                
+                whatsapp_url = None
+                if whatsapp_result.get('success'):
+                    whatsapp_url = whatsapp_result.get('whatsapp_url')
+                    print("✅ WhatsApp notification generated")
+                else:
+                    print(f"⚠️ WhatsApp notification error: {whatsapp_result.get('error')}")
+
                 return jsonify({
                     'success': True,
                     'order_id': order_id,
                     'total': total,
                     'message': 'Order placed successfully!',
                     'customer_name': customer_name,
+                    'whatsapp_url': whatsapp_url,  # ✅ Frontend will open this
                 })
             else:
                 print(f"❌ Supabase error: {response.status_code}")
@@ -745,9 +813,6 @@ def clear_cart():
     return jsonify({'success': True, 'message': 'Cart cleared'})
 
 
-# ============================================================
-# CATEGORY API
-# ============================================================
 @shop_bp.route('/api/categories')
 def api_categories():
     products = load_products()
@@ -764,4 +829,3 @@ def api_categories():
     all_categories.update(categories)
     
     return jsonify(all_categories)
-    
