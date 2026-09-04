@@ -2,17 +2,16 @@ import os
 import json
 import requests
 from datetime import datetime
+from config import Config  # ✅ Use Config instead of hardcoding
 
-# 🔥 HARDCODE SUPABASE CONFIG
-SUPABASE_URL = "https://haqqknmerdnfvwmsnath.supabase.co"
-SUPABASE_KEY = "sb_publishable_fKWHaWSF-h5O8raSZzWMKA_udQTGyAA"
+# ============================================================
+# USE CONFIG (NO HARDCODED KEYS)
+# ============================================================
+SUPABASE_URL = Config.SUPABASE_URL
+SUPABASE_KEY = Config.SUPABASE_KEY
+SUPABASE_HEADERS = Config.SUPABASE_HEADERS
 
-SUPABASE_HEADERS = {
-    'apikey': SUPABASE_KEY,
-    'Authorization': f'Bearer {SUPABASE_KEY}',
-    'Content-Type': 'application/json',
-    'Prefer': 'return=representation'
-}
+print(f"📊 Profitability module using: {SUPABASE_URL}")
 
 # ============================================================
 # ✅ FIXED: PROFITABILITY TRACKING - ONLY PAID SALES
@@ -95,7 +94,7 @@ def get_paid_sales():
             'total_paid_sales': total_paid_sales,
             'cash_pos_sales': total_orders,
             'credit_payments_received': total_credit_paid,
-            'total_credit_sales': total_credit_sales,  # ✅ FIXED: Now includes all credit sales
+            'total_credit_sales': total_credit_sales,
             'outstanding_credit': outstanding_credit,
             'collection_rate': collection_rate
         }
@@ -178,7 +177,7 @@ def get_profitability_summary():
             'total_revenue': total_revenue,
             'cash_pos_revenue': sales_data.get('cash_pos_sales', 0),
             'credit_payments_received': sales_data.get('credit_payments_received', 0),
-            'total_credit_sales': sales_data.get('total_credit_sales', 0),  # ✅ FIXED
+            'total_credit_sales': sales_data.get('total_credit_sales', 0),
             'outstanding_credit': sales_data.get('outstanding_credit', 0),
             'collection_rate': sales_data.get('collection_rate', 0),
             'total_cost': total_cost,
