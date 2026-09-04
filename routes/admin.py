@@ -1,14 +1,15 @@
-from flask import Flask
+from flask import Flask, session
+from admin import admin_bp
 
 app = Flask(__name__)
+app.secret_key = 'your-secret-key-2026'
+
+# Register admin blueprint
+app.register_blueprint(admin_bp)
 
 @app.route('/')
 def home():
-    return "✅ App is working!"
-
-@app.route('/admin')
-def admin():
-    return "✅ Admin page is working!"
+    return redirect('/admin')
 
 if __name__ == '__main__':
     app.run(debug=True, port=5000)
