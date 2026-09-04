@@ -2032,10 +2032,16 @@ function editProduct(productId) {
         return;
     }
     
-    // ✅ FIX: Force open modal with display:flex
+    // ✅ FIX: Force open modal with display:flex (THIS IS THE KEY FIX!)
     modal.classList.remove('hidden');
     modal.style.display = 'flex';
     modal.style.zIndex = '99999';
+    modal.style.position = 'fixed';
+    modal.style.inset = '0';
+    modal.style.backgroundColor = 'rgba(0,0,0,0.6)';
+    modal.style.alignItems = 'center';
+    modal.style.justifyContent = 'center';
+    modal.style.padding = '20px';
     console.log('✅ Modal opened with display:flex');
     
     showToast('🔄 Loading product data...', 'info');
@@ -2088,12 +2094,14 @@ function editProduct(productId) {
             } else {
                 showToast('❌ Product not found', 'error');
                 modal.classList.add('hidden');
+                modal.style.display = 'none';
             }
         })
         .catch(err => {
             console.error('Error loading product:', err);
             showToast('❌ Error loading product: ' + err.message, 'error');
             modal.classList.add('hidden');
+            modal.style.display = 'none';
         });
 }
 
