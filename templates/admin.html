@@ -1864,7 +1864,6 @@ function renderProductsTable(products) {
     
     let html = '';
     products.forEach(p => {
-        // ✅ FIX: Use product_id fallback
         const productId = p.id || p.product_id || '';
         const stock = p.stock || 0;
         let stockColor = stock > 20 ? 'var(--success)' : stock > 0 ? 'var(--warning)' : 'var(--danger)';
@@ -1968,7 +1967,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ============================================================
-// EDIT PRODUCT - BULLETPROOF PROMPT APPROACH ✅
+// EDIT PRODUCT - BULLETPROOF (NO TOAST!)
 // ============================================================
 function editProduct(productId) {
     console.log('✏️ EDIT PRODUCT:', productId);
@@ -1991,9 +1990,8 @@ function editProduct(productId) {
             if (data.success && data.product) {
                 const p = data.product;
                 
-                // Use prompt() to edit - SIMPLE AND ALWAYS WORKS
                 const newName = prompt('Edit Product Name:', p.name || '');
-                if (newName === null) return; // User cancelled
+                if (newName === null) return;
                 
                 const newPrice = prompt('Edit Price (KSh):', p.price || 0);
                 if (newPrice === null) return;
@@ -2004,7 +2002,6 @@ function editProduct(productId) {
                 const newCategory = prompt('Edit Category:', p.category || '');
                 if (newCategory === null) return;
                 
-                // Prepare data for update
                 const updateData = {
                     name: newName || p.name,
                     price: parseFloat(newPrice) || p.price,
@@ -2020,7 +2017,6 @@ function editProduct(productId) {
                     specs: (p.specs || []).join(', ')
                 };
                 
-                // Confirm update
                 if (confirm(`✅ Update product "${updateData.name}"?\n\nPrice: KSh ${updateData.price}\nStock: ${updateData.stock}\nCategory: ${updateData.category}`)) {
                     saveProductWithPrompt(productId, updateData);
                 }
@@ -2040,9 +2036,6 @@ function editProduct(productId) {
 function saveProductWithPrompt(productId, data) {
     console.log('💾 Saving product:', productId, data);
     
-    const btn = document.querySelector('#productForm button[type="submit"]');
-    const originalText = btn ? btn.innerHTML : 'Save';
-    
     fetch('/admin/api/product/' + encodeURIComponent(productId), {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -2053,7 +2046,6 @@ function saveProductWithPrompt(productId, data) {
         console.log('📥 Result:', result);
         if (result.success) {
             alert('✅ Product updated successfully!');
-            // Reload the products list
             if (typeof loadProductsWithFilters === 'function') {
                 loadProductsWithFilters();
             } else {
@@ -3032,7 +3024,7 @@ document.addEventListener('DOMContentLoaded', function() {
     updateCreditStats();
 });
 
-console.log('✅ AcaciaMart Admin - Bulletproof Version!');
+console.log('✅ AcaciaMart Admin - NO TOAST VERSION!');
 </script>
 
 {% endblock %}
