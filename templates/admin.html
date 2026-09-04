@@ -1638,12 +1638,59 @@
      ============================================================ -->
 <script>
 // ============================================================
-// FIX BROKEN SHOWTOAST - MUST BE FIRST!
+// TOAST NOTIFICATION - FIXED
 // ============================================================
-window.showToast = function(msg, type) {
+function showToast(msg, type) {
+    type = type || 'success';
     console.log('🔔 Toast:', msg, type);
-    alert(msg);
-};
+    
+    const oldToast = document.getElementById('toast');
+    if (oldToast) {
+        oldToast.remove();
+    }
+    
+    const toast = document.createElement('div');
+    toast.id = 'toast';
+    toast.style.position = 'fixed';
+    toast.style.bottom = '30px';
+    toast.style.left = '50%';
+    toast.style.transform = 'translateX(-50%)';
+    toast.style.padding = '12px 28px';
+    toast.style.borderRadius = '12px';
+    toast.style.color = 'white';
+    toast.style.fontWeight = '500';
+    toast.style.fontSize = '0.85rem';
+    toast.style.zIndex = '99999';
+    toast.style.boxShadow = '0 20px 60px rgba(0,0,0,0.3)';
+    toast.style.maxWidth = '90%';
+    toast.style.transition = 'all 0.3s ease';
+    toast.style.display = 'flex';
+    toast.style.alignItems = 'center';
+    toast.style.gap = '10px';
+    
+    const colors = {
+        'success': 'linear-gradient(135deg, #065f46, #047857)',
+        'error': 'linear-gradient(135deg, #991b1b, #dc2626)',
+        'info': 'linear-gradient(135deg, #1e3a5f, #2563eb)',
+        'warning': 'linear-gradient(135deg, #78350f, #d97706)'
+    };
+    toast.style.background = colors[type] || colors.success;
+    toast.textContent = msg;
+    document.body.appendChild(toast);
+    
+    if (window.toastTimeout) {
+        clearTimeout(window.toastTimeout);
+    }
+    
+    window.toastTimeout = setTimeout(function() {
+        toast.style.opacity = '0';
+        setTimeout(function() {
+            if (toast.parentNode) {
+                toast.remove();
+            }
+        }, 300);
+    }, 3000);
+}
 
 // ============================================================
 // SHOW SECTION
@@ -1655,6 +1702,7 @@ function showSection(sectionName) {
     const target = document.getElementById(sectionName + '-section');
     if (target) target.classList.remove('hidden');
     
+    // Update page title
     const titles = {
         'dashboard': 'Dashboard',
         'orders': 'Orders',
@@ -1669,6 +1717,7 @@ function showSection(sectionName) {
     const titleEl = document.getElementById('pageTitle');
     if (titleEl) titleEl.innerHTML = titles[sectionName] || 'Dashboard';
     
+    // Load data when section is shown
     if (sectionName === 'products') setTimeout(loadProductsWithFilters, 300);
     if (sectionName === 'analytics') setTimeout(loadAnalyticsData, 300);
     if (sectionName === 'orders') setTimeout(loadOrders, 300);
@@ -1687,6 +1736,7 @@ function toggleDarkMode() {
     if (icon) icon.textContent = isDark ? '🌙' : '☀️';
 }
 
+// Load saved theme
 if (localStorage.getItem('pos-theme') === 'dark') {
     document.documentElement.setAttribute('data-theme', 'dark');
     const icon = document.getElementById('themeIcon');
@@ -1952,6 +2002,7 @@ function clearProductFilters() {
     loadProductsWithFilters();
 }
 
+// Search input handlers
 document.addEventListener('DOMContentLoaded', function() {
     const searchInput = document.getElementById('productSearchInput');
     if (searchInput) {
@@ -1973,17 +2024,37 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ============================================================
-// EDIT PRODUCT - FIXED WORKING VERSION
+// EDIT PRODUCT - FIXED
 // ============================================================
 function editProduct(productId) {
-    console.log('✏️ EDIT PRODUCT:', productId);
+    console.log('✏️ Edit product:', productId);
 
     if (!productId) {
-        showToast('❌ No product ID found', 'error');
+        showToast('❌ No product ID found for this row', 'error');
         return;
     }
 
-    showToast('🔄 Loading product...', 'info');
+    const modal = document.getElementById('editProductModal');
+    if (!modal) {
+        showToast('❌ Edit modal not found on page', 'error');
+        return;
+    }
+
+    // Open modal (uses the static modal already defined in the HTML)
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+
+    // Clear stale values while loading
+    const loadingIds = [
+        'editProdId','editProdIdDisplay','editProdName','editProdCategory',
+        'editProdBarcode','editProdPrice','editProdCost','editProdOriginal',
+        'editProdStock','editProdRating','editProdBadge','editProdImage',
+        'editProdDesc','editProdSpecs'
+    ];
+    loadingIds.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+    });
 
     fetch('/admin/api/product/' + encodeURIComponent(productId) + '?t=' + Date.now())
         .then(response => {
@@ -1992,96 +2063,166 @@ function editProduct(productId) {
         })
         .then(data => {
             console.log('📦 Product data:', data);
-            
-            if (data.success && data.product) {
-                const p = data.product;
-                
-                const newName = prompt('Edit Product Name:', p.name || '');
-                if (newName === null) return;
-                
-                const newPrice = prompt('Edit Price (KSh):', p.price || 0);
-                if (newPrice === null) return;
-                
-                const newStock = prompt('Edit Stock:', p.stock || 0);
-                if (newStock === null) return;
-                
-                const newCategory = prompt('Edit Category:', p.category || '');
-                if (newCategory === null) return;
-                
-                const updateData = {
-                    name: newName || p.name,
-                    price: parseFloat(newPrice) || p.price,
-                    stock: parseInt(newStock) || p.stock,
-                    category: newCategory || p.category,
-                    barcode: p.barcode || '',
-                    cost_price: p.cost_price || 0,
-                    original_price: p.original_price || null,
-                    rating: p.rating || 4.5,
-                    badge: p.badge || '',
-                    image: p.image || '',
-                    description: p.description || '',
-                    specs: (p.specs || []).join(', ')
-                };
-                
-                if (confirm(`✅ Update product "${updateData.name}"?\n\nPrice: KSh ${updateData.price}\nStock: ${updateData.stock}\nCategory: ${updateData.category}`)) {
-                    fetch('/admin/api/product/' + encodeURIComponent(productId), {
-                        method: 'PUT',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify(updateData)
-                    })
-                    .then(response => response.json())
-                    .then(result => {
-                        if (result.success) {
-                            showToast('✅ Product updated successfully!', 'success');
-                            setTimeout(() => location.reload(), 1000);
-                        } else {
-                            showToast('❌ Failed to update: ' + (result.message || 'Unknown error'), 'error');
-                        }
-                    })
-                    .catch(err => {
-                        showToast('❌ Error saving: ' + err.message, 'error');
-                    });
-                }
-            } else {
+
+            if (!data.success || !data.product) {
                 showToast('❌ Product not found', 'error');
+                modal.classList.add('hidden');
+                modal.style.display = 'none';
+                return;
             }
+
+            const p = data.product;
+            const resolvedId = p.id || p.product_id || productId;
+
+            const fields = {
+                editProdId: resolvedId,
+                editProdIdDisplay: resolvedId,
+                editProdName: p.name || '',
+                editProdCategory: p.category || '',
+                editProdBarcode: p.barcode || '',
+                editProdPrice: p.price || 0,
+                editProdCost: p.cost_price || 0,
+                editProdOriginal: p.original_price || '',
+                editProdStock: p.stock || 0,
+                editProdRating: p.rating || 4.5,
+                editProdBadge: p.badge || '',
+                editProdImage: p.image || '',
+                editProdDesc: p.description || '',
+                editProdSpecs: (p.specs || []).join(', ')
+            };
+
+            let count = 0;
+            Object.entries(fields).forEach(([id, value]) => {
+                const el = document.getElementById(id);
+                if (el) {
+                    el.value = value;
+                    count++;
+                } else {
+                    console.warn('⚠️ Missing field element:', id);
+                }
+            });
+
+            console.log(`✅ Populated ${count} fields for`, p.name);
+            showToast('✅ Loaded: ' + (p.name || 'product'), 'success');
         })
         .catch(err => {
-            console.error('❌ Error:', err);
+            console.error('❌ Error loading product:', err);
             showToast('❌ Error loading product: ' + err.message, 'error');
+            modal.classList.add('hidden');
+            modal.style.display = 'none';
         });
 }
 
-// ============================================================
-// DELETE PRODUCT - FIXED
-// ============================================================
-function deleteProduct(productId) {
-    if (!productId) {
-        showToast('❌ No product ID', 'error');
-        return;
+function closeEditModal() {
+    const modal = document.getElementById('editProductModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
     }
-    
-    if (!confirm(`⚠️ Are you sure you want to delete product ${productId}?`)) return;
-    
-    fetch('/admin/api/product/' + encodeURIComponent(productId), { 
-        method: 'DELETE' 
-    })
-    .then(r => r.json())
-    .then(result => {
-        if (result.success) {
-            showToast('✅ Product deleted successfully!', 'success');
-            loadProductsWithFilters();
-        } else {
-            showToast('❌ Failed to delete: ' + (result.message || 'Unknown error'), 'error');
-        }
-    })
-    .catch(err => {
-        showToast('❌ Error deleting: ' + err.message, 'error');
-    });
 }
 
 // ============================================================
-// SAVE PRODUCT (Add New)
+// SAVE EDITED PRODUCT
+// ============================================================
+function saveEditedProduct(event) {
+    event.preventDefault();
+
+    const productId = document.getElementById('editProdId').value;
+    if (!productId) {
+        showToast('❌ Missing product ID — cannot save', 'error');
+        return;
+    }
+
+    const data = {
+        name: document.getElementById('editProdName').value.trim(),
+        category: document.getElementById('editProdCategory').value,
+        price: parseFloat(document.getElementById('editProdPrice').value) || 0,
+        cost_price: parseFloat(document.getElementById('editProdCost').value) || 0,
+        original_price: parseFloat(document.getElementById('editProdOriginal').value) || null,
+        stock: parseInt(document.getElementById('editProdStock').value) || 0,
+        rating: parseFloat(document.getElementById('editProdRating').value) || 4.5,
+        badge: document.getElementById('editProdBadge').value,
+        image: document.getElementById('editProdImage').value.trim(),
+        description: document.getElementById('editProdDesc').value.trim(),
+        specs: document.getElementById('editProdSpecs').value.split(',').map(s => s.trim()).filter(s => s),
+        barcode: document.getElementById('editProdBarcode').value.trim() || ''
+    };
+
+    console.log('📦 Updating product:', productId, data);
+
+    if (!data.name) {
+        showToast('⚠️ Please enter a product name', 'warning');
+        return;
+    }
+    if (data.price <= 0) {
+        showToast('⚠️ Please enter a valid price', 'warning');
+        return;
+    }
+
+    const btn = document.querySelector('#editProductForm button[type="submit"]');
+    const originalText = btn ? btn.innerHTML : 'Update';
+    if (btn) {
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
+        btn.disabled = true;
+    }
+
+    fetch('/admin/api/product/' + encodeURIComponent(productId), {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(response => response.json())
+    .then(result => {
+        console.log('📥 Result:', result);
+        if (result.success) {
+            showToast('✅ Product updated successfully!', 'success');
+            document.getElementById('editProductModal').classList.add('hidden');
+            document.getElementById('editProductModal').style.display = 'none';
+            setTimeout(() => {
+                if (document.getElementById('products-section') && !document.getElementById('products-section').classList.contains('hidden')) {
+                    loadProductsWithFilters();
+                } else {
+                    location.reload();
+                }
+            }, 800);
+        } else {
+            showToast('❌ ' + (result.message || 'Failed to update'), 'error');
+        }
+    })
+    .catch(err => {
+        console.error('❌ Error:', err);
+        showToast('❌ Error saving product: ' + err.message, 'error');
+    })
+    .finally(() => {
+        if (btn) {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+    });
+}
+
+function deleteProduct(productId) {
+    if (!productId) {
+        showToast('❌ No product ID found for this row', 'error');
+        return;
+    }
+    if (!confirm('⚠️ Delete this product?')) return;
+
+    fetch('/admin/api/product/' + encodeURIComponent(productId), { method: 'DELETE' })
+        .then(r => r.json())
+        .then(result => {
+            if (result.success) {
+                showToast('✅ Product deleted', 'success');
+                loadProductsWithFilters();
+            } else {
+                showToast('❌ ' + (result.message || 'Error deleting product'), 'error');
+            }
+        })
+        .catch(() => showToast('❌ Error deleting product', 'error'));
+}
+
+// ============================================================
+// SAVE PRODUCT
 // ============================================================
 function saveProduct(event) {
     event.preventDefault();
@@ -2105,7 +2246,7 @@ function saveProduct(event) {
     const btn = document.querySelector('#productForm button[type="submit"]');
     const originalText = btn ? btn.innerHTML : 'Save';
     if (btn) {
-        btn.innerHTML = '⏳ Saving...';
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
         btn.disabled = true;
     }
     
@@ -2140,8 +2281,10 @@ function saveProduct(event) {
 }
 
 // ============================================================
-// ANALYTICS FUNCTIONS
+// ANALYTICS - COMPLETE FIXED ✅
 // ============================================================
+
+// Load ALL transactions from ALL pages
 async function loadAllTransactions() {
     const container = document.getElementById('recentTransactionsBody');
     if (!container) return;
@@ -2208,6 +2351,184 @@ async function loadAllTransactions() {
     }
 }
 
+// Update charts with REAL data
+function updateChartsWithRealData(data) {
+    if (typeof Chart === 'undefined') {
+        setTimeout(() => updateChartsWithRealData(data), 500);
+        return;
+    }
+    
+    // Destroy existing charts safely
+    try {
+        if (window.advancedRevenueChart && typeof window.advancedRevenueChart.destroy === 'function') {
+            window.advancedRevenueChart.destroy();
+        }
+    } catch(e) {}
+    try {
+        if (window.advancedCategoryChart && typeof window.advancedCategoryChart.destroy === 'function') {
+            window.advancedCategoryChart.destroy();
+        }
+    } catch(e) {}
+    try {
+        if (window.revenueChart && typeof window.revenueChart.destroy === 'function') {
+            window.revenueChart.destroy();
+        }
+    } catch(e) {}
+    try {
+        if (window.categoryChart && typeof window.categoryChart.destroy === 'function') {
+            window.categoryChart.destroy();
+        }
+    } catch(e) {}
+    
+    // Revenue Chart - REAL monthly data
+    const revenueCtx = document.getElementById('advancedRevenueChart');
+    if (revenueCtx) {
+        const monthlyData = data.monthly_data || {};
+        const months = Object.keys(monthlyData).sort();
+        const revenueData = months.map(m => monthlyData[m].revenue || 0);
+        const profitData = months.map(m => monthlyData[m].profit || 0);
+        
+        window.advancedRevenueChart = new Chart(revenueCtx, {
+            type: 'bar',
+            data: {
+                labels: months.length > 0 ? months : ['No Data'],
+                datasets: [
+                    {
+                        label: 'Revenue',
+                        data: months.length > 0 ? revenueData : [data.total_revenue || 0],
+                        backgroundColor: 'rgba(59, 130, 246, 0.7)',
+                        borderColor: '#3b82f6',
+                        borderWidth: 2,
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'Profit',
+                        data: months.length > 0 ? profitData : [data.total_profit || 0],
+                        backgroundColor: 'rgba(16, 185, 129, 0.7)',
+                        borderColor: '#10b981',
+                        borderWidth: 2,
+                        borderRadius: 4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'top',
+                        labels: { font: { size: 10 }, boxWidth: 12, padding: 8 }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(value) { return 'KSh ' + value.toLocaleString(); },
+                            font: { size: 9 }
+                        }
+                    },
+                    x: {
+                        ticks: { font: { size: 9 } }
+                    }
+                }
+            }
+        });
+        console.log('✅ Revenue chart updated with real monthly data');
+    }
+    
+    // Category Chart - REAL category data
+    const categoryCtx = document.getElementById('advancedCategoryChart');
+    if (categoryCtx) {
+        const categoryData = data.category_sales || {};
+        const categories = Object.keys(categoryData);
+        const values = categories.map(c => categoryData[c].revenue || 0);
+        const colors = ['#6C3CE1', '#4F46E5', '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
+        
+        window.advancedCategoryChart = new Chart(categoryCtx, {
+            type: 'doughnut',
+            data: {
+                labels: categories.length > 0 ? categories : ['No Data'],
+                datasets: [{
+                    data: categories.length > 0 ? values : [1],
+                    backgroundColor: colors.slice(0, Math.max(categories.length, 1)),
+                    borderWidth: 2,
+                    borderColor: '#ffffff'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        display: true,
+                        position: 'bottom',
+                        labels: { font: { size: 9 }, boxWidth: 12, padding: 6 }
+                    }
+                }
+            }
+        });
+        console.log('✅ Category chart updated with real data');
+    }
+    
+    // Dashboard Revenue Chart
+    const dashRevenueCtx = document.getElementById('revenueChart');
+    if (dashRevenueCtx) {
+        const monthlyData = data.monthly_data || {};
+        const months = Object.keys(monthlyData).sort();
+        const revenueData = months.map(m => monthlyData[m].revenue || 0);
+        
+        window.revenueChart = new Chart(dashRevenueCtx, {
+            type: 'line',
+            data: {
+                labels: months.length > 0 ? months : ['No Data'],
+                datasets: [{
+                    label: 'Revenue',
+                    data: months.length > 0 ? revenueData : [data.total_revenue || 0],
+                    borderColor: '#6C3CE1',
+                    backgroundColor: 'rgba(108, 60, 225, 0.1)',
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { display: false } }
+            }
+        });
+        console.log('✅ Dashboard revenue chart updated');
+    }
+    
+    // Dashboard Category Chart
+    const dashCategoryCtx = document.getElementById('categoryChart');
+    if (dashCategoryCtx) {
+        const categoryData = data.category_sales || {};
+        const categories = Object.keys(categoryData);
+        const values = categories.map(c => categoryData[c].revenue || 0);
+        const colors = ['#6C3CE1', '#4F46E5', '#3B82F6', '#10B981', '#F59E0B'];
+        
+        window.categoryChart = new Chart(dashCategoryCtx, {
+            type: 'doughnut',
+            data: {
+                labels: categories.length > 0 ? categories : ['No Data'],
+                datasets: [{
+                    data: categories.length > 0 ? values : [1],
+                    backgroundColor: colors.slice(0, Math.max(categories.length, 1))
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: { legend: { position: 'bottom' } }
+            }
+        });
+        console.log('✅ Dashboard category chart updated');
+    }
+}
+
+// Load analytics data
 function loadAnalyticsData() {
     console.log('🔄 Loading analytics...');
     
@@ -2216,6 +2537,7 @@ function loadAnalyticsData() {
         .then(data => {
             console.log('📊 Analytics data loaded');
             
+            // Update KPIs
             const kpiRevenue = document.getElementById('kpiRevenue');
             const kpiOrders = document.getElementById('kpiOrders');
             const kpiProfit = document.getElementById('kpiProfit');
@@ -2226,6 +2548,7 @@ function loadAnalyticsData() {
             if (kpiProfit) kpiProfit.textContent = 'KSh ' + (data.total_profit || 0).toLocaleString();
             if (kpiCredit) kpiCredit.textContent = 'KSh ' + (data.credit_sales || 0).toLocaleString();
             
+            // Update status counts
             if (data.status_counts) {
                 document.getElementById('statusPending').textContent = data.status_counts.pending || 0;
                 document.getElementById('statusCompleted').textContent = data.status_counts.completed || 0;
@@ -2233,8 +2556,14 @@ function loadAnalyticsData() {
                 document.getElementById('statusCancelled').textContent = data.status_counts.cancelled || 0;
             }
             
+            // Update top products
             updateTopProducts(data.product_sales || {});
             updateCategoryLegend(data.category_sales || {});
+            
+            // Update charts with real data
+            updateChartsWithRealData(data);
+            
+            // Load all transactions
             loadAllTransactions();
             
             console.log('✅ Analytics loaded with real data!');
@@ -2311,8 +2640,25 @@ function exportAnalyticsCSV() {
 }
 
 // ============================================================
-// CREDIT FUNCTIONS
+// CHARTS INIT
 // ============================================================
+let revenueChart = null;
+let categoryChart = null;
+let advancedRevenueChart = null;
+let advancedCategoryChart = null;
+
+function initCharts() {
+    if (typeof Chart === 'undefined') {
+        setTimeout(initCharts, 500);
+        return;
+    }
+    // Charts will be updated by loadAnalyticsData
+}
+
+// ============================================================
+// CREDIT FUNCTIONS - FIXED ✅
+// ============================================================
+
 function showAddCreditCustomerModal() {
     document.getElementById('creditModalTitle').textContent = '👤 Add Credit Customer';
     document.getElementById('creditCustomerForm').reset();
@@ -2330,19 +2676,21 @@ function editCreditCustomer(customerId) {
     console.log('✏️ Editing credit customer:', customerId);
     
     if (!customerId) {
-        showToast('❌ No customer ID provided', 'error');
+        alert('❌ No customer ID provided');
         return;
     }
     
     const modal = document.getElementById('creditCustomerModal');
     if (!modal) {
-        showToast('❌ Credit customer modal not found', 'error');
+        alert('❌ Credit customer modal not found');
         return;
     }
     
+    // ✅ FIX: Force open modal with display:flex
     modal.classList.remove('hidden');
     modal.style.display = 'flex';
     modal.style.zIndex = '99999';
+    console.log('✅ Credit modal opened with display:flex');
     
     document.getElementById('creditModalTitle').textContent = 'Loading...';
     
@@ -2358,6 +2706,7 @@ function editCreditCustomer(customerId) {
             
             if (data.success && data.customer) {
                 const c = data.customer;
+                console.log('✅ Customer loaded:', c.full_name);
                 
                 document.getElementById('creditModalTitle').textContent = 'Edit Credit Customer';
                 document.getElementById('editCreditCustomerId').value = customerId;
@@ -2371,15 +2720,20 @@ function editCreditCustomer(customerId) {
                     balanceDisplay.textContent = 'Current Balance: KSh ' + (c.current_balance || 0).toLocaleString();
                 }
                 
-                showToast('✅ Customer loaded: ' + c.full_name, 'success');
+                console.log('✅ Form populated!');
+                console.log('  - Name:', document.getElementById('creditFullName').value);
+                console.log('  - Phone:', document.getElementById('creditPhone').value);
+                console.log('  - Limit:', document.getElementById('creditLimit').value);
+                
+                alert('✅ Customer loaded: ' + c.full_name);
             } else {
-                showToast('❌ ' + (data.message || 'Customer not found'), 'error');
+                alert('❌ ' + (data.message || 'Customer not found'));
                 modal.classList.add('hidden');
             }
         })
         .catch(e => {
             console.error('❌ Error:', e);
-            showToast('❌ Error loading customer: ' + e.message, 'error');
+            alert('❌ Error loading customer: ' + e.message);
             modal.classList.add('hidden');
         });
 }
@@ -2401,10 +2755,11 @@ function saveCreditCustomer(event) {
     console.log('💾 Saving customer data:', data);
     
     if (!data.full_name || !data.phone) {
-        showToast('⚠️ Full name and phone are required', 'warning');
+        alert('⚠️ Full name and phone are required');
         return;
     }
     
+    // ✅ Check for duplicates before adding (only for new customers)
     if (method === 'POST') {
         fetch('/admin/api/credit/customers')
             .then(r => r.json())
@@ -2416,12 +2771,14 @@ function saveCreditCustomer(event) {
                     );
                     
                     if (duplicate) {
-                        showToast(`⚠️ Customer "${data.full_name}" already exists!`, 'warning');
+                        alert(`⚠️ Customer "${data.full_name}" with phone "${data.phone}" already exists!\n\nEdit the existing customer instead.`);
                         editCreditCustomer(duplicate.customer_id);
                         closeCreditCustomerModal();
                         return;
                     }
                 }
+                
+                // No duplicate, proceed with save
                 saveCustomerData(url, method, data);
             })
             .catch(err => {
@@ -2429,6 +2786,7 @@ function saveCreditCustomer(event) {
                 saveCustomerData(url, method, data);
             });
     } else {
+        // Editing - skip duplicate check
         saveCustomerData(url, method, data);
     }
 }
@@ -2439,7 +2797,7 @@ function saveCustomerData(url, method, data) {
     const btn = document.querySelector('#creditCustomerForm button[type="submit"]');
     const originalText = btn ? btn.innerHTML : 'Save';
     if (btn) {
-        btn.innerHTML = '⏳ Saving...';
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
         btn.disabled = true;
     }
     
@@ -2463,11 +2821,11 @@ function saveCustomerData(url, method, data) {
         }
         console.log('📥 Result:', result);
         if (result.success) {
-            showToast(method === 'PUT' ? '✅ Customer updated successfully!' : '✅ Customer added successfully!', 'success');
+            alert(method === 'PUT' ? '✅ Customer updated successfully!' : '✅ Customer added successfully!');
             closeCreditCustomerModal();
             setTimeout(() => location.reload(), 1500);
         } else {
-            showToast('❌ Error: ' + (result.message || 'Unknown error'), 'error');
+            alert('❌ Error: ' + (result.message || 'Unknown error'));
         }
     })
     .catch(e => {
@@ -2476,7 +2834,7 @@ function saveCustomerData(url, method, data) {
             btn.innerHTML = originalText;
             btn.disabled = false;
         }
-        showToast('❌ Error saving customer: ' + e.message, 'error');
+        alert('❌ Error saving customer: ' + e.message);
     });
 }
 
@@ -2491,7 +2849,7 @@ function closeCreditCustomerModal() {
 function viewCreditCustomer(customerId) {
     const modal = document.getElementById('viewCreditModal');
     if (!modal) {
-        showToast('❌ View credit modal not found', 'error');
+        alert('❌ View credit modal not found');
         return;
     }
     
@@ -2554,14 +2912,14 @@ function savePayment(event) {
     const amount = parseFloat(document.getElementById('paymentAmount').value);
     
     if (!customerId || !amount || amount <= 0) {
-        showToast('⚠️ Enter a valid amount', 'warning');
+        alert('⚠️ Enter a valid amount');
         return;
     }
     
     const btn = document.querySelector('#paymentForm button[type="submit"]');
     const originalText = btn ? btn.innerHTML : 'Record';
     if (btn) {
-        btn.innerHTML = '⏳ Saving...';
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
         btn.disabled = true;
     }
     
@@ -2582,12 +2940,12 @@ function savePayment(event) {
             btn.disabled = false;
         }
         if (result.success) {
-            showToast('✅ Payment recorded successfully!', 'success');
+            alert('✅ Payment recorded successfully!');
             document.getElementById('paymentModal').classList.add('hidden');
             updateCreditStats();
             setTimeout(() => location.reload(), 1000);
         } else {
-            showToast('❌ Error recording payment: ' + (result.message || 'Unknown error'), 'error');
+            alert('❌ Error recording payment: ' + (result.message || 'Unknown error'));
         }
     })
     .catch(err => {
@@ -2596,7 +2954,7 @@ function savePayment(event) {
             btn.innerHTML = originalText;
             btn.disabled = false;
         }
-        showToast('❌ Error recording payment: ' + err.message, 'error');
+        alert('❌ Error recording payment: ' + err.message);
     });
 }
 
@@ -2731,7 +3089,7 @@ function saveSupplier(event) {
     const btn = document.querySelector('#supplierForm button[type="submit"]');
     const originalText = btn ? btn.innerHTML : 'Save';
     if (btn) {
-        btn.innerHTML = '⏳ Saving...';
+        btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...';
         btn.disabled = true;
     }
     
@@ -2824,17 +3182,19 @@ setInterval(updateLiveTime, 30000);
 updateLiveTime();
 
 // ============================================================
-// INIT - LOAD EVERYTHING
+// INIT
 // ============================================================
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 Admin dashboard loaded');
     loadProductsWithFilters();
+    initCharts();
     loadAnalyticsData();
     loadOrders();
     updateCreditStats();
 });
 
-console.log('✅ AcaciaMart Admin - FULLY WORKING!');
+console.log('✅ AcaciaMart Admin v3.0 - Fully Working!');
+console.log('📌 Features: Edit Product, Edit Credit Customer, Collection Rate, Real Charts');
 </script>
 
 {% endblock %}
