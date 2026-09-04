@@ -1235,7 +1235,7 @@
         }
 
         // ============================================================
-        // ✅ PLACE ORDER - FIXED: shippingCost passed to backend
+        // ✅ PLACE ORDER - FIXED with WhatsApp support
         // ============================================================
         function placeOrder(method) {
             console.log('🛒 Place order called with method:', method);
@@ -1285,17 +1285,13 @@
             const trackingNumber = generateTrackingNumber();
             const orderId = 'PP-' + Date.now().toString(36).toUpperCase();
 
-            // ============================================================
-            // ✅ CRITICAL FIX: shipping MUST be included and sent to backend!
-            // ============================================================
             const orderData = {
                 order_id: orderId,
                 tracking_number: trackingNumber,
                 items: cartItems,
                 subtotal: subtotal,
-                shipping: shippingCost,        // ✅ THIS IS THE FIX!
-                shipping_distance: shippingDistance,
-                total: totalAmount,            // ✅ total = subtotal + shipping
+                shipping: shippingCost,
+                total: totalAmount,
                 payment_method: method,
                 status: 'processing',
                 source: 'web',
@@ -1341,6 +1337,7 @@
                 if (result.success) {
                     orderPlaced = true;
                     
+                    // Update confirmation page
                     document.getElementById('orderId').textContent = result.order_id || orderId;
                     document.getElementById('trackingNumber').textContent = trackingNumber;
                     document.getElementById('deliveryName').textContent = customerName;
@@ -1355,6 +1352,15 @@
                     goToStep(3);
                     launchConfetti();
                     showToast('🎉 Order placed successfully!', 'success', 'Your order #' + (result.order_id || orderId) + ' is being processed');
+                    
+                    // ✅ OPEN WHATSAPP AUTOMATICALLY if URL is returned
+                    if (result.whatsapp_url) {
+                        console.log('📱 Opening WhatsApp:', result.whatsapp_url);
+                        // Open in new tab after 1.5 seconds
+                        setTimeout(() => {
+                            window.open(result.whatsapp_url, '_blank');
+                        }, 1500);
+                    }
                     
                     setTimeout(updateShippingStatus, 2000);
                     
