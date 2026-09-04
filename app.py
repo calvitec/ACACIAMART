@@ -2,13 +2,68 @@ from flask import Flask, jsonify, render_template, request, redirect, url_for, s
 from datetime import datetime
 import os
 import traceback
+import sys
 
-from config import Config
-from routes.shop import shop_bp
-from routes.api import api_bp
-from routes.admin import admin_bp
-from utils.data import load_orders, load_products, load_bundles, sync_products_from_supabase, sync_pending_data_if_possible
+print("=" * 60)
+print("🚀 ACACIAMART Starting...")
+print("=" * 60)
 
+# ============================================================
+# TRY EACH IMPORT SEPARATELY TO FIND THE ERROR
+# ============================================================
+
+try:
+    print("1. Loading config...")
+    from config import Config
+    print("   ✅ Config loaded")
+except Exception as e:
+    print(f"   ❌ Config error: {e}")
+    traceback.print_exc()
+    raise
+
+try:
+    print("2. Loading routes.shop...")
+    from routes.shop import shop_bp
+    print("   ✅ Shop routes loaded")
+except Exception as e:
+    print(f"   ❌ Shop routes error: {e}")
+    traceback.print_exc()
+    raise
+
+try:
+    print("3. Loading routes.api...")
+    from routes.api import api_bp
+    print("   ✅ API routes loaded")
+except Exception as e:
+    print(f"   ❌ API routes error: {e}")
+    traceback.print_exc()
+    raise
+
+try:
+    print("4. Loading routes.admin...")
+    from routes.admin import admin_bp
+    print("   ✅ Admin routes loaded")
+except Exception as e:
+    print(f"   ❌ Admin routes error: {e}")
+    traceback.print_exc()
+    raise
+
+try:
+    print("5. Loading utils.data...")
+    from utils.data import load_orders, load_products, load_bundles, sync_products_from_supabase, sync_pending_data_if_possible
+    print("   ✅ Utils.data loaded")
+except Exception as e:
+    print(f"   ❌ Utils.data error: {e}")
+    traceback.print_exc()
+    raise
+
+print("=" * 60)
+print("✅ ALL IMPORTS SUCCESSFUL!")
+print("=" * 60)
+
+# ============================================================
+# CREATE APP
+# ============================================================
 app = Flask(__name__)
 application = app
 app.config.from_object(Config)
@@ -189,7 +244,7 @@ def home():
     if 'user' in session:
         if session['user'].get('role') == 'admin':
             return redirect('/admin')
-        return redirect('/pos')  # ← Changed from /admin/pos to /pos
+        return redirect('/pos')
     return redirect('/login')
 
 
@@ -242,7 +297,7 @@ def user_login():
                     return redirect('/admin')
                 else:
                     flash('Welcome, ' + user.full_name + '!', 'success')
-                    return redirect('/pos')  # ← Changed from /admin/pos to /pos
+                    return redirect('/pos')
                     
         except Exception as e:
             print(f"DB auth error: {e}")
@@ -262,19 +317,19 @@ def user_login():
                 'password': 'electronics2026',
                 'name': 'John Doe',
                 'role': 'user',
-                'redirect': '/pos'  # ← Changed from /admin/pos to /pos
+                'redirect': '/pos'
             },
             'pos@pricepoint.com': {
                 'password': 'electronics2026',
                 'name': 'POS Operator',
                 'role': 'pos',
-                'redirect': '/pos'  # ← Changed from /admin/pos to /pos
+                'redirect': '/pos'
             },
             'manager@pricepoint.com': {
                 'password': 'electronics2026',
                 'name': 'Store Manager',
                 'role': 'manager',
-                'redirect': '/pos'  # ← Changed from /admin/pos to /pos
+                'redirect': '/pos'
             }
         }
         
@@ -516,6 +571,13 @@ def load_sample_data():
         return jsonify({'success': True, 'added': added, 'total': len(sample_products), 'errors': errors, 'message': f'Loaded {added}/{len(sample_products)} sample products'})
     except Exception as exc:
         return jsonify({'success': False, 'error': str(exc)}), 500
+
+
+# ============================================================
+# FOR VERCEL
+# ============================================================
+def handler(request, context):
+    return app(request, context)
 
 
 if __name__ == '__main__':
