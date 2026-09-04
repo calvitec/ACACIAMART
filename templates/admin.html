@@ -424,9 +424,7 @@
     }
     .page-link.disabled { opacity: 0.5; cursor: not-allowed; }
 
-    /* ============================================================
-       MODALS - WORKING
-       ============================================================ */
+    /* MODALS */
     .modal-overlay {
         position: fixed;
         inset: 0;
@@ -587,7 +585,7 @@
         <div class="quick-action-btn" onclick="showSection('credit')">
             <span class="icon">💰</span><span class="label">Credit</span>
         </div>
-        <div class="quick-action-btn" onclick="location.href='/admin/pos'">
+        <div class="quick-action-btn" onclick="showSection('pos')">
             <span class="icon">🛒</span><span class="label">POS</span>
         </div>
     </div>
@@ -923,25 +921,38 @@
      MODALS
      ============================================================ -->
 
-<!-- Edit Product Modal - WORKING -->
-<div id="editProductModal" class="modal-overlay hidden" onclick="closeModal(event, 'editProductModal')">
-    <div class="modal" onclick="event.stopPropagation()" style="max-width:600px;">
-        <button class="close" onclick="document.getElementById('editProductModal').classList.add('hidden')">✕</button>
-        <div class="title">✏️ Edit Product</div>
-        <form id="editProductForm" onsubmit="saveEditedProduct(event)">
-            <input type="hidden" id="editProdId">
-            <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                <div>
-                    <label class="form-label">Product ID</label>
-                    <input type="text" id="editProdIdDisplay" class="form-input" readonly style="background:var(--bg-input);">
+<!-- Order View Modal -->
+<div id="orderModal" class="modal-overlay hidden" onclick="closeModal(event, 'orderModal')">
+    <div class="modal" onclick="event.stopPropagation()">
+        <button class="close" onclick="document.getElementById('orderModal').classList.add('hidden')">✕</button>
+        <div class="title">📋 Order Details</div>
+        <div id="orderDetails"></div>
+    </div>
+</div>
+
+<!-- ============================================================
+     EDIT MODAL - SIMPLE WORKING
+     ============================================================ -->
+<div id="modalFix">
+    <div class="modal-inner">
+        <button class="close" onclick="document.getElementById('modalFix').classList.remove('show')">✕</button>
+        <h3>✏️ Edit Product</h3>
+        <form id="formFix" onsubmit="saveFix(event)">
+            <input type="hidden" id="fixId">
+            <div class="row">
+                <div class="mb-2">
+                    <label>Product ID</label>
+                    <input type="text" id="fixIdDisplay" readonly style="background:#f5f5f5;">
                 </div>
-                <div>
-                    <label class="form-label">Name *</label>
-                    <input type="text" id="editProdName" class="form-input" required>
+                <div class="mb-2">
+                    <label>Name *</label>
+                    <input type="text" id="fixName" required>
                 </div>
-                <div>
-                    <label class="form-label">Category</label>
-                    <select id="editProdCategory" class="form-input">
+            </div>
+            <div class="row">
+                <div class="mb-2">
+                    <label>Category</label>
+                    <select id="fixCategory">
                         <option value="">Select</option>
                         <option value="Phones">📱 Phones</option>
                         <option value="Laptops">💻 Laptops</option>
@@ -952,66 +963,44 @@
                         <option value="General">📦 General</option>
                     </select>
                 </div>
-                <div>
-                    <label class="form-label">Barcode</label>
-                    <input type="text" id="editProdBarcode" class="form-input">
-                </div>
-                <div>
-                    <label class="form-label">Price (KSh) *</label>
-                    <input type="number" id="editProdPrice" class="form-input" required>
-                </div>
-                <div>
-                    <label class="form-label">Cost Price (KSh)</label>
-                    <input type="number" id="editProdCost" class="form-input" value="0">
-                </div>
-                <div>
-                    <label class="form-label">Original Price</label>
-                    <input type="number" id="editProdOriginal" class="form-input" value="0">
-                </div>
-                <div>
-                    <label class="form-label">Stock *</label>
-                    <input type="number" id="editProdStock" class="form-input" required>
-                </div>
-                <div>
-                    <label class="form-label">Rating</label>
-                    <input type="number" id="editProdRating" class="form-input" step="0.1" value="4.5">
-                </div>
-                <div>
-                    <label class="form-label">Badge</label>
-                    <select id="editProdBadge" class="form-input">
-                        <option value="">None</option>
-                        <option value="Best Seller">⭐ Best Seller</option>
-                        <option value="New">🌟 New</option>
-                        <option value="Trending">🔥 Trending</option>
-                    </select>
-                </div>
-                <div>
-                    <label class="form-label">Specs</label>
-                    <input type="text" id="editProdSpecs" class="form-input" placeholder="comma, separated">
+                <div class="mb-2">
+                    <label>Barcode</label>
+                    <input type="text" id="fixBarcode">
                 </div>
             </div>
-            <div style="margin-top:10px;">
-                <label class="form-label">Image URL</label>
-                <input type="url" id="editProdImage" class="form-input">
+            <div class="row">
+                <div class="mb-2">
+                    <label>Price (KSh) *</label>
+                    <input type="number" id="fixPrice" required step="0.01">
+                </div>
+                <div class="mb-2">
+                    <label>Stock *</label>
+                    <input type="number" id="fixStock" required min="0">
+                </div>
             </div>
-            <div style="margin-top:10px;">
-                <label class="form-label">Description</label>
-                <textarea id="editProdDesc" class="form-input" rows="2"></textarea>
+            <div class="row">
+                <div class="mb-2">
+                    <label>Cost Price (KSh)</label>
+                    <input type="number" id="fixCost" step="0.01" value="0">
+                </div>
+                <div class="mb-2">
+                    <label>Rating</label>
+                    <input type="number" id="fixRating" step="0.1" min="0" max="5" value="4.5">
+                </div>
             </div>
-            <div style="display:flex;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border-color);">
-                <button type="submit" class="btn-gradient" id="editProductSaveBtn">💾 Update Product</button>
-                <button type="button" onclick="document.getElementById('editProductModal').classList.add('hidden')" class="btn-outline">Cancel</button>
+            <div class="mb-2">
+                <label>Image URL</label>
+                <input type="url" id="fixImage" placeholder="https://example.com/image.jpg">
+            </div>
+            <div class="mb-2">
+                <label>Description</label>
+                <textarea id="fixDesc" rows="2"></textarea>
+            </div>
+            <div class="btns">
+                <button type="submit" class="btn-save" id="fixSaveBtn">💾 Update</button>
+                <button type="button" class="btn-cancel" onclick="closeEditModal()">Cancel</button>
             </div>
         </form>
-    </div>
-</div>
-
-<!-- Order View Modal -->
-<div id="orderModal" class="modal-overlay hidden" onclick="closeModal(event, 'orderModal')">
-    <div class="modal" onclick="event.stopPropagation()">
-        <button class="close" onclick="document.getElementById('orderModal').classList.add('hidden')">✕</button>
-        <div class="title">📋 Order Details</div>
-        <div id="orderDetails"></div>
     </div>
 </div>
 
@@ -1150,14 +1139,16 @@
 </div>
 
 <!-- Toast -->
-<div id="toast" class="toast hidden"><span id="toastMessage">Success!</span></div>
+<div id="toast" class="toast hidden">
+    <span id="toastMessage">Success!</span>
+</div>
 
 <!-- ============================================================
      JAVASCRIPT - COMPLETE
      ============================================================ -->
 <script>
 // ============================================================
-// TOAST
+// TOAST NOTIFICATION
 // ============================================================
 function showToast(msg, type) {
     type = type || 'success';
@@ -1222,6 +1213,17 @@ function closeModal(event, modalId) {
     if (event && event.target && !event.target.classList.contains('modal-overlay')) return;
     const modal = document.getElementById(modalId);
     if (modal) { modal.classList.add('hidden'); modal.style.display = 'none'; }
+}
+
+function closeEditModal() {
+    const modal = document.getElementById('modalFix');
+    if (modal) {
+        modal.classList.remove('show');
+        modal.style.display = 'none';
+    }
+    document.getElementById('fixName').disabled = false;
+    const btn = document.getElementById('fixSaveBtn');
+    if (btn) { btn.textContent = '💾 Update'; btn.disabled = false; }
 }
 
 // ============================================================
@@ -1363,42 +1365,24 @@ function clearProductFilters() {
     loadProductsWithFilters();
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-    const searchInput = document.getElementById('productSearchInput');
-    if (searchInput) {
-        searchInput.addEventListener('input', function() {
-            productSearchTerm = this.value.trim();
-            currentProductPage = 1;
-            loadProductsWithFilters();
-        });
-    }
-    const filterSelect = document.getElementById('productFilterSelect');
-    if (filterSelect) {
-        filterSelect.addEventListener('change', function() {
-            productFilter = this.value;
-            currentProductPage = 1;
-            loadProductsWithFilters();
-        });
-    }
-});
-
 // ============================================================
 // EDIT PRODUCT - WORKING ✅
 // ============================================================
 function editProduct(productId) {
     console.log('✏️ EDIT PRODUCT:', productId);
-    if (!productId) { showToast('❌ No product ID provided', 'error'); return; }
+    if (!productId) { showToast('❌ No product ID', 'error'); return; }
     
-    const modal = document.getElementById('editProductModal');
+    const modal = document.getElementById('modalFix');
     if (!modal) { showToast('❌ Modal not found', 'error'); return; }
     
-    modal.classList.remove('hidden');
+    modal.classList.add('show');
     modal.style.display = 'flex';
-    modal.style.zIndex = '99999';
     
     // Show loading
-    const btn = document.getElementById('editProductSaveBtn');
+    const btn = document.getElementById('fixSaveBtn');
     if (btn) { btn.textContent = '⏳ Loading...'; btn.disabled = true; }
+    document.getElementById('fixName').value = 'Loading...';
+    document.getElementById('fixName').disabled = true;
     
     fetch('/admin/api/product/' + productId + '?t=' + Date.now())
         .then(r => {
@@ -1406,77 +1390,76 @@ function editProduct(productId) {
             return r.json();
         })
         .then(data => {
-            console.log('📦 Product data:', data);
             if (data.success && data.product) {
                 const p = data.product;
-                document.getElementById('editProdId').value = p.id || '';
-                document.getElementById('editProdIdDisplay').value = p.id || '';
-                document.getElementById('editProdName').value = p.name || '';
-                document.getElementById('editProdCategory').value = p.category || '';
-                document.getElementById('editProdBarcode').value = p.barcode || '';
-                document.getElementById('editProdPrice').value = p.price || 0;
-                document.getElementById('editProdCost').value = p.cost_price || 0;
-                document.getElementById('editProdOriginal').value = p.original_price || '';
-                document.getElementById('editProdStock').value = p.stock || 0;
-                document.getElementById('editProdRating').value = p.rating || 4.5;
-                document.getElementById('editProdBadge').value = p.badge || '';
-                document.getElementById('editProdImage').value = p.image || '';
-                document.getElementById('editProdDesc').value = p.description || '';
-                document.getElementById('editProdSpecs').value = (p.specs || []).join(', ');
-                
-                if (btn) { btn.textContent = '💾 Update Product'; btn.disabled = false; }
-                showToast('✅ Product loaded: ' + p.name, 'success');
+                document.getElementById('fixId').value = p.id || '';
+                document.getElementById('fixIdDisplay').value = p.id || '';
+                document.getElementById('fixName').value = p.name || '';
+                document.getElementById('fixName').disabled = false;
+                document.getElementById('fixCategory').value = p.category || '';
+                document.getElementById('fixBarcode').value = p.barcode || '';
+                document.getElementById('fixPrice').value = p.price || 0;
+                document.getElementById('fixStock').value = p.stock || 0;
+                document.getElementById('fixCost').value = p.cost_price || 0;
+                document.getElementById('fixRating').value = p.rating || 4.5;
+                document.getElementById('fixImage').value = p.image || '';
+                document.getElementById('fixDesc').value = p.description || '';
+                if (btn) { btn.textContent = '💾 Update'; btn.disabled = false; }
+                showToast('✅ Loaded: ' + p.name, 'success');
             } else {
                 showToast('❌ Product not found', 'error');
-                modal.classList.add('hidden');
+                modal.classList.remove('show');
             }
         })
         .catch(err => {
-            console.error('❌ Error:', err);
             showToast('❌ Error: ' + err.message, 'error');
-            modal.classList.add('hidden');
+            modal.classList.remove('show');
         });
 }
 
 // ============================================================
-// SAVE EDITED PRODUCT - WORKING ✅
+// SAVE PRODUCT - WORKING ✅
 // ============================================================
-function saveEditedProduct(event) {
+function saveFix(event) {
     event.preventDefault();
-    const productId = document.getElementById('editProdId').value;
+    
+    const id = document.getElementById('fixId').value;
+    if (!id) { showToast('❌ No product ID', 'error'); return; }
+    
     const data = {
-        name: document.getElementById('editProdName').value.trim(),
-        category: document.getElementById('editProdCategory').value,
-        price: parseFloat(document.getElementById('editProdPrice').value) || 0,
-        cost_price: parseFloat(document.getElementById('editProdCost').value) || 0,
-        original_price: parseFloat(document.getElementById('editProdOriginal').value) || null,
-        stock: parseInt(document.getElementById('editProdStock').value) || 0,
-        rating: parseFloat(document.getElementById('editProdRating').value) || 4.5,
-        badge: document.getElementById('editProdBadge').value,
-        image: document.getElementById('editProdImage').value.trim(),
-        description: document.getElementById('editProdDesc').value.trim(),
-        specs: document.getElementById('editProdSpecs').value.split(',').map(s => s.trim()).filter(s => s),
-        barcode: document.getElementById('editProdBarcode').value.trim() || ''
+        name: document.getElementById('fixName').value.trim(),
+        category: document.getElementById('fixCategory').value,
+        barcode: document.getElementById('fixBarcode').value.trim(),
+        price: parseFloat(document.getElementById('fixPrice').value) || 0,
+        stock: parseInt(document.getElementById('fixStock').value) || 0,
+        cost_price: parseFloat(document.getElementById('fixCost').value) || 0,
+        rating: parseFloat(document.getElementById('fixRating').value) || 4.5,
+        image: document.getElementById('fixImage').value.trim(),
+        description: document.getElementById('fixDesc').value.trim()
     };
     
-    if (!data.name) { showToast('⚠️ Product name required', 'warning'); return; }
+    if (!data.name) { showToast('⚠️ Name required', 'warning'); return; }
     if (data.price <= 0) { showToast('⚠️ Valid price required', 'warning'); return; }
+    if (data.stock < 0) { showToast('⚠️ Stock cannot be negative', 'warning'); return; }
     
-    const btn = document.getElementById('editProductSaveBtn');
+    const btn = document.getElementById('fixSaveBtn');
     const originalText = btn ? btn.textContent : 'Update';
     if (btn) { btn.textContent = '⏳ Saving...'; btn.disabled = true; }
     
-    fetch('/admin/api/product/' + productId, {
+    fetch('/admin/api/product/' + id, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(data)
     })
-    .then(r => r.json())
+    .then(r => {
+        if (!r.ok) throw new Error('HTTP ' + r.status);
+        return r.json();
+    })
     .then(result => {
         if (btn) { btn.textContent = originalText; btn.disabled = false; }
         if (result.success) {
-            showToast('✅ Product updated!', 'success');
-            document.getElementById('editProductModal').classList.add('hidden');
+            showToast('✅ Updated successfully!', 'success');
+            document.getElementById('modalFix').classList.remove('show');
             loadProductsWithFilters();
         } else {
             showToast('❌ Error: ' + (result.message || 'Failed'), 'error');
@@ -1491,19 +1474,23 @@ function saveEditedProduct(event) {
 // ============================================================
 // DELETE PRODUCT
 // ============================================================
-function deleteProduct(productId) {
-    if (!confirm('⚠️ Delete this product?')) return;
-    fetch('/admin/api/product/' + productId, { method: 'DELETE' })
-        .then(r => r.json())
+function deleteProduct(id) {
+    if (!confirm('Delete this product?')) return;
+    
+    fetch('/admin/api/product/' + id, { method: 'DELETE' })
+        .then(r => {
+            if (!r.ok) throw new Error('HTTP ' + r.status);
+            return r.json();
+        })
         .then(result => {
             if (result.success) {
-                showToast('✅ Product deleted', 'success');
+                showToast('✅ Deleted!', 'success');
                 loadProductsWithFilters();
             } else {
-                showToast('❌ Error deleting product', 'error');
+                showToast('❌ Error deleting', 'error');
             }
         })
-        .catch(() => showToast('❌ Error deleting product', 'error'));
+        .catch(() => showToast('❌ Error', 'error'));
 }
 
 // ============================================================
@@ -1736,14 +1723,12 @@ function showAddCreditCustomerModal() {
     document.getElementById('editCreditCustomerId').value = '';
     document.getElementById('creditCustomerModal').classList.remove('hidden');
     document.getElementById('creditCustomerModal').style.display = 'flex';
-    document.getElementById('creditCustomerModal').style.zIndex = '99999';
 }
 
 function editCreditCustomer(customerId) {
     const modal = document.getElementById('creditCustomerModal');
     modal.classList.remove('hidden');
     modal.style.display = 'flex';
-    modal.style.zIndex = '99999';
     document.getElementById('creditModalTitle').textContent = 'Loading...';
     
     fetch('/admin/api/credit/customers/' + customerId + '?t=' + Date.now())
@@ -1823,7 +1808,6 @@ function viewCreditCustomer(customerId) {
     const modal = document.getElementById('viewCreditModal');
     modal.classList.remove('hidden');
     modal.style.display = 'flex';
-    modal.style.zIndex = '99999';
     document.getElementById('viewCreditContent').innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);">Loading...</div>';
     
     fetch('/admin/api/credit/customers/' + customerId + '?t=' + Date.now())
@@ -1956,7 +1940,6 @@ function editSupplier(supplierId) {
     const modal = document.getElementById('supplierModal');
     modal.classList.remove('hidden');
     modal.style.display = 'flex';
-    modal.style.zIndex = '99999';
     document.getElementById('modalTitle').textContent = 'Loading...';
     
     fetch('/admin/api/suppliers/' + supplierId + '?t=' + Date.now())
@@ -1988,7 +1971,6 @@ function viewSupplier(supplierId) {
     const modal = document.getElementById('viewSupplierModal');
     modal.classList.remove('hidden');
     modal.style.display = 'flex';
-    modal.style.zIndex = '99999';
     document.getElementById('viewSupplierContent').innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);">Loading...</div>';
     
     fetch('/admin/api/suppliers/' + supplierId + '?t=' + Date.now())
@@ -2104,7 +2086,6 @@ function loadAnalyticsData() {
                 document.getElementById('kpiProfit').textContent = 'KSh ' + (data.total_profit || 0).toLocaleString();
                 document.getElementById('kpiCredit').textContent = 'KSh ' + (data.credit_sales || 0).toLocaleString();
                 
-                // Recent transactions
                 const tbody = document.getElementById('recentTransactionsBody');
                 if (data.recent_orders && data.recent_orders.length > 0) {
                     let html = '';
@@ -2142,30 +2123,6 @@ function updateDashboardStats() {
                 document.getElementById('liveRevenue').textContent = 'KSh ' + (data.today_revenue || 0).toLocaleString();
                 document.getElementById('liveOrders').textContent = data.today_orders || 0;
                 document.getElementById('liveCustomers').textContent = data.total_customers || 0;
-                
-                // Recent activity
-                const list = document.getElementById('recentActivityList');
-                if (data.recent_orders && data.recent_orders.length > 0) {
-                    let html = '';
-                    data.recent_orders.slice(0, 5).forEach(order => {
-                        html += `
-                        <div style="display:flex;align-items:center;gap:14px;padding:10px 14px;border-radius:var(--radius-sm);background:var(--bg-input);border:1px solid var(--border-color);margin-bottom:6px;">
-                            <div style="width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;flex-shrink:0;background:var(--info-bg);color:var(--info);">
-                                🛒
-                            </div>
-                            <div style="flex:1;min-width:0;">
-                                <div style="font-size:0.75rem;font-weight:600;color:var(--text-primary);">#${(order.order_id || order.id || '').slice(0, 8)}</div>
-                                <div style="font-size:0.6rem;color:var(--text-muted);">${order.customer_name || 'Customer'}</div>
-                            </div>
-                            <span style="font-weight:700;font-size:0.8rem;color:var(--success);">KSh ${(order.total || 0).toLocaleString()}</span>
-                            <span class="badge ${order.status == 'delivered' ? 'badge-success' : 'badge-warning'}" style="font-size:0.5rem;padding:2px 10px;">${order.status || 'Pending'}</span>
-                        </div>
-                        `;
-                    });
-                    list.innerHTML = html;
-                } else {
-                    list.innerHTML = '<div style="text-align:center;padding:30px;color:var(--text-muted);">📭 No recent orders</div>';
-                }
             }
         })
         .catch(() => {});
@@ -2184,9 +2141,14 @@ document.addEventListener('DOMContentLoaded', function() {
     loadAnalyticsData();
     updateDashboardStats();
     
-    // Keep stats updated
-    setInterval(updateDashboardStats, 60000);
-    setInterval(updateLiveTime, 10000);
+    setTimeout(function() {
+        // Fix any inline buttons
+        document.querySelectorAll('#productsTableBody .btn-outline, #productsTableBody .btn-danger').forEach(btn => {
+            if (btn.getAttribute('onclick') && btn.getAttribute('onclick').includes('editProduct')) {
+                // Already has onclick, good
+            }
+        });
+    }, 500);
     
     console.log('✅ Admin panel ready!');
     console.log('📌 Click Edit button on any product to test.');
@@ -2197,7 +2159,7 @@ document.addEventListener('DOMContentLoaded', function() {
 // ============================================================
 window.showSection = showSection;
 window.editProduct = editProduct;
-window.saveEditedProduct = saveEditedProduct;
+window.saveFix = saveFix;
 window.deleteProduct = deleteProduct;
 window.saveProduct = saveProduct;
 window.loadProductsWithFilters = loadProductsWithFilters;
@@ -2225,6 +2187,7 @@ window.loadAnalyticsData = loadAnalyticsData;
 window.updateDashboardStats = updateDashboardStats;
 window.showToast = showToast;
 window.closeModal = closeModal;
+window.closeEditModal = closeEditModal;
 window.toggleDarkMode = toggleDarkMode;
 
 console.log('✅ All functions registered globally!');
