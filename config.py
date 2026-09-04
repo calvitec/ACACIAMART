@@ -19,9 +19,9 @@ class Config:
     MAX_CONTENT_LENGTH = 5 * 1024 * 1024
 
     # ===== SUPABASE CONFIGURATION =====
-    # ✅ NEW DATABASE (tkotvyblutchsudpqqqe)
-    SUPABASE_URL = os.environ.get('NEXT_PUBLIC_SUPABASE_URL', 'https://tkotvyblutchsudpqqqe.supabase.co')
-    SUPABASE_KEY = os.environ.get('NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY', 'sb_publishable_NSVq3YS29H-U5vjhB6gC7A_uWFsezmy')
+    # ✅ NEW DATABASE (haqqknmerdnfvwmsnath)
+    SUPABASE_URL = os.environ.get('NEXT_PUBLIC_SUPABASE_URL', 'https://haqqknmerdnfvwmsnath.supabase.co')
+    SUPABASE_KEY = os.environ.get('NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY', 'sb_publishable_fKWHaWSF-h5O8raSZzWMKA_udQTGyAA')
     
     print(f"🔑 Using Supabase URL: {SUPABASE_URL}")
     print(f"🔑 Using Supabase key: {SUPABASE_KEY[:30]}...")
