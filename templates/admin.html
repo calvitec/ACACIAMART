@@ -956,7 +956,7 @@
 </div>
 
 <!-- ============================================================
-     PRODUCTS SECTION
+     PRODUCTS SECTION - FIXED WITH WORKING EDIT
      ============================================================ -->
 <div id="products-section" class="section hidden">
     <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
@@ -1411,7 +1411,7 @@
     </div>
 </div>
 
-<!-- Edit Product Modal -->
+<!-- EDIT PRODUCT MODAL - WORKING VERSION -->
 <div id="editProductModal" class="modal-overlay hidden" onclick="closeModal(event, 'editProductModal')">
     <div class="modal" onclick="event.stopPropagation()" style="max-width:600px;">
         <button class="close" onclick="document.getElementById('editProductModal').classList.add('hidden')">✕</button>
@@ -1883,7 +1883,7 @@ function viewOrder(orderId) {
 }
 
 // ============================================================
-// PRODUCT FUNCTIONS
+// PRODUCT FUNCTIONS - FIXED EDIT
 // ============================================================
 let productSearchTerm = '';
 let productFilter = 'all';
@@ -2029,96 +2029,44 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ============================================================
-// EDIT PRODUCT - FULLY WORKING ✅
+// EDIT PRODUCT - FIXED WORKING VERSION ✅
 // ============================================================
 function editProduct(productId) {
-    console.log('✏️✏️✏️ EDIT PRODUCT:', productId);
+    console.log('✏️ EDIT PRODUCT:', productId);
     
     if (!productId) {
-        alert('❌ No product ID provided');
+        showToast('❌ No product ID provided', 'error');
         return;
     }
     
-    // Get or create modal
-    let modal = document.getElementById('editProductModal');
-    
+    const modal = document.getElementById('editProductModal');
     if (!modal) {
-        console.log('⚠️ Modal not found, creating...');
-        modal = document.createElement('div');
-        modal.id = 'editProductModal';
-        modal.className = 'modal-overlay';
-        modal.style.display = 'none';
-        modal.style.position = 'fixed';
-        modal.style.inset = '0';
-        modal.style.backgroundColor = 'rgba(0,0,0,0.6)';
-        modal.style.zIndex = '99999';
-        modal.style.alignItems = 'center';
-        modal.style.justifyContent = 'center';
-        modal.style.padding = '20px';
-        modal.style.backdropFilter = 'blur(4px)';
-        modal.setAttribute('onclick', "closeModal(event, 'editProductModal')");
-        
-        modal.innerHTML = `
-            <div class="modal" onclick="event.stopPropagation()" style="background:white;border-radius:16px;padding:28px;max-width:600px;width:100%;max-height:90vh;overflow-y:auto;position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
-                <button class="close" onclick="document.getElementById('editProductModal').style.display='none'" style="position:absolute;top:12px;right:16px;background:none;border:none;font-size:1.2rem;color:#8A8AAA;cursor:pointer;">✕</button>
-                <div class="title" style="font-size:1.05rem;font-weight:700;color:#1A1A2E;margin-bottom:16px;display:flex;align-items:center;gap:10px;">✏️ Edit Product</div>
-                <form id="editProductForm" onsubmit="saveEditedProduct(event)">
-                    <input type="hidden" id="editProdId">
-                    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
-                        <div><label style="font-size:0.6rem;font-weight:600;color:#8A8AAA;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">Product ID</label><input type="text" id="editProdIdDisplay" class="form-input" readonly style="width:100%;padding:8px 14px;border:1px solid rgba(0,0,0,0.08);border-radius:8px;background:#f0f0f0;color:#1A1A2E;font-size:0.8rem;outline:none;"></div>
-                        <div><label style="font-size:0.6rem;font-weight:600;color:#8A8AAA;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">Name *</label><input type="text" id="editProdName" class="form-input" required style="width:100%;padding:8px 14px;border:1px solid rgba(0,0,0,0.08);border-radius:8px;background:#f0f0f0;color:#1A1A2E;font-size:0.8rem;outline:none;"></div>
-                        <div><label style="font-size:0.6rem;font-weight:600;color:#8A8AAA;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">Category</label><select id="editProdCategory" class="form-input" style="width:100%;padding:8px 14px;border:1px solid rgba(0,0,0,0.08);border-radius:8px;background:#f0f0f0;color:#1A1A2E;font-size:0.8rem;outline:none;"><option value="">Select</option><option value="Phones">📱 Phones</option><option value="Laptops">💻 Laptops</option><option value="Accessories">🎧 Accessories</option><option value="Wearables">⌚ Wearables</option><option value="Audio">🎵 Audio</option><option value="Gaming">🎮 Gaming</option><option value="General">📦 General</option></select></div>
-                        <div><label style="font-size:0.6rem;font-weight:600;color:#8A8AAA;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">Barcode</label><input type="text" id="editProdBarcode" class="form-input" style="width:100%;padding:8px 14px;border:1px solid rgba(0,0,0,0.08);border-radius:8px;background:#f0f0f0;color:#1A1A2E;font-size:0.8rem;outline:none;"></div>
-                        <div><label style="font-size:0.6rem;font-weight:600;color:#8A8AAA;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">Price (KSh) *</label><input type="number" id="editProdPrice" class="form-input" required style="width:100%;padding:8px 14px;border:1px solid rgba(0,0,0,0.08);border-radius:8px;background:#f0f0f0;color:#1A1A2E;font-size:0.8rem;outline:none;"></div>
-                        <div><label style="font-size:0.6rem;font-weight:600;color:#8A8AAA;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">Stock *</label><input type="number" id="editProdStock" class="form-input" required style="width:100%;padding:8px 14px;border:1px solid rgba(0,0,0,0.08);border-radius:8px;background:#f0f0f0;color:#1A1A2E;font-size:0.8rem;outline:none;"></div>
-                    </div>
-                    <div style="margin-top:10px;"><label style="font-size:0.6rem;font-weight:600;color:#8A8AAA;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">Image URL</label><input type="url" id="editProdImage" class="form-input" style="width:100%;padding:8px 14px;border:1px solid rgba(0,0,0,0.08);border-radius:8px;background:#f0f0f0;color:#1A1A2E;font-size:0.8rem;outline:none;"></div>
-                    <div style="margin-top:10px;"><label style="font-size:0.6rem;font-weight:600;color:#8A8AAA;text-transform:uppercase;letter-spacing:0.5px;display:block;margin-bottom:4px;">Description</label><textarea id="editProdDesc" class="form-input" rows="2" style="width:100%;padding:8px 14px;border:1px solid rgba(0,0,0,0.08);border-radius:8px;background:#f0f0f0;color:#1A1A2E;font-size:0.8rem;outline:none;"></textarea></div>
-                    <div style="display:flex;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid #e5e7eb;">
-                        <button type="submit" class="btn-gradient" style="background:linear-gradient(135deg, #6C3CE1, #4F46E5);color:white;border:none;padding:8px 20px;border-radius:9999px;font-weight:600;font-size:0.75rem;cursor:pointer;transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);">💾 Update Product</button>
-                        <button type="button" onclick="document.getElementById('editProductModal').style.display='none'" class="btn-outline" style="background:transparent;border:1px solid rgba(0,0,0,0.08);color:#4A4A6A;padding:8px 20px;border-radius:9999px;font-weight:600;font-size:0.75rem;cursor:pointer;transition:all 0.3s cubic-bezier(0.4, 0, 0.2, 1);">Cancel</button>
-                    </div>
-                </form>
-            </div>
-        `;
-        document.body.appendChild(modal);
-        console.log('✅ Modal created!');
+        showToast('❌ Modal not found', 'error');
+        return;
     }
     
-    // FORCE OPEN
-    modal.style.display = 'flex';
-    modal.style.position = 'fixed';
-    modal.style.top = '0';
-    modal.style.left = '0';
-    modal.style.right = '0';
-    modal.style.bottom = '0';
-    modal.style.backgroundColor = 'rgba(0,0,0,0.6)';
-    modal.style.zIndex = '99999';
-    modal.style.alignItems = 'center';
-    modal.style.justifyContent = 'center';
-    modal.style.padding = '20px';
-    modal.style.visibility = 'visible';
-    modal.style.opacity = '1';
-    modal.style.backdropFilter = 'blur(4px)';
+    // Show modal
     modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+    modal.style.zIndex = '99999';
     
-    // Make sure modal content is visible
-    const modalContent = modal.querySelector('.modal');
-    if (modalContent) {
-        modalContent.style.display = 'block';
-        modalContent.style.background = 'white';
-        modalContent.style.borderRadius = '16px';
-        modalContent.style.padding = '28px';
-        modalContent.style.maxWidth = '600px';
-        modalContent.style.width = '100%';
-        modalContent.style.maxHeight = '90vh';
-        modalContent.style.overflowY = 'auto';
-        modalContent.style.position = 'relative';
-        modalContent.style.boxShadow = '0 20px 60px rgba(0,0,0,0.3)';
-    }
+    showToast('🔄 Loading product...', 'info');
     
-    console.log('✅ Modal forced open');
-    alert('🔄 Loading product...');
+    // Clear form fields
+    document.getElementById('editProdId').value = '';
+    document.getElementById('editProdIdDisplay').value = '';
+    document.getElementById('editProdName').value = '';
+    document.getElementById('editProdCategory').value = '';
+    document.getElementById('editProdBarcode').value = '';
+    document.getElementById('editProdPrice').value = '';
+    document.getElementById('editProdCost').value = '0';
+    document.getElementById('editProdOriginal').value = '0';
+    document.getElementById('editProdStock').value = '';
+    document.getElementById('editProdRating').value = '4.5';
+    document.getElementById('editProdBadge').value = '';
+    document.getElementById('editProdImage').value = '';
+    document.getElementById('editProdDesc').value = '';
+    document.getElementById('editProdSpecs').value = '';
     
     fetch('/admin/api/product/' + productId + '?t=' + Date.now())
         .then(response => {
@@ -2135,67 +2083,49 @@ function editProduct(productId) {
                 console.log('✅ Product loaded:', p.name);
                 
                 // Populate all fields
-                const fields = {
-                    'editProdId': p.id || '',
-                    'editProdIdDisplay': p.id || '',
-                    'editProdName': p.name || '',
-                    'editProdCategory': p.category || '',
-                    'editProdBarcode': p.barcode || '',
-                    'editProdPrice': p.price || 0,
-                    'editProdCost': p.cost_price || 0,
-                    'editProdOriginal': p.original_price || '',
-                    'editProdStock': p.stock || 0,
-                    'editProdRating': p.rating || 4.5,
-                    'editProdBadge': p.badge || '',
-                    'editProdImage': p.image || '',
-                    'editProdDesc': p.description || '',
-                    'editProdSpecs': (p.specs || []).join(', ')
-                };
+                document.getElementById('editProdId').value = p.id || '';
+                document.getElementById('editProdIdDisplay').value = p.id || '';
+                document.getElementById('editProdName').value = p.name || '';
+                document.getElementById('editProdCategory').value = p.category || '';
+                document.getElementById('editProdBarcode').value = p.barcode || '';
+                document.getElementById('editProdPrice').value = p.price || 0;
+                document.getElementById('editProdCost').value = p.cost_price || 0;
+                document.getElementById('editProdOriginal').value = p.original_price || 0;
+                document.getElementById('editProdStock').value = p.stock || 0;
+                document.getElementById('editProdRating').value = p.rating || 4.5;
+                document.getElementById('editProdBadge').value = p.badge || '';
+                document.getElementById('editProdImage').value = p.image || '';
+                document.getElementById('editProdDesc').value = p.description || '';
+                document.getElementById('editProdSpecs').value = (p.specs || []).join(', ');
                 
-                let count = 0;
-                Object.keys(fields).forEach(id => {
-                    const el = document.getElementById(id);
-                    if (el) {
-                        el.value = fields[id];
-                        count++;
-                        console.log(`  ✅ Set ${id} = ${fields[id]}`);
-                    } else {
-                        console.log(`  ⚠️ ${id} not found`);
-                    }
-                });
-                
-                console.log(`✅ Form populated with ${count} fields`);
-                alert('✅ Product loaded: ' + p.name);
+                showToast('✅ Product loaded: ' + p.name, 'success');
+                console.log('✅ Form populated with product data');
             } else {
-                alert('❌ Product not found');
-                modal.style.display = 'none';
+                showToast('❌ Product not found', 'error');
                 modal.classList.add('hidden');
+                modal.style.display = 'none';
             }
         })
         .catch(err => {
             console.error('❌ Error loading product:', err);
-            alert('❌ Error loading product: ' + err.message);
-            modal.style.display = 'none';
+            showToast('❌ Error loading product: ' + err.message, 'error');
             modal.classList.add('hidden');
+            modal.style.display = 'none';
         });
 }
-        
-  function closeEditModal() {
-    const modal = document.getElementById('editProductModal');
-    if (modal) {
-        modal.classList.add('hidden');
-        modal.style.display = 'none';
-    }
-}
 
-        
 // ============================================================
-// SAVE EDITED PRODUCT
+// SAVE EDITED PRODUCT - FIXED WORKING VERSION ✅
 // ============================================================
 function saveEditedProduct(event) {
     event.preventDefault();
     
     const productId = document.getElementById('editProdId').value;
+    if (!productId) {
+        showToast('❌ No product ID found', 'error');
+        return;
+    }
+    
     const data = {
         name: document.getElementById('editProdName').value.trim(),
         category: document.getElementById('editProdCategory').value,
@@ -2214,11 +2144,11 @@ function saveEditedProduct(event) {
     console.log('📦 Updating product:', data);
     
     if (!data.name) {
-        alert('❌ Please enter a product name');
+        showToast('❌ Please enter a product name', 'error');
         return;
     }
     if (data.price <= 0) {
-        alert('❌ Please enter a valid price');
+        showToast('❌ Please enter a valid price', 'error');
         return;
     }
     
@@ -2238,17 +2168,17 @@ function saveEditedProduct(event) {
     .then(result => {
         console.log('📥 Result:', result);
         if (result.success) {
-            alert('✅ Product updated successfully!');
+            showToast('✅ Product updated successfully!', 'success');
             document.getElementById('editProductModal').classList.add('hidden');
             document.getElementById('editProductModal').style.display = 'none';
-            setTimeout(() => location.reload(), 1000);
+            setTimeout(() => loadProductsWithFilters(), 500);
         } else {
-            alert('❌ ' + (result.message || 'Failed to update'));
+            showToast('❌ ' + (result.message || 'Failed to update'), 'error');
         }
     })
     .catch(err => {
         console.error('❌ Error:', err);
-        alert('❌ Error saving product: ' + err.message);
+        showToast('❌ Error saving product: ' + err.message, 'error');
     })
     .finally(() => {
         if (btn) {
@@ -2739,7 +2669,7 @@ function editCreditCustomer(customerId) {
         return;
     }
     
-    // ✅ FIX: Force open modal with display:flex
+    // Force open modal with display:flex
     modal.classList.remove('hidden');
     modal.style.display = 'flex';
     modal.style.zIndex = '99999';
@@ -2774,10 +2704,6 @@ function editCreditCustomer(customerId) {
                 }
                 
                 console.log('✅ Form populated!');
-                console.log('  - Name:', document.getElementById('creditFullName').value);
-                console.log('  - Phone:', document.getElementById('creditPhone').value);
-                console.log('  - Limit:', document.getElementById('creditLimit').value);
-                
                 alert('✅ Customer loaded: ' + c.full_name);
             } else {
                 alert('❌ ' + (data.message || 'Customer not found'));
@@ -2812,7 +2738,7 @@ function saveCreditCustomer(event) {
         return;
     }
     
-    // ✅ Check for duplicates before adding (only for new customers)
+    // Check for duplicates before adding (only for new customers)
     if (method === 'POST') {
         fetch('/admin/api/credit/customers')
             .then(r => r.json())
@@ -3247,7 +3173,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 console.log('✅ AcaciaMart Admin v3.0 - Fully Working!');
-console.log('📌 Features: Edit Product, Edit Credit Customer, Collection Rate, Real Charts');
+console.log('📌 Features: Edit Product Working, Edit Credit Customer, Collection Rate, Real Charts');
 </script>
 
 {% endblock %}
