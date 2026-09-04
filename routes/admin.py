@@ -73,8 +73,6 @@ def get_cached_or_load():
         
         # Load credit data
         try:
-            import requests
-            from config import Config
             response = requests.get(
                 f"{Config.SUPABASE_URL}/rest/v1/credit_customers?select=*",
                 headers=Config.SUPABASE_HEADERS,
@@ -142,9 +140,8 @@ IS_VERCEL = os.environ.get('VERCEL') == '1' or os.environ.get('NOW_REGION') is n
 print(f"🚀 Running on: {'Vercel' if IS_VERCEL else 'Local'}")
 
 # ============================================================
-# AUTHENTICATION ROUTES
+# AUTHENTICATION HELPERS (DEFINED ONCE)
 # ============================================================
-
 def allowed_file(filename):
     return '.' in filename and filename.rsplit('.', 1)[1].lower() in Config.ALLOWED_EXTENSIONS
 
@@ -197,7 +194,7 @@ def get_default_users():
     ]
 
 # ============================================================
-# 🔥 REPLACE YOUR ENTIRE /admin ROUTE WITH THIS
+# 🔥 ADMIN DASHBOARD (CACHED - WORKS EVERY TIME)
 # ============================================================
 @admin_bp.route('/admin')
 @admin_required
@@ -363,65 +360,8 @@ def admin_dashboard():
         )
 
 # ============================================================
-# REST OF YOUR CODE CONTINUES HERE...
-# (Keep all your other routes: /admin/login, /admin/api/products, etc.)
-# ============================================================
-
-def allowed_file(filename):
-    return '.' in filename and filename.rsplit('.', 1)[1].lower() in Config.ALLOWED_EXTENSIONS
-
-def is_admin():
-    user = session.get('user', {})
-    return user.get('role') == 'admin' or session.get('admin_logged_in')
-
-def is_logged_in():
-    return 'user' in session or session.get('admin_logged_in')
-
-def admin_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not is_admin():
-            flash('Admin access required', 'danger')
-            return redirect(url_for('admin.user_login'))
-        return f(*args, **kwargs)
-    return decorated_function
-
-def login_required(f):
-    @wraps(f)
-    def decorated_function(*args, **kwargs):
-        if not is_logged_in():
-            flash('Please login first', 'danger')
-            return redirect(url_for('admin.user_login'))
-        return f(*args, **kwargs)
-    return decorated_function
-
-def seed_demo_products():
-    demo_products = [
-        {'id': 'PROD_1', 'name': 'Wireless Headphones', 'price': 2999, 'stock': 45, 'category': 'Electronics', 'image': '', 'description': 'Premium wireless headphones'},
-        {'id': 'PROD_2', 'name': 'USB-C Cable', 'price': 499, 'stock': 120, 'category': 'Accessories', 'image': ''},
-        {'id': 'PROD_3', 'name': 'Bluetooth Speaker', 'price': 1499, 'stock': 30, 'category': 'Electronics', 'image': ''},
-        {'id': 'PROD_4', 'name': 'Laptop Stand', 'price': 899, 'stock': 25, 'category': 'Furniture', 'image': ''},
-        {'id': 'PROD_5', 'name': 'Wireless Mouse', 'price': 699, 'stock': 60, 'category': 'Accessories', 'image': ''},
-        {'id': 'PROD_6', 'name': 'Mechanical Keyboard', 'price': 2499, 'stock': 15, 'category': 'Electronics', 'image': ''},
-        {'id': 'PROD_7', 'name': 'HDMI Cable', 'price': 299, 'stock': 80, 'category': 'Accessories', 'image': ''},
-        {'id': 'PROD_8', 'name': 'USB Hub', 'price': 1299, 'stock': 20, 'category': 'Accessories', 'image': ''},
-        {'id': 'PROD_9', 'name': 'Monitor 24"', 'price': 14999, 'stock': 8, 'category': 'Electronics', 'image': ''},
-        {'id': 'PROD_10', 'name': 'Desk Lamp', 'price': 599, 'stock': 35, 'category': 'Furniture', 'image': ''},
-    ]
-    return demo_products
-
-def get_default_users():
-    return [
-        {'id': 'admin_1', 'email': 'admin@pricepoint.com', 'password': 'electronics2026', 'name': 'Admin User', 'role': 'admin'},
-        {'id': 'manager_1', 'email': 'manager@pricepoint.com', 'password': 'electronics2026', 'name': 'Store Manager', 'role': 'manager'},
-        {'id': 'pos_1', 'email': 'pos@pricepoint.com', 'password': 'electronics2026', 'name': 'POS Operator', 'role': 'pos'},
-        {'id': 'user_1', 'email': 'user@pricepoint.com', 'password': 'electronics2026', 'name': 'Regular User', 'role': 'user'}
-    ]
-
-# ============================================================
 # AUTHENTICATION ROUTES
 # ============================================================
-
 @admin_bp.route('/login', methods=['GET', 'POST'])
 def user_login():
     if request.method == 'POST':
@@ -504,6 +444,11 @@ def admin_logout():
     flash('Logged out', 'success')
     return redirect(url_for('admin.user_login'))
 
+# ============================================================
+# THE REST OF YOUR CODE CONTINUES HERE...
+# (Keep all your API routes, POS, Credit, etc.)
+# ============================================================
+# ... ALL YOUR OTHER ROUTES GO HERE ...
 # ============================================================
 # PRODUCTS API - MAIN
 # ============================================================
