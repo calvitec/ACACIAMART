@@ -2086,7 +2086,7 @@ function editProduct(productId) {
     
     console.log('✅ Modal found, forcing open...');
     
-    // ✅ FORCE OPEN - Remove all hiding
+    // ✅ CRITICAL FIX: Force open with display:flex
     modal.classList.remove('hidden');
     modal.style.display = 'flex';
     modal.style.position = 'fixed';
@@ -2101,9 +2101,8 @@ function editProduct(productId) {
     modal.style.padding = '20px';
     modal.style.visibility = 'visible';
     modal.style.opacity = '1';
-    modal.style.pointerEvents = 'auto';
     
-    // Also make sure the modal content is visible
+    // Make sure modal content is visible
     const modalContent = modal.querySelector('.modal');
     if (modalContent) {
         modalContent.style.display = 'block';
@@ -2119,8 +2118,6 @@ function editProduct(productId) {
     }
     
     console.log('✅ Modal forced open');
-    
-    // Use alert instead of toast to avoid issues
     alert('🔄 Loading product...');
     
     fetch('/admin/api/product/' + productId + '?t=' + Date.now())
@@ -2199,6 +2196,15 @@ function editProduct(productId) {
             modal.style.display = 'none';
             modal.classList.add('hidden');
         });
+}
+        
+
+        function closeEditModal() {
+    const modal = document.getElementById('editProductModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+    }
 }
 
 // ============================================================
