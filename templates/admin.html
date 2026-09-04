@@ -1636,6 +1636,129 @@
 <!-- ============================================================
      SCRIPTS - COMPLETE WORKING VERSION
      ============================================================ -->
+
+     <script>
+// ============================================================
+// FIX BROKEN SHOWTOAST - MUST BE FIRST!
+// ============================================================
+// This OVERRIDES the broken showToast function
+window.showToast = function(msg, type) {
+    console.log('🔔 Toast:', msg, type);
+    alert(msg); // Use alert as fallback
+};
+
+// ============================================================
+// EDIT PRODUCT - WORKING VERSION
+// ============================================================
+window.editProduct = function(productId) {
+    console.log('✏️ EDIT PRODUCT:', productId);
+
+    if (!productId) {
+        showToast('❌ No product ID found', 'error');
+        return;
+    }
+
+    showToast('🔄 Loading product...', 'info');
+
+    fetch('/admin/api/product/' + encodeURIComponent(productId) + '?t=' + Date.now())
+        .then(response => {
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('📦 Product data:', data);
+            
+            if (data.success && data.product) {
+                const p = data.product;
+                
+                const newName = prompt('Edit Product Name:', p.name || '');
+                if (newName === null) return;
+                
+                const newPrice = prompt('Edit Price (KSh):', p.price || 0);
+                if (newPrice === null) return;
+                
+                const newStock = prompt('Edit Stock:', p.stock || 0);
+                if (newStock === null) return;
+                
+                const newCategory = prompt('Edit Category:', p.category || '');
+                if (newCategory === null) return;
+                
+                const updateData = {
+                    name: newName || p.name,
+                    price: parseFloat(newPrice) || p.price,
+                    stock: parseInt(newStock) || p.stock,
+                    category: newCategory || p.category,
+                    barcode: p.barcode || '',
+                    cost_price: p.cost_price || 0,
+                    original_price: p.original_price || null,
+                    rating: p.rating || 4.5,
+                    badge: p.badge || '',
+                    image: p.image || '',
+                    description: p.description || '',
+                    specs: (p.specs || []).join(', ')
+                };
+                
+                if (confirm(`✅ Update product "${updateData.name}"?\n\nPrice: KSh ${updateData.price}\nStock: ${updateData.stock}\nCategory: ${updateData.category}`)) {
+                    fetch('/admin/api/product/' + encodeURIComponent(productId), {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify(updateData)
+                    })
+                    .then(response => response.json())
+                    .then(result => {
+                        if (result.success) {
+                            showToast('✅ Product updated successfully!', 'success');
+                            setTimeout(() => location.reload(), 1000);
+                        } else {
+                            showToast('❌ Failed to update: ' + (result.message || 'Unknown error'), 'error');
+                        }
+                    })
+                    .catch(err => {
+                        showToast('❌ Error saving: ' + err.message, 'error');
+                    });
+                }
+            } else {
+                showToast('❌ Product not found', 'error');
+            }
+        })
+        .catch(err => {
+            console.error('❌ Error:', err);
+            showToast('❌ Error loading product: ' + err.message, 'error');
+        });
+};
+
+// ============================================================
+// DELETE PRODUCT - FIXED
+// ============================================================
+window.deleteProduct = function(productId) {
+    if (!productId) {
+        showToast('❌ No product ID', 'error');
+        return;
+    }
+    
+    if (!confirm(`⚠️ Are you sure you want to delete product ${productId}?`)) return;
+    
+    fetch('/admin/api/product/' + encodeURIComponent(productId), { 
+        method: 'DELETE' 
+    })
+    .then(r => r.json())
+    .then(result => {
+        if (result.success) {
+            showToast('✅ Product deleted successfully!', 'success');
+            location.reload();
+        } else {
+            showToast('❌ Failed to delete: ' + (result.message || 'Unknown error'), 'error');
+        }
+    })
+    .catch(err => {
+        showToast('❌ Error deleting: ' + err.message, 'error');
+    });
+};
+
+// ============================================================
+// THE REST OF YOUR EXISTING CODE GOES HERE...
+// ============================================================
+// ... your existing functions ...
 <script>
 // ============================================================
 // SHOW SECTION
