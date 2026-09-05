@@ -24,18 +24,26 @@ shop_bp = Blueprint('shop', __name__)
 
 
 # ============================================================
-# WHATSAPP NOTIFICATION HELPER
+# WHATSAPP NOTIFICATION HELPER (UPDATED)
 # ============================================================
 
 def send_whatsapp_notification(order_data, customer_name, order_id, total):
-    """Send order notification via WhatsApp"""
+    """Send order notification via WhatsApp with revenue breakdown"""
     try:
         # Format the order items for WhatsApp
         items_text = ""
         for item in order_data.get('items', []):
             items_text += f"  • {item.get('name')} x{item.get('quantity')} = KSh {item.get('total', 0):,.2f}\n"
         
-        # Create the WhatsApp message
+        # Get revenue breakdown from order_data
+        net_revenue = order_data.get('net_revenue', 0)
+        shipping = order_data.get('shipping', 0)
+        tax = order_data.get('tax', 0)
+        discount = order_data.get('discount', 0)
+        subtotal = order_data.get('subtotal', 0)
+        total_charged = order_data.get('total_charged', total)
+        
+        # Create the WhatsApp message with clear breakdown
         message = f"""
 🛍️ *NEW ORDER ALERT!*
 
@@ -48,9 +56,15 @@ def send_whatsapp_notification(order_data, customer_name, order_id, total):
 📦 *Items:*
 {items_text}
 
-💰 *Subtotal:* KSh {order_data.get('subtotal', 0):,.2f}
-🚚 *Shipping:* KSh {order_data.get('shipping', 0):,.2f}
-💳 *Total:* KSh {total:,.2f}
+💰 *Order Breakdown:*
+  • Subtotal: KSh {subtotal:,.2f}
+  • Discount: -KSh {discount:,.2f}
+  • Tax (16%): KSh {tax:,.2f}
+  • Shipping: KSh {shipping:,.2f} 🚚
+
+📊 *Revenue:*
+  • Net Revenue: KSh {net_revenue:,.2f} ✅ (products only)
+  • Total Charged: KSh {total_charged:,.2f}
 
 📅 *Order Date:* {datetime.utcnow().strftime('%Y-%m-%d %H:%M')}
 
@@ -65,7 +79,6 @@ def send_whatsapp_notification(order_data, customer_name, order_id, total):
         # ============================================================
         # WHATSAPP NUMBER (YOUR STORE NUMBER)
         # ============================================================
-        # Replace this with YOUR WhatsApp number (with country code, no +)
         WHATSAPP_PHONE = "254745793237"  # ← CHANGE THIS TO YOUR NUMBER
         
         # Create WhatsApp API URL
@@ -85,6 +98,34 @@ def send_whatsapp_notification(order_data, customer_name, order_id, total):
             'success': False,
             'error': str(e)
         }
+
+
+# ============================================================
+# REVENUE CALCULATION HELPER (NEW)
+# ============================================================
+
+def calculate_revenue_breakdown(subtotal, shipping, discount=0, tax_rate=0.16):
+    """
+    Calculate correct revenue breakdown
+    Revenue = product sales ONLY (excluding shipping)
+    Returns: dict with revenue and shipping separated
+    """
+    net_revenue = subtotal - discount  # ✅ Revenue (products only)
+    tax = subtotal * tax_rate          # Tax on products
+    total_charged = net_revenue + tax + shipping  # What customer pays
+    
+    return {
+        'net_revenue': net_revenue,      # ✅ For revenue reports
+        'tax': tax,
+        'shipping_collected': shipping,  # 🚚 What customer paid
+        'total_charged': total_charged,  # Grand total
+        'revenue_breakdown': {
+            'products': subtotal,
+            'discounts': discount,
+            'tax': tax,
+            'shipping': shipping  # 🚚 Separate from revenue
+        }
+    }
 
 
 # ============================================================
@@ -565,7 +606,7 @@ def checkout_page():
 
 
 # ============================================================
-# ✅ COMPLETE FIXED PLACE ORDER - Saves to DB AND sends WhatsApp
+# ✅ COMPLETE UPDATED PLACE ORDER - Shipping NOT in revenue
 # ============================================================
 @shop_bp.route('/place-order', methods=['POST'])
 def place_order():
@@ -589,10 +630,11 @@ def place_order():
         customer_phone = data.get('customer_phone') or data.get('phone') or 'N/A'
         customer_address = data.get('customer_address') or data.get('address') or 'Online Order'
 
-        # Get shipping from frontend (calculated by geolocation)
+        # Get values from frontend
         shipping = float(data.get('shipping', 0) or 0)
-        total = float(data.get('total', 0) or 0)
         subtotal = float(data.get('subtotal', 0) or 0)
+        discount = float(data.get('discount', 0) or 0)  # Add discount field
+        tax_rate = 0.16  # 16% VAT
 
         # If subtotal not sent, calculate from cart
         if subtotal == 0:
@@ -610,17 +652,27 @@ def place_order():
                             subtotal += float(bundle.get('price', 0) or 0) * int(quantity)
                             break
 
-        # Calculate total if not provided
-        if total == 0:
-            total = subtotal + shipping
+        # ============================================================
+        # ✅ CORRECT REVENUE CALCULATION
+        # ============================================================
+        # Revenue = product sales ONLY (excluding shipping)
+        net_revenue = subtotal - discount  # ✅ This is your actual revenue
+        
+        # Calculate tax on products only
+        tax = subtotal * tax_rate
+        
+        # What customer pays (includes shipping)
+        total_charged = net_revenue + tax + shipping
 
         print(f"👤 Customer: {customer_name}")
         print(f"📧 Email: {customer_email}")
         print(f"📱 Phone: {customer_phone}")
         print(f"📍 Address: {customer_address}")
         print(f"📦 Subtotal: {subtotal}")
-        print(f"🚚 Shipping: {shipping}")
-        print(f"💰 Total: {total}")
+        print(f"💰 Discount: {discount}")
+        print(f"📊 Net Revenue: {net_revenue} ✅")
+        print(f"🚚 Shipping: {shipping} (separate)")
+        print(f"💳 Total Charged: {total_charged}")
         print("=" * 60)
 
         # ===== BUILD ORDER ITEMS =====
@@ -676,7 +728,7 @@ def place_order():
         order_id = data.get('order_id') or f'ELEC-{datetime.utcnow().strftime("%Y%m%d%H%M%S")}'
 
         # ============================================================
-        # ✅ FIX: Handle estimated_delivery properly
+        # Handle estimated_delivery properly
         # ============================================================
         estimated_delivery = data.get('estimated_delivery', '')
         
@@ -696,17 +748,31 @@ def place_order():
                 estimated_delivery = (datetime.utcnow() + timedelta(days=3)).isoformat()
 
         # ============================================================
-        # ✅ ORDER DATA - NO shipping_distance
+        # ✅ ORDER DATA WITH REVENUE SEPARATED FROM SHIPPING
         # ============================================================
         order_data = {
             'order_id': str(order_id),
             'items': order_items,
-            'subtotal': float(subtotal),
-            'shipping': float(shipping),
-            'total': float(total),
+            
+            # 📊 REVENUE FIELDS (for your reports)
+            'subtotal': float(subtotal),           # Products before tax
+            'discount': float(discount),           # Any discounts
+            'tax': float(tax),                     # Tax on products
+            'net_revenue': float(net_revenue),     # ✅ THIS IS YOUR REVENUE
+            
+            # 🚚 SHIPPING (tracked separately - NOT revenue)
+            'shipping': float(shipping),           # What customer paid for shipping
+            'shipping_cost': float(data.get('shipping_cost', 0) or 0),  # What you paid courier
+            
+            # 💰 WHAT CUSTOMER PAYS (includes shipping + tax)
+            'total_charged': float(total_charged), # Grand total customer pays
+            
+            # Status & metadata
             'status': str(data.get('status', 'pending')),
             'source': str(data.get('source', 'web')),
             'created_at': datetime.utcnow().isoformat(),
+            
+            # Customer info
             'customer_name': str(customer_name),
             'customer_email': str(customer_email),
             'customer_phone': str(customer_phone),
@@ -717,15 +783,20 @@ def place_order():
                 'phone': str(customer_phone),
                 'address': str(customer_address),
             },
+            
+            # Delivery info
             'estimated_delivery': estimated_delivery,
             'delivery_notes': str(data.get('delivery_notes', '')),
         }
 
+        # Add location if provided
         if data.get('location'):
             order_data['location'] = data.get('location')
 
         print(f"🔥 SAVING ORDER: {order_id}")
-        print(f"📦 Order data: {json.dumps(order_data, indent=2, default=str)}")
+        print(f"📊 Net Revenue: {net_revenue} (products only) ✅")
+        print(f"🚚 Shipping: {shipping} (separate)")
+        print(f"💳 Total Charged: {total_charged}")
 
         # ============================================================
         # SAVE TO SUPABASE
@@ -755,9 +826,9 @@ def place_order():
                 utils.data.orders_cache = []
 
                 # ============================================================
-                # ✅ SEND WHATSAPP NOTIFICATION (BOTH TO SYSTEM AND WHATSAPP)
+                # ✅ SEND WHATSAPP NOTIFICATION WITH REVENUE BREAKDOWN
                 # ============================================================
-                whatsapp_result = send_whatsapp_notification(order_data, customer_name, order_id, total)
+                whatsapp_result = send_whatsapp_notification(order_data, customer_name, order_id, total_charged)
                 
                 whatsapp_url = None
                 if whatsapp_result.get('success'):
@@ -769,10 +840,12 @@ def place_order():
                 return jsonify({
                     'success': True,
                     'order_id': order_id,
-                    'total': total,
+                    'total': total_charged,
+                    'net_revenue': net_revenue,  # ✅ Send revenue separately
+                    'shipping': shipping,        # 🚚 Send shipping separately
                     'message': 'Order placed successfully!',
                     'customer_name': customer_name,
-                    'whatsapp_url': whatsapp_url,  # ✅ Frontend will open this
+                    'whatsapp_url': whatsapp_url,
                 })
             else:
                 print(f"❌ Supabase error: {response.status_code}")
