@@ -4817,11 +4817,11 @@ function printReceipt() {
     win.document.close();
 }
 // ============================================================
-// LOAD CATEGORIES DYNAMICALLY FROM DATABASE
+// LOAD CATEGORIES FROM YOUR BACKEND API
 // ============================================================
 
 function loadCategories() {
-    console.log('🔄 Loading categories dynamically...');
+    console.log('🔄 Loading categories from backend...');
 
     const container = document.getElementById('categoryFilters');
     if (!container) {
@@ -4838,43 +4838,86 @@ function loadCategories() {
     allBtn.onclick = function() { filterByCategory('all', this); };
     container.appendChild(allBtn);
 
-    // ✅ NEW SUPABASE URL
-    const SUPABASE_URL = 'https://hzqrdwerkgfmfaufabjr.supabase.co';
-    const SUPABASE_KEY = 'sb_publishable_tnBOmCO7EFfIoXfNjEH_Tg_D7WX-zld';
+    // ✅ Use your Flask backend API
+    fetch('/api/categories')
+        .then(r => r.json())
+        .then(data => {
+            console.log('📊 Categories from backend:', data);
 
-    fetch(`${SUPABASE_URL}/rest/v1/products?select=category`, {
-        headers: {
-            'apikey': SUPABASE_KEY,
-            'Authorization': `Bearer ${SUPABASE_KEY}`
-        }
-    })
-    .then(r => r.json())
-    .then(products => {
-        const categories = {};
-        products.forEach(p => {
-            const cat = p.category || 'Uncategorized';
-            // Show ALL categories (keep all)
-            if (cat && cat !== 'Uncategorized' && cat !== 'Test') {
-                categories[cat] = (categories[cat] || 0) + 1;
+            // Get categories (skip 'All' if present)
+            const categories = {};
+            for (const key in data) {
+                if (key !== 'All' && data[key] && data[key].count > 0) {
+                    categories[key] = data[key].count;
+                }
             }
+
+            const sortedCategories = Object.keys(categories).sort();
+            console.log('📊 Categories loaded:', sortedCategories);
+
+            sortedCategories.forEach(cat => {
+                const pill = document.createElement('span');
+                pill.className = 'category-pill';
+                pill.dataset.category = cat;
+                pill.textContent = cat + ' (' + categories[cat] + ')';
+                pill.onclick = function() { filterByCategory(cat, this); };
+                container.appendChild(pill);
+            });
+
+            console.log('✅ Categories loaded: ' + sortedCategories.length);
+        })
+        .catch(err => {
+            console.error('❌ Error loading categories:', err);
+            // Fallback: Use local products data
+            loadCategoriesFromLocal();
         });
+}
 
-        const sortedCategories = Object.keys(categories).sort();
-        console.log('📊 Categories loaded:', sortedCategories);
+// ============================================================
+// FALLBACK: Load categories from local products
+// ============================================================
 
-        sortedCategories.forEach(cat => {
-            const pill = document.createElement('span');
-            pill.className = 'category-pill';
-            pill.dataset.category = cat;
-            pill.textContent = cat + ' (' + categories[cat] + ')';
-            pill.onclick = function() { filterByCategory(cat, this); };
-            container.appendChild(pill);
-        });
+function loadCategoriesFromLocal() {
+    console.log('🔄 Loading categories from local products...');
 
-        console.log('✅ Categories loaded: ' + sortedCategories.length);
-    })
-    .catch(err => {
-        console.error('❌ Error loading categories:', err);
+    const container = document.getElementById('categoryFilters');
+    if (!container) return;
+
+    // Use the allProducts array that's already loaded
+    if (typeof allProducts === 'undefined' || !allProducts.length) {
+        console.log('⚠️ No local products available');
+        return;
+    }
+
+    const categories = {};
+    allProducts.forEach(p => {
+        const cat = p.category || 'Uncategorized';
+        if (cat && cat !== 'Uncategorized' && cat !== 'Test' && cat !== '') {
+            categories[cat] = (categories[cat] || 0) + 1;
+        }
+    });
+
+    const sortedCategories = Object.keys(categories).sort();
+    console.log('📊 Local categories:', sortedCategories);
+
+    // Clear existing pills (keep "All")
+    const allPill = container.querySelector('.category-pill.active');
+    container.innerHTML = '';
+    if (allPill) {
+        allPill.className = 'category-pill active';
+        allPill.dataset.category = 'all';
+        allPill.textContent = 'All';
+        allPill.onclick = function() { filterByCategory('all', this); };
+        container.appendChild(allPill);
+    }
+
+    sortedCategories.forEach(cat => {
+        const pill = document.createElement('span');
+        pill.className = 'category-pill';
+        pill.dataset.category = cat;
+        pill.textContent = cat + ' (' + categories[cat] + ')';
+        pill.onclick = function() { filterByCategory(cat, this); };
+        container.appendChild(pill);
     });
 }
 
