@@ -17,13 +17,13 @@
         * { margin: 0; padding: 0; box-sizing: border-box; }
 
         :root {
-            --primary: #d21f1f;
-            --primary-dark: #a81616;
-            --primary-light: #ef4444;
-            --primary-bg: #fef2f2;
-            --accent: #f7941d;
-            --accent-dark: #d97e0c;
-            --danger: #dc2626;
+            --primary: #059669;
+            --primary-dark: #047857;
+            --primary-light: #10b981;
+            --primary-bg: #ecfdf5;
+            --accent: #f59e0b;
+            --accent-dark: #d97706;
+            --danger: #ef4444;
             --gray-50: #f8fafc;
             --gray-100: #f1f5f9;
             --gray-200: #e2e8f0;
@@ -33,31 +33,31 @@
             --gray-600: #475569;
             --gray-700: #334155;
             --gray-800: #1e293b;
-            --gray-900: #14110f;
-            --bg-body: #f7f5f2;
+            --gray-900: #0f172a;
+            --bg-body: #f8fafc;
             --bg-card: #ffffff;
             --bg-input: #f1f5f9;
-            --text-primary: #14110f;
-            --text-secondary: #4b5563;
+            --text-primary: #0f172a;
+            --text-secondary: #475569;
             --text-muted: #94a3b8;
-            --border-color: #e6e2db;
+            --border-color: #e2e8f0;
             --shadow: 0 1px 3px rgba(0,0,0,0.06);
-            --shadow-lg: 0 10px 40px rgba(0,0,0,0.09);
-            --radius: 10px;
+            --shadow-lg: 0 10px 40px rgba(0,0,0,0.08);
+            --radius: 12px;
             --transition: all 0.25s ease;
-            --header-bg: rgba(255,255,255,0.92);
+            --header-bg: rgba(255,255,255,0.78);
         }
 
         [data-theme="dark"] {
-            --bg-body: #14110f;
-            --bg-card: #201c19;
-            --bg-input: #2c2622;
-            --text-primary: #f5f1ea;
-            --text-secondary: #b3aba1;
-            --text-muted: #8a8178;
-            --border-color: #35302b;
-            --primary-bg: #3a1414;
-            --header-bg: rgba(20,17,15,0.9);
+            --bg-body: #0f172a;
+            --bg-card: #1e293b;
+            --bg-input: #334155;
+            --text-primary: #f1f5f9;
+            --text-secondary: #94a3b8;
+            --text-muted: #64748b;
+            --border-color: #334155;
+            --primary-bg: #064e3b;
+            --header-bg: rgba(15,23,42,0.72);
         }
 
         html { scroll-behavior: smooth; }
@@ -255,14 +255,14 @@
         .hero-slide .slide-img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
         .hero-slide .slide-overlay {
             position:absolute; inset:0;
-            background: linear-gradient(180deg, rgba(20,10,8,0.55) 0%, rgba(20,10,8,0.35) 40%, rgba(20,10,8,0.78) 100%),
-                        linear-gradient(100deg, rgba(210,31,31,0.55) 0%, rgba(168,22,22,0.22) 45%, rgba(20,17,15,0.15) 100%);
+            background: linear-gradient(180deg, rgba(4,20,15,0.55) 0%, rgba(4,20,15,0.35) 40%, rgba(4,20,15,0.78) 100%),
+                        linear-gradient(100deg, rgba(5,150,105,0.55) 0%, rgba(4,120,87,0.22) 45%, rgba(15,23,42,0.15) 100%);
         }
         .hero-content { position:relative; z-index:5; text-align:center; max-width:680px; margin:0 auto; }
         .hero-title { font-family:'Plus Jakarta Sans',sans-serif; font-size:2.7rem; font-weight:800; line-height:1.1; color:white; margin-bottom:0.55rem; text-shadow:0 4px 26px rgba(0,0,0,0.35); letter-spacing:-0.8px; }
-        .hero-title .highlight { color: var(--accent); }
+        .hero-title .highlight { background: linear-gradient(135deg, #6ee7b7, #34d399); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
         .hero-subtitle { font-size:1.02rem; color:rgba(255,255,255,0.92); line-height:1.6; margin-bottom:1.3rem; max-width:480px; margin-left:auto; margin-right:auto; }
-        .hero-badge { display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.14); backdrop-filter:blur(10px); padding:6px 16px; border-radius:9999px; font-weight:700; font-size:0.72rem; color:#fecaca; border:1px solid rgba(255,255,255,0.18); margin-bottom:1rem; }
+        .hero-badge { display:inline-flex; align-items:center; gap:6px; background:rgba(255,255,255,0.14); backdrop-filter:blur(10px); padding:6px 16px; border-radius:9999px; font-weight:700; font-size:0.72rem; color:#a7f3d0; border:1px solid rgba(255,255,255,0.18); margin-bottom:1rem; }
         .hero-badge i { color: var(--accent); }
         .hero-btn-primary { background:white; color:var(--gray-900); padding:13px 30px; border-radius:9999px; font-weight:800; font-size:0.9rem; transition:all .3s; display:inline-flex; align-items:center; gap:8px; text-decoration:none; box-shadow:0 12px 30px rgba(0,0,0,0.25); }
         .hero-btn-primary:hover { transform:translateY(-3px) scale(1.03); }
@@ -287,20 +287,31 @@
         .section-heading .sub { font-size:0.78rem; color:var(--text-muted); }
 
         .home-category-grid {
-            display:grid; grid-template-columns:repeat(auto-fill,minmax(120px,1fr)); gap:12px;
+            display:grid; grid-template-columns:repeat(auto-fill,minmax(150px,1fr)); gap:14px;
         }
-        @media (min-width:640px) { .home-category-grid { grid-template-columns:repeat(auto-fill,minmax(140px,1fr)); } }
+        @media (min-width:640px) { .home-category-grid { grid-template-columns:repeat(auto-fill,minmax(180px,1fr)); } }
         .home-category-tile {
             background: var(--bg-card); border:1px solid var(--border-color); border-radius:14px;
-            padding:16px 10px; text-align:center; cursor:pointer; transition: var(--transition);
+            overflow:hidden; cursor:pointer; transition: var(--transition); position:relative;
         }
-        .home-category-tile:hover { transform:translateY(-4px); box-shadow:var(--shadow-lg); border-color:var(--primary); }
-        .home-category-tile .tile-icon {
-            width:52px; height:52px; margin:0 auto 8px; border-radius:50%; background:var(--primary-bg);
-            display:flex; align-items:center; justify-content:center; font-size:1.3rem; color:var(--primary);
+        .home-category-tile:hover { transform:translateY(-5px); box-shadow:var(--shadow-lg); border-color:var(--primary); }
+        .home-category-tile .tile-image {
+            width:100%; height:110px; object-fit:cover; background:var(--bg-input); display:block;
         }
-        .home-category-tile .tile-name { font-size:0.78rem; font-weight:700; color:var(--text-primary); line-height:1.25; }
+        .home-category-tile .tile-icon-badge {
+            position:absolute; top:8px; left:8px; width:30px; height:30px; border-radius:50%;
+            background:rgba(255,255,255,0.92); display:flex; align-items:center; justify-content:center;
+            font-size:0.85rem; color:var(--primary); box-shadow:0 2px 8px rgba(0,0,0,0.15);
+        }
+        .home-category-tile .tile-info { padding:10px 12px 12px; text-align:center; }
+        .home-category-tile .tile-name { font-size:0.8rem; font-weight:700; color:var(--text-primary); line-height:1.25; }
         .home-category-tile .tile-count { font-size:0.65rem; color:var(--text-muted); margin-top:2px; }
+        .home-category-tile.view-all {
+            display:flex; flex-direction:column; align-items:center; justify-content:center; gap:6px;
+            background:var(--primary-bg); border:2px dashed var(--primary);
+        }
+        .home-category-tile.view-all i { font-size:1.4rem; color:var(--primary); }
+        .home-category-tile.view-all .tile-name { color:var(--primary); }
 
         /* ============================================================
            PRODUCT CAROUSEL (per-category sample overview)
@@ -954,16 +965,56 @@
             if (!e.target.closest('.cat-mega-btn') && !e.target.closest('.cat-mega-panel')) closeCatMega();
         });
 
+        // Representative real photos per category, matched by keyword. Falls back to a generic
+        // grocery-basket shot if a category name doesn't match anything below.
+        const CATEGORY_IMAGE_MAP = [
+            [['beverage', 'drink', 'juice', 'soda', 'water'], 'https://images.unsplash.com/photo-1544145945-f90425340c7e?w=400&h=300&fit=crop&auto=format'],
+            [['snack', 'chip', 'biscuit', 'confection'], 'https://images.unsplash.com/photo-1613919113640-25732ec5e61f?w=400&h=300&fit=crop&auto=format'],
+            [['fresh', 'fruit', 'vegetable', 'produce'], 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=400&h=300&fit=crop&auto=format'],
+            [['dairy', 'milk', 'cheese', 'yog'], 'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=400&h=300&fit=crop&auto=format'],
+            [['bakery', 'bread'], 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400&h=300&fit=crop&auto=format'],
+            [['meat', 'butchery', 'chicken', 'beef'], 'https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?w=400&h=300&fit=crop&auto=format'],
+            [['household', 'clean', 'homecare', 'laundry'], 'https://images.unsplash.com/photo-1585421514738-01798e348b17?w=400&h=300&fit=crop&auto=format'],
+            [['health', 'beauty', 'personal care', 'cosmetic'], 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&h=300&fit=crop&auto=format'],
+            [['baby', 'kid'], 'https://images.unsplash.com/photo-1522771930-78848d9293e8?w=400&h=300&fit=crop&auto=format'],
+            [['frozen'], 'https://images.unsplash.com/photo-1584362917165-526a968579e8?w=400&h=300&fit=crop&auto=format'],
+            [['grain', 'cereal', 'rice', 'flour', 'cupboard'], 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400&h=300&fit=crop&auto=format'],
+            [['electronic', 'appliance'], 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=400&h=300&fit=crop&auto=format'],
+            [['stationery', 'office'], 'https://images.unsplash.com/photo-1568205612837-017257d2310a?w=400&h=300&fit=crop&auto=format'],
+            [['liquor', 'wine', 'beer', 'spirit', 'alcohol'], 'https://images.unsplash.com/photo-1470337458703-46ad1756a187?w=400&h=300&fit=crop&auto=format'],
+        ];
+        function getCategoryImage(category) {
+            const lower = category.toLowerCase();
+            for (const [keywords, url] of CATEGORY_IMAGE_MAP) {
+                if (keywords.some(k => lower.includes(k))) return url;
+            }
+            return 'https://images.unsplash.com/photo-1543168256-418811576931?w=400&h=300&fit=crop&auto=format';
+        }
+
+        const HOME_CATEGORY_LIMIT = 7;
+
         function buildHomeCategoryGrid() {
             const grid = document.getElementById('homeCategoryGrid');
             const cats = realCategories();
-            grid.innerHTML = cats.map(c => `
+            const shown = cats.slice(0, HOME_CATEGORY_LIMIT);
+            let html = shown.map(c => `
                 <div class="home-category-tile" onclick="showShop('${c}')">
-                    <div class="tile-icon"><i class="fas ${CATEGORY_INFO[c].icon}"></i></div>
-                    <div class="tile-name">${c}</div>
-                    <div class="tile-count">${CATEGORY_INFO[c].count} items</div>
+                    <img class="tile-image" src="${getCategoryImage(c)}" alt="${c}" loading="lazy">
+                    <span class="tile-icon-badge"><i class="fas ${CATEGORY_INFO[c].icon}"></i></span>
+                    <div class="tile-info">
+                        <div class="tile-name">${c}</div>
+                        <div class="tile-count">${CATEGORY_INFO[c].count} items</div>
+                    </div>
                 </div>
             `).join('');
+            if (cats.length > HOME_CATEGORY_LIMIT) {
+                html += `
+                <div class="home-category-tile view-all" onclick="showShop('all')" style="min-height:100%;">
+                    <i class="fas fa-th-large"></i>
+                    <div class="tile-name">View All<br>Categories</div>
+                </div>`;
+            }
+            grid.innerHTML = html;
         }
 
         function renderStars(rating) {
@@ -973,9 +1024,11 @@
             return out;
         }
 
+        const HOME_CAROUSEL_LIMIT = 5;
+
         function buildCarousels() {
             const container = document.getElementById('carouselContainer');
-            const cats = realCategories();
+            const cats = realCategories().slice(0, HOME_CAROUSEL_LIMIT);
             let html = '';
             cats.forEach(cat => {
                 const items = Object.entries(ALL_PRODUCTS).filter(([id, p]) => p.category === cat).slice(0, 10);
