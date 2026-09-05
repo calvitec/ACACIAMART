@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <style>
-        /* ===== ALL STYLES ===== */
+        /* ===== ALL STYLES (same as before) ===== */
         * { font-family: 'Inter', sans-serif; margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #f0f4f8; color: #0b1a2f; min-height: 100vh; }
 
@@ -483,7 +483,7 @@
             </div>
             <div class="flex items-center gap-3 bg-white px-4 py-2 rounded-full shadow-sm border border-gray-100">
                 <span class="text-gray-400 text-sm">Total:</span>
-                <span class="font-bold text-[#0b2b1e] text-lg" id="orderTotal">KSh {{ "%.0f"|format(subtotal) }}</span>
+                <span class="font-bold text-[#0b2b1e] text-lg" id="orderTotal">KSh {{ "%.0f"|format(total) }}</span>
             </div>
         </div>
 
@@ -555,7 +555,7 @@
                                 <label class="form-label"><i class="fas fa-phone"></i> Phone Number <span class="required">*</span></label>
                                 <div class="input-wrapper">
                                     <i class="fas fa-phone input-icon"></i>
-                                    <input type="tel" class="form-input" placeholder="+254 700 000 000" id="phone" />
+                                    <input type="tel" class="form-input" placeholder="0712345678" id="phone" />
                                 </div>
                             </div>
                             <div>
@@ -805,7 +805,7 @@
                         </div>
                         <div class="summary-total">
                             <span class="text-[#0b1a2f]">Total</span>
-                            <span class="value" id="totalDisplay">KSh {{ "%.0f"|format(subtotal) }}</span>
+                            <span class="value" id="totalDisplay">KSh {{ "%.0f"|format(total) }}</span>
                         </div>
                     </div>
 
@@ -847,11 +847,10 @@
 
     <script>
     // ============================================================
-    // ACACIAMART CHECKOUT - COMPLETE FIXED VERSION
+    // ACACIAMART CHECKOUT - FIXED WITH SHIPPING + PHONE VALIDATION
     // ============================================================
 
     console.log('🚀 ACACIAMART Checkout Loaded');
-    console.log('📍 Store: Nairobi CBD (Lat: -1.286389, Lng: 36.817223)');
 
     // ============================================================
     // GLOBAL VARIABLES
@@ -862,7 +861,7 @@
     let shippingDistance = 0;
     let shippingCalculated = false;
     let subtotal = {{ subtotal }};
-    let totalAmount = subtotal;
+    let totalAmount = {{ total }};  // ✅ THIS INCLUDES SHIPPING
     let storeLat = -1.286389;
     let storeLng = 36.817223;
     let userLat = null;
@@ -886,6 +885,59 @@
             Math.sin(dLon/2) * Math.sin(dLon/2);
         const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
         return R * c;
+    }
+
+    // ============================================================
+    // ✅ FORMAT PHONE NUMBER - FIXED
+    // ============================================================
+    function formatPhoneNumber(phone) {
+        // Remove all non-numeric characters
+        let cleaned = phone.replace(/\D/g, '');
+        
+        // If empty, return empty
+        if (!cleaned) return '';
+        
+        // If starts with 0, remove it
+        if (cleaned.startsWith('0')) {
+            cleaned = cleaned.substring(1);
+        }
+        
+        // If starts with 254, keep it
+        if (cleaned.startsWith('254')) {
+            return cleaned;
+        }
+        
+        // If starts with 7, add 254
+        if (cleaned.startsWith('7')) {
+            return '254' + cleaned;
+        }
+        
+        // If starts with 1, add 254
+        if (cleaned.startsWith('1')) {
+            return '254' + cleaned;
+        }
+        
+        return cleaned;
+    }
+
+    // ============================================================
+    // ✅ VALIDATE PHONE NUMBER - FIXED
+    // ============================================================
+    function validatePhoneNumber(phone) {
+        const formatted = formatPhoneNumber(phone);
+        console.log('📱 Phone validation:', { original: phone, formatted: formatted });
+        
+        // Must be exactly 12 digits after formatting (254XXXXXXXXX)
+        if (formatted.length !== 12) {
+            return { valid: false, message: 'Please enter a valid phone number (e.g., 0712345678)', formatted: formatted };
+        }
+        
+        // Must start with 254
+        if (!formatted.startsWith('254')) {
+            return { valid: false, message: 'Phone must start with 254 or 0', formatted: formatted };
+        }
+        
+        return { valid: true, formatted: formatted };
     }
 
     // ============================================================
@@ -1100,6 +1152,9 @@
         shippingCost = calculateShippingCost(distance);
         shippingCalculated = true;
         
+        // ✅ UPDATE TOTAL AMOUNT WITH SHIPPING
+        totalAmount = subtotal + shippingCost;
+        
         document.getElementById('shippingCostContainer').style.display = 'block';
         document.getElementById('shippingPending').style.display = 'none';
         
@@ -1109,8 +1164,6 @@
         const orderTotal = document.getElementById('orderTotal');
         const distanceInfo = document.getElementById('shippingDistanceInfo');
         const methodLabel = document.getElementById('shippingMethodLabel');
-        
-        totalAmount = subtotal + shippingCost;
         
         if (shippingCost === 0) {
             costDisplay.textContent = 'FREE 🎉';
@@ -1132,9 +1185,16 @@
             }
         }
         
+        // ✅ UPDATE DISPLAY WITH SHIPPING INCLUDED
         totalDisplay.textContent = 'KSh ' + totalAmount.toLocaleString();
         if (orderTotal) orderTotal.textContent = 'KSh ' + totalAmount.toLocaleString();
         distanceInfo.textContent = `Distance: ${distance.toFixed(1)} km from our store | Order: KSh ${subtotal.toLocaleString()}`;
+        
+        // ✅ UPDATE M-PESA BUTTON AMOUNT
+        const mpesaBtn = document.getElementById('mpesaPayBtn');
+        if (mpesaBtn) {
+            mpesaBtn.innerHTML = `<i class="fas fa-mobile-alt"></i> Pay KSh ${totalAmount.toLocaleString()}`;
+        }
         
         const freeShippingInfo = document.getElementById('freeShippingInfo');
         if (subtotal >= 50000) {
@@ -1238,7 +1298,7 @@
     }
 
     // ============================================================
-    // ✅ PAY WITH M-PESA - FIXED
+    // ✅ PAY WITH M-PESA - FIXED WITH SHIPPING + PHONE VALIDATION
     // ============================================================
     function payWithMpesa() {
         console.log('📱 payWithMpesa called');
@@ -1258,24 +1318,29 @@
             return;
         }
 
-        const phone = document.getElementById('phone').value.trim();
-        if (!phone) {
+        const phoneInput = document.getElementById('phone').value.trim();
+        if (!phoneInput) {
             showToast('⚠️ Please enter your phone number for M-Pesa', 'warning');
             document.getElementById('phone').focus();
             return;
         }
 
-        let formattedPhone = phone.replace(/\s/g, '');
-        if (formattedPhone.startsWith('0')) {
-            formattedPhone = '254' + formattedPhone.substring(1);
-        } else if (!formattedPhone.startsWith('254')) {
-            formattedPhone = '254' + formattedPhone;
-        }
-
-        if (formattedPhone.length !== 12) {
-            showToast('⚠️ Please enter a valid phone number (e.g., 0712345678)', 'warning');
+        // ✅ VALIDATE PHONE NUMBER - FIXED
+        const validation = validatePhoneNumber(phoneInput);
+        console.log('📱 Phone validation result:', validation);
+        
+        if (!validation.valid) {
+            showToast('⚠️ ' + validation.message, 'warning');
+            document.getElementById('phone').focus();
+            document.getElementById('phone').style.borderColor = '#dc2626';
+            setTimeout(() => {
+                document.getElementById('phone').style.borderColor = '';
+            }, 3000);
             return;
         }
+
+        const formattedPhone = validation.formatted;
+        console.log('📱 Formatted phone for M-Pesa:', formattedPhone);
 
         isProcessingPayment = true;
         
@@ -1300,10 +1365,14 @@
 
         const orderId = 'ORD-' + Date.now().toString(36).toUpperCase();
 
+        // ✅ USE totalAmount WHICH INCLUDES SHIPPING
+        const paymentAmount = totalAmount;
         console.log('📤 Sending M-Pesa request:', {
             phone: formattedPhone,
-            amount: totalAmount,
-            order_id: orderId
+            amount: paymentAmount,
+            order_id: orderId,
+            subtotal: subtotal,
+            shipping: shippingCost
         });
 
         fetch('/mpesa/initiate', {
@@ -1311,7 +1380,7 @@
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({
                 phone: formattedPhone,
-                amount: totalAmount,
+                amount: paymentAmount,
                 order_id: orderId
             })
         })
@@ -1334,7 +1403,7 @@
                 isProcessingPayment = false;
                 
                 if (mpesaBtn) {
-                    mpesaBtn.innerHTML = '<i class="fas fa-mobile-alt"></i> Pay KSh ' + totalAmount.toLocaleString();
+                    mpesaBtn.innerHTML = '<i class="fas fa-mobile-alt"></i> Pay KSh ' + paymentAmount.toLocaleString();
                     mpesaBtn.disabled = false;
                 }
                 if (cashBtn) {
@@ -1350,7 +1419,7 @@
             isProcessingPayment = false;
             
             if (mpesaBtn) {
-                mpesaBtn.innerHTML = '<i class="fas fa-mobile-alt"></i> Pay KSh ' + totalAmount.toLocaleString();
+                mpesaBtn.innerHTML = '<i class="fas fa-mobile-alt"></i> Pay KSh ' + paymentAmount.toLocaleString();
                 mpesaBtn.disabled = false;
             }
             if (cashBtn) {
@@ -1497,8 +1566,7 @@
             items: cartItems,
             subtotal: subtotal,
             shipping: shippingCost,
-            total: totalAmount,
-            payment_method: method,
+            total: totalAmount,  // ✅ INCLUDES SHIPPING            payment_method: method,
             status: 'processing',
             source: 'web',
             created_at: new Date().toISOString(),
@@ -1525,7 +1593,7 @@
             }
         };
 
-        console.log('📤 Sending order to server...');
+        console.log('📤 Sending order to server with total including shipping:', totalAmount);
 
         fetch('/place-order', {
             method: 'POST',
@@ -1688,12 +1756,12 @@
     }
 
     // ============================================================
-    // ✅ EVENT LISTENERS - FIXED
+    // EVENT LISTENERS
     // ============================================================
     document.addEventListener('DOMContentLoaded', function() {
         console.log('✅ DOM loaded, initializing...');
         
-        // ✅ M-Pesa Button - Direct click handler
+        // M-Pesa Button
         const mpesaBtn = document.getElementById('mpesaPayBtn');
         if (mpesaBtn) {
             console.log('✅ M-Pesa button found, attaching click handler');
@@ -1703,11 +1771,9 @@
                 console.log('🖱️ M-Pesa button clicked');
                 payWithMpesa();
             });
-        } else {
-            console.error('❌ M-Pesa button not found!');
         }
         
-        // ✅ Cash Button
+        // Cash Button
         const cashBtn = document.getElementById('cashPayBtn');
         if (cashBtn) {
             console.log('✅ Cash button found, attaching click handler');
@@ -1719,7 +1785,7 @@
             });
         }
         
-        // ✅ M-Pesa Option click
+        // M-Pesa Option click
         const mpesaOption = document.getElementById('mpesaOption');
         if (mpesaOption) {
             mpesaOption.addEventListener('click', function(e) {
@@ -1730,7 +1796,7 @@
             });
         }
         
-        // ✅ Cash Option click
+        // Cash Option click
         const cashOption = document.getElementById('cashOption');
         if (cashOption) {
             cashOption.addEventListener('click', function(e) {
@@ -1741,9 +1807,9 @@
             });
         }
         
-        // Init totals
+        // Init totals - SHOW TOTAL WITH SHIPPING
         document.getElementById('summarySubtotal').textContent = 'KSh ' + subtotal.toLocaleString();
-        document.getElementById('totalDisplay').textContent = 'KSh ' + subtotal.toLocaleString();
+        document.getElementById('totalDisplay').textContent = 'KSh ' + totalAmount.toLocaleString();
         
         const freeShippingInfo = document.getElementById('freeShippingInfo');
         if (subtotal >= 50000) {
@@ -1762,7 +1828,7 @@
         
         console.log('✅ ACACIAMART Checkout initialized');
         console.log('📦 Subtotal: KSh ' + subtotal.toLocaleString());
-        console.log('📦 Total: KSh ' + totalAmount.toLocaleString());
+        console.log('📦 Total with shipping: KSh ' + totalAmount.toLocaleString());
     });
     </script>
 </body>
