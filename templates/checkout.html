@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <style>
-        /* ===== ALL STYLES SAME AS BEFORE ===== */
+        /* ===== ALL STYLES ===== */
         * { font-family: 'Inter', sans-serif; margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #f0f4f8; color: #0b1a2f; min-height: 100vh; }
 
@@ -648,7 +648,8 @@
                         </div>
 
                         <div class="grid md:grid-cols-2 gap-4">
-                            <div class="payment-option" onclick="placeOrder('mpesa')">
+                            <!-- M-Pesa Option -->
+                            <div class="payment-option" onclick="payWithMpesa()">
                                 <span class="icon">📱</span>
                                 <div class="title">M-Pesa</div>
                                 <div class="subtitle">Pay via M-Pesa Paybill</div>
@@ -656,22 +657,32 @@
                                     <span class="badge mpesa">💳 M-Pesa</span>
                                     <span class="badge popular">✓ Fast</span>
                                 </div>
-                                <button class="mt-3 w-full bg-[#0b2b1e] text-white py-2.5 px-4 rounded-full font-semibold text-sm hover:bg-[#061a12] transition-all shadow-lg shadow-[#0b2b1e]/20">
-                                    <i class="fas fa-mobile-alt"></i> Pay with M-Pesa
+                                <button class="mt-3 w-full bg-[#0b2b1e] text-white py-2.5 px-4 rounded-full font-semibold text-sm hover:bg-[#061a12] transition-all shadow-lg shadow-[#0b2b1e]/20" id="mpesaPayBtn">
+                                    <i class="fas fa-mobile-alt"></i> Pay KSh {{ "%.0f"|format(total) }}
                                 </button>
                             </div>
 
-                            <div class="payment-option" onclick="placeOrder('card')">
-                                <span class="icon">💳</span>
-                                <div class="title">Card Payment</div>
-                                <div class="subtitle">Pay with debit or credit card</div>
+                            <!-- Cash Option -->
+                            <div class="payment-option" onclick="placeCashOrder()">
+                                <span class="icon">💵</span>
+                                <div class="title">Cash</div>
+                                <div class="subtitle">Pay with cash at the store or upon delivery</div>
                                 <div class="flex flex-wrap gap-2 mt-2">
                                     <span class="badge popular">✓ Secure</span>
                                     <span class="badge" style="background:#e0e7ff;color:#4f46e5;">🔒 Encrypted</span>
                                 </div>
-                                <button class="mt-3 w-full bg-[#0b2b1e] text-white py-2.5 px-4 rounded-full font-semibold text-sm hover:bg-[#061a12] transition-all shadow-lg shadow-[#0b2b1e]/20">
-                                    <i class="fas fa-credit-card"></i> Pay Now
+                                <button class="mt-3 w-full bg-[#0b2b1e] text-white py-2.5 px-4 rounded-full font-semibold text-sm hover:bg-[#061a12] transition-all shadow-lg shadow-[#0b2b1e]/20" id="cashPayBtn">
+                                    <i class="fas fa-money-bill-wave"></i> Place Order
                                 </button>
+                            </div>
+                        </div>
+
+                        <!-- M-Pesa Status -->
+                        <div id="mpesaStatus" style="display:none;margin-top:16px;padding:16px;border-radius:12px;border:2px solid #0b2b1e;background:#f0fdf4;">
+                            <div id="mpesaStatusMessage" style="font-size:0.9rem;font-weight:600;color:#0b2b1e;"></div>
+                            <div id="mpesaStatusLoader" style="display:none;text-align:center;margin-top:8px;">
+                                <i class="fas fa-spinner fa-spin" style="font-size:1.5rem;color:#0b2b1e;"></i>
+                                <p style="font-size:0.7rem;color:#5a6d7a;margin-top:4px;">Waiting for confirmation...</p>
                             </div>
                         </div>
 
@@ -849,6 +860,9 @@
         let storeLng = 36.817223;
         let userLat = null;
         let userLng = null;
+        let mpesaCheckoutId = null;
+        let mpesaStatusInterval = null;
+        let isProcessingPayment = false;
 
         // ============================================================
         // HAVERSINE FORMULA
@@ -1034,7 +1048,7 @@
                 freeShippingInfo.innerHTML = '<i class="fas fa-gift text-[#0b2b1e]"></i> <span class="text-[#0b2b1e] font-semibold">🎉 FREE SHIPPING applied!</span>';
             } else {
                 const remaining = 50000 - subtotal;
-                freeShippingInfo.innerHTML = `<i class="fas fa-info-circle text-[#0b2b1e]"></i> <span>Add KSh ${remaining.toLocaleString()} more for free shipping</span>`;
+                freeShippingInfo.innerHTML = `<i class="fas fa-info-circle text-[#0b2b1e]"></i> <span>Add KSh ${remaining.toLocaleString()} more for free shipping</span>';
             }
             
             console.log(`📦 Shipping updated: KSh ${shippingCost}, Total: KSh ${totalAmount}`);
@@ -1235,11 +1249,15 @@
         }
 
         // ============================================================
-        // ✅ PLACE ORDER - FIXED with WhatsApp support
+        // ✅ PAY WITH M-PESA - COMPLETE IMPLEMENTATION
         // ============================================================
-        function placeOrder(method) {
-            console.log('🛒 Place order called with method:', method);
-            console.log('🛒 orderPlaced:', orderPlaced);
+        function payWithMpesa() {
+            console.log('📱 payWithMpesa called');
+            
+            if (isProcessingPayment) {
+                console.log('⚠️ Payment already processing');
+                return;
+            }
             
             if (orderPlaced) {
                 console.log('⚠️ Order already placed');
@@ -1251,16 +1269,214 @@
                 return;
             }
 
-            const btns = document.querySelectorAll('#step2 .btn-primary, .payment-option button');
-            btns.forEach(btn => {
-                btn.disabled = true;
-                btn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-            });
+            const phone = document.getElementById('phone').value.trim();
+            if (!phone) {
+                showToast('⚠️ Please enter your phone number for M-Pesa', 'warning');
+                document.getElementById('phone').focus();
+                return;
+            }
 
-            const data = getCustomerData();
-            console.log('📦 Customer data:', data);
-            console.log('📦 Shipping cost being sent:', shippingCost);
+            // Format phone number for M-Pesa
+            let formattedPhone = phone.replace(/\s/g, '');
+            if (formattedPhone.startsWith('0')) {
+                formattedPhone = '254' + formattedPhone.substring(1);
+            } else if (!formattedPhone.startsWith('254')) {
+                formattedPhone = '254' + formattedPhone;
+            }
+
+            if (formattedPhone.length !== 12) {
+                showToast('⚠️ Please enter a valid phone number (e.g., 0712345678)', 'warning');
+                return;
+            }
+
+            isProcessingPayment = true;
             
+            // Disable buttons
+            const mpesaBtn = document.getElementById('mpesaPayBtn');
+            const cashBtn = document.getElementById('cashPayBtn');
+            if (mpesaBtn) {
+                mpesaBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+                mpesaBtn.disabled = true;
+            }
+            if (cashBtn) {
+                cashBtn.disabled = true;
+            }
+
+            // Show status
+            const statusDiv = document.getElementById('mpesaStatus');
+            const statusMsg = document.getElementById('mpesaStatusMessage');
+            const loader = document.getElementById('mpesaStatusLoader');
+            
+            statusDiv.style.display = 'block';
+            statusMsg.innerHTML = '⏳ Sending STK Push to your phone...';
+            loader.style.display = 'block';
+
+            const orderId = 'ORD-' + Date.now().toString(36).toUpperCase();
+
+            fetch('/mpesa/initiate', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    phone: formattedPhone,
+                    amount: totalAmount,
+                    order_id: orderId
+                })
+            })
+            .then(r => r.json())
+            .then(data => {
+                console.log('📱 M-Pesa response:', data);
+                
+                if (data.success) {
+                    mpesaCheckoutId = data.checkout_request_id;
+                    statusMsg.innerHTML = '✅ STK Push sent! <br><small style="font-weight:400;">Check your phone and enter PIN to confirm payment.</small>';
+                    loader.style.display = 'none';
+                    
+                    showToast('📱 STK Push sent to your phone', 'success');
+                    
+                    // Start polling for status
+                    pollMpesaStatus(mpesaCheckoutId);
+                } else {
+                    statusMsg.innerHTML = '❌ ' + data.message;
+                    loader.style.display = 'none';
+                    showToast('❌ ' + data.message, 'error');
+                    isProcessingPayment = false;
+                    
+                    // Re-enable buttons
+                    if (mpesaBtn) {
+                        mpesaBtn.innerHTML = '<i class="fas fa-mobile-alt"></i> Pay KSh ' + totalAmount.toLocaleString();
+                        mpesaBtn.disabled = false;
+                    }
+                    if (cashBtn) {
+                        cashBtn.disabled = false;
+                    }
+                }
+            })
+            .catch(err => {
+                console.error('❌ M-Pesa error:', err);
+                statusMsg.innerHTML = '❌ Error: ' + err.message;
+                loader.style.display = 'none';
+                showToast('❌ Payment initiation failed', 'error');
+                isProcessingPayment = false;
+                
+                if (mpesaBtn) {
+                    mpesaBtn.innerHTML = '<i class="fas fa-mobile-alt"></i> Pay KSh ' + totalAmount.toLocaleString();
+                    mpesaBtn.disabled = false;
+                }
+                if (cashBtn) {
+                    cashBtn.disabled = false;
+                }
+            });
+        }
+
+        // ============================================================
+        // POLL M-PESA STATUS
+        // ============================================================
+        function pollMpesaStatus(checkoutId) {
+            console.log('📱 Polling M-Pesa status for:', checkoutId);
+            
+            if (mpesaStatusInterval) clearInterval(mpesaStatusInterval);
+            
+            let attempts = 0;
+            const maxAttempts = 30;
+            
+            mpesaStatusInterval = setInterval(() => {
+                attempts++;
+                console.log(`📱 Polling attempt ${attempts}/${maxAttempts}`);
+                
+                fetch('/mpesa/status', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ checkout_request_id: checkoutId })
+                })
+                .then(r => r.json())
+                .then(data => {
+                    console.log('📱 Status response:', data);
+                    
+                    if (data.success) {
+                        if (data.status === 'completed') {
+                            clearInterval(mpesaStatusInterval);
+                            document.getElementById('mpesaStatusMessage').innerHTML = '✅ Payment successful!';
+                            document.getElementById('mpesaStatusLoader').style.display = 'none';
+                            showToast('✅ Payment completed successfully!', 'success');
+                            
+                            // Complete order with M-Pesa
+                            completeOrder('mpesa');
+                        } else if (data.status === 'failed') {
+                            clearInterval(mpesaStatusInterval);
+                            document.getElementById('mpesaStatusMessage').innerHTML = '❌ ' + data.message;
+                            document.getElementById('mpesaStatusLoader').style.display = 'none';
+                            showToast('❌ Payment failed: ' + data.message, 'error');
+                            isProcessingPayment = false;
+                            
+                            const mpesaBtn = document.getElementById('mpesaPayBtn');
+                            if (mpesaBtn) {
+                                mpesaBtn.innerHTML = '<i class="fas fa-mobile-alt"></i> Pay KSh ' + totalAmount.toLocaleString();
+                                mpesaBtn.disabled = false;
+                            }
+                            const cashBtn = document.getElementById('cashPayBtn');
+                            if (cashBtn) cashBtn.disabled = false;
+                        }
+                    }
+                    
+                    if (attempts >= maxAttempts) {
+                        clearInterval(mpesaStatusInterval);
+                        document.getElementById('mpesaStatusMessage').innerHTML = '⏳ Payment still pending. We will confirm via SMS.';
+                        document.getElementById('mpesaStatusLoader').style.display = 'none';
+                        showToast('⏳ Payment pending. We will confirm via SMS.', 'info');
+                        isProcessingPayment = false;
+                        
+                        const mpesaBtn = document.getElementById('mpesaPayBtn');
+                        if (mpesaBtn) {
+                            mpesaBtn.innerHTML = '<i class="fas fa-mobile-alt"></i> Pay KSh ' + totalAmount.toLocaleString();
+                            mpesaBtn.disabled = false;
+                        }
+                        const cashBtn = document.getElementById('cashPayBtn');
+                        if (cashBtn) cashBtn.disabled = false;
+                    }
+                })
+                .catch(() => {});
+            }, 5000);
+        }
+
+        // ============================================================
+        // PLACE CASH ORDER
+        // ============================================================
+        function placeCashOrder() {
+            console.log('💵 placeCashOrder called');
+            
+            if (isProcessingPayment) {
+                console.log('⚠️ Payment already processing');
+                return;
+            }
+            
+            if (orderPlaced) {
+                console.log('⚠️ Order already placed');
+                return;
+            }
+            
+            if (!validateCustomerData()) {
+                console.log('⚠️ Validation failed');
+                return;
+            }
+
+            const cashBtn = document.getElementById('cashPayBtn');
+            if (cashBtn) {
+                cashBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+                cashBtn.disabled = true;
+            }
+            const mpesaBtn = document.getElementById('mpesaPayBtn');
+            if (mpesaBtn) mpesaBtn.disabled = true;
+
+            completeOrder('cash');
+        }
+
+        // ============================================================
+        // ✅ COMPLETE ORDER - FIXED with WhatsApp support
+        // ============================================================
+        function completeOrder(method) {
+            console.log('🛒 completeOrder called with method:', method);
+            
+            const data = getCustomerData();
             const customerName = data.first_name + ' ' + data.last_name;
             const fullAddress = data.address + ', ' + data.city + ', ' + data.country;
 
@@ -1336,6 +1552,7 @@
                 
                 if (result.success) {
                     orderPlaced = true;
+                    isProcessingPayment = false;
                     
                     // Update confirmation page
                     document.getElementById('orderId').textContent = result.order_id || orderId;
@@ -1356,7 +1573,6 @@
                     // ✅ OPEN WHATSAPP AUTOMATICALLY if URL is returned
                     if (result.whatsapp_url) {
                         console.log('📱 Opening WhatsApp:', result.whatsapp_url);
-                        // Open in new tab after 1.5 seconds
                         setTimeout(() => {
                             window.open(result.whatsapp_url, '_blank');
                         }, 1500);
@@ -1367,23 +1583,35 @@
                 } else {
                     console.log('❌ Order failed:', result.message);
                     showToast('❌ ' + (result.message || 'Failed to place order'), 'error');
-                    btns.forEach(btn => {
-                        btn.disabled = false;
-                        btn.innerHTML = method === 'mpesa' 
-                            ? '<i class="fas fa-mobile-alt"></i> Pay with M-Pesa'
-                            : '<i class="fas fa-credit-card"></i> Pay Now';
-                    });
+                    
+                    const mpesaBtn = document.getElementById('mpesaPayBtn');
+                    if (mpesaBtn) {
+                        mpesaBtn.innerHTML = '<i class="fas fa-mobile-alt"></i> Pay KSh ' + totalAmount.toLocaleString();
+                        mpesaBtn.disabled = false;
+                    }
+                    const cashBtn = document.getElementById('cashPayBtn');
+                    if (cashBtn) {
+                        cashBtn.innerHTML = '<i class="fas fa-money-bill-wave"></i> Place Order';
+                        cashBtn.disabled = false;
+                    }
+                    isProcessingPayment = false;
                 }
             })
             .catch(error => {
                 console.error('❌ Order error:', error);
                 showToast('❌ Something went wrong. Please try again.', 'error');
-                btns.forEach(btn => {
-                    btn.disabled = false;
-                    btn.innerHTML = method === 'mpesa' 
-                        ? '<i class="fas fa-mobile-alt"></i> Pay with M-Pesa'
-                        : '<i class="fas fa-credit-card"></i> Pay Now';
-                });
+                
+                const mpesaBtn = document.getElementById('mpesaPayBtn');
+                if (mpesaBtn) {
+                    mpesaBtn.innerHTML = '<i class="fas fa-mobile-alt"></i> Pay KSh ' + totalAmount.toLocaleString();
+                    mpesaBtn.disabled = false;
+                }
+                const cashBtn = document.getElementById('cashPayBtn');
+                if (cashBtn) {
+                    cashBtn.innerHTML = '<i class="fas fa-money-bill-wave"></i> Place Order';
+                    cashBtn.disabled = false;
+                }
+                isProcessingPayment = false;
             });
         }
 
