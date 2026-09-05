@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <style>
-        /* ===== ALL STYLES ===== */
+        /* ===== ALL STYLES SAME AS BEFORE ===== */
         * { font-family: 'Inter', sans-serif; margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #f0f4f8; color: #0b1a2f; min-height: 100vh; }
 
@@ -648,8 +648,7 @@
                         </div>
 
                         <div class="grid md:grid-cols-2 gap-4">
-                            <!-- M-Pesa Option -->
-                            <div class="payment-option" onclick="payWithMpesa()">
+                            <div class="payment-option" onclick="placeOrder('mpesa')">
                                 <span class="icon">📱</span>
                                 <div class="title">M-Pesa</div>
                                 <div class="subtitle">Pay via M-Pesa Paybill</div>
@@ -657,32 +656,22 @@
                                     <span class="badge mpesa">💳 M-Pesa</span>
                                     <span class="badge popular">✓ Fast</span>
                                 </div>
-                                <button class="mt-3 w-full bg-[#0b2b1e] text-white py-2.5 px-4 rounded-full font-semibold text-sm hover:bg-[#061a12] transition-all shadow-lg shadow-[#0b2b1e]/20" id="mpesaPayBtn">
-                                    <i class="fas fa-mobile-alt"></i> Pay KSh {{ "%.0f"|format(total) }}
+                                <button class="mt-3 w-full bg-[#0b2b1e] text-white py-2.5 px-4 rounded-full font-semibold text-sm hover:bg-[#061a12] transition-all shadow-lg shadow-[#0b2b1e]/20">
+                                    <i class="fas fa-mobile-alt"></i> Pay with M-Pesa
                                 </button>
                             </div>
 
-                            <!-- Cash Option -->
-                            <div class="payment-option" onclick="placeCashOrder()">
-                                <span class="icon">💵</span>
-                                <div class="title">Cash</div>
-                                <div class="subtitle">Pay with cash at the store or upon delivery</div>
+                            <div class="payment-option" onclick="placeOrder('card')">
+                                <span class="icon">💳</span>
+                                <div class="title">Card Payment</div>
+                                <div class="subtitle">Pay with debit or credit card</div>
                                 <div class="flex flex-wrap gap-2 mt-2">
                                     <span class="badge popular">✓ Secure</span>
                                     <span class="badge" style="background:#e0e7ff;color:#4f46e5;">🔒 Encrypted</span>
                                 </div>
-                                <button class="mt-3 w-full bg-[#0b2b1e] text-white py-2.5 px-4 rounded-full font-semibold text-sm hover:bg-[#061a12] transition-all shadow-lg shadow-[#0b2b1e]/20" id="cashPayBtn">
-                                    <i class="fas fa-money-bill-wave"></i> Place Order
+                                <button class="mt-3 w-full bg-[#0b2b1e] text-white py-2.5 px-4 rounded-full font-semibold text-sm hover:bg-[#061a12] transition-all shadow-lg shadow-[#0b2b1e]/20">
+                                    <i class="fas fa-credit-card"></i> Pay Now
                                 </button>
-                            </div>
-                        </div>
-
-                        <!-- M-Pesa Status -->
-                        <div id="mpesaStatus" style="display:none;margin-top:16px;padding:16px;border-radius:12px;border:2px solid #0b2b1e;background:#f0fdf4;">
-                            <div id="mpesaStatusMessage" style="font-size:0.9rem;font-weight:600;color:#0b2b1e;"></div>
-                            <div id="mpesaStatusLoader" style="display:none;text-align:center;margin-top:8px;">
-                                <i class="fas fa-spinner fa-spin" style="font-size:1.5rem;color:#0b2b1e;"></i>
-                                <p style="font-size:0.7rem;color:#5a6d7a;margin-top:4px;">Waiting for confirmation...</p>
                             </div>
                         </div>
 
@@ -845,517 +834,522 @@
         </div>
     </div>
 
-    <script>
-        console.log('🚀 ACACIAMART Checkout Loaded');
-        console.log('📍 Store: Nairobi CBD (Lat: -1.286389, Lng: 36.817223)');
+   <script>
+    console.log('🚀 ACACIAMART Checkout Loaded');
+    console.log('📍 Store: Nairobi CBD (Lat: -1.286389, Lng: 36.817223)');
 
-        let currentStep = 1;
-        let orderPlaced = false;
-        let shippingCost = 0;
-        let shippingDistance = 0;
-        let shippingCalculated = false;
-        let subtotal = {{ subtotal }};
-        let totalAmount = subtotal;
-        let storeLat = -1.286389;
-        let storeLng = 36.817223;
-        let userLat = null;
-        let userLng = null;
-        let mpesaCheckoutId = null;
-        let mpesaStatusInterval = null;
-        let isProcessingPayment = false;
+    let currentStep = 1;
+    let orderPlaced = false;
+    let shippingCost = 0;
+    let shippingDistance = 0;
+    let shippingCalculated = false;
+    let subtotal = {{ subtotal }};
+    let totalAmount = subtotal;
+    let storeLat = -1.286389;
+    let storeLng = 36.817223;
+    let userLat = null;
+    let userLng = null;
+    let mpesaCheckoutId = null;
+    let mpesaStatusInterval = null;
+    let isProcessingPayment = false;
+    let locationDetectionAttempted = false;  // ✅ NEW: Prevents infinite loop
+    let locationDetectionInProgress = false; // ✅ NEW: Prevents multiple simultaneous attempts
 
-        // ============================================================
-        // HAVERSINE FORMULA
-        // ============================================================
-        function haversineDistance(lat1, lon1, lat2, lon2) {
-            const R = 6371;
-            const dLat = (lat2 - lat1) * Math.PI / 180;
-            const dLon = (lon2 - lon1) * Math.PI / 180;
-            const a = 
-                Math.sin(dLat/2) * Math.sin(dLat/2) +
-                Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
-                Math.sin(dLon/2) * Math.sin(dLon/2);
-            const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
-            return R * c;
+    // ============================================================
+    // HAVERSINE FORMULA
+    // ============================================================
+    function haversineDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371;
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = 
+            Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R * c;
+    }
+
+    // ============================================================
+    // ✅ FIXED: DETECT LOCATION (runs only once)
+    // ============================================================
+    function detectLocation() {
+        console.log('📍 detectLocation called, attempted:', locationDetectionAttempted, 'inProgress:', locationDetectionInProgress);
+        
+        // ✅ PREVENT MULTIPLE ATTEMPTS
+        if (locationDetectionAttempted || locationDetectionInProgress) {
+            console.log('⚠️ Location detection already attempted or in progress');
+            return;
         }
-
-        // ============================================================
-        // ✅ GEOCODE ADDRESS USING NOMINATIM
-        // ============================================================
-        function geocodeAddress() {
-            console.log('📍 Geocoding address...');
-            
-            const address = document.getElementById('address').value.trim();
-            const city = document.getElementById('city').value.trim();
-            const country = document.getElementById('country').value.trim();
-            
-            if (!address || !city) {
-                console.log('⚠️ Address or city missing');
-                document.getElementById('shippingCostContainer').style.display = 'none';
-                document.getElementById('shippingPending').style.display = 'flex';
-                document.getElementById('shippingCostDisplay2').innerHTML = '⏳ Pending';
-                document.getElementById('totalDisplay').textContent = 'KSh ' + subtotal.toLocaleString();
-                shippingCalculated = false;
-                return;
-            }
-            
-            document.getElementById('shippingPending').style.display = 'flex';
-            document.getElementById('shippingPending').innerHTML = `
-                <i class="fas fa-spinner fa-spin"></i>
-                <span>📍 Geocoding your address...</span>
-            `;
-            
-            const fullAddress = `${address}, ${city}, ${country || 'Kenya'}`;
-            const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(fullAddress)}&format=json&limit=1`;
-            
-            console.log('📍 Geocoding URL:', url);
-            
-            fetch(url)
-                .then(response => response.json())
-                .then(data => {
-                    console.log('📍 Geocoding response:', data);
-                    
-                    if (data && data.length > 0) {
-                        const lat = parseFloat(data[0].lat);
-                        const lon = parseFloat(data[0].lon);
-                        
-                        userLat = lat;
-                        userLng = lon;
-                        
-                        const distance = haversineDistance(storeLat, storeLng, lat, lon);
-                        
-                        console.log(`📍 Location found: (${lat}, ${lon}) Distance: ${distance.toFixed(1)} km`);
-                        
-                        document.getElementById('shippingPending').style.display = 'none';
-                        document.getElementById('locationMessage').innerHTML = `
-                            <span class="font-medium text-sm text-green-600">
-                                <i class="fas fa-check-circle text-[#10b981]"></i> Location found!
-                            </span>
-                            <p class="text-xs text-gray-500">Distance from store: ${distance.toFixed(1)} km</p>
-                        `;
-                        
-                        updateShippingDisplay(distance);
-                        showToast('📍 Location found!', 'success', `Distance: ${distance.toFixed(1)} km`);
-                    } else {
-                        console.log('⚠️ Address not found');
-                        document.getElementById('shippingPending').style.display = 'flex';
-                        document.getElementById('shippingPending').innerHTML = `
-                            <i class="fas fa-exclamation-triangle text-amber-500"></i>
-                            <span>⚠️ Address not found. Please check and try again.</span>
-                        `;
-                        showToast('⚠️ Address not found. Please check your address.', 'warning');
-                    }
-                })
-                .catch(error => {
-                    console.error('❌ Geocoding error:', error);
-                    document.getElementById('shippingPending').style.display = 'flex';
-                    document.getElementById('shippingPending').innerHTML = `
-                        <i class="fas fa-exclamation-triangle text-amber-500"></i>
-                        <span>⚠️ Error geocoding address. Please check your address.</span>
-                    `;
-                    showToast('⚠️ Error finding location. Please check your address.', 'error');
-                });
+        
+        locationDetectionInProgress = true;
+        
+        const spinner = document.getElementById('locationSpinner');
+        const messageEl = document.getElementById('locationMessage');
+        const retryBtn = document.getElementById('locationRetryBtn');
+        
+        spinner.style.display = 'block';
+        messageEl.innerHTML = '<span class="font-medium text-sm">Detecting your location...</span><p class="text-xs text-gray-500">Please allow location access</p>';
+        retryBtn.style.display = 'none';
+        
+        if (!navigator.geolocation) {
+            console.log('⚠️ Geolocation not supported');
+            messageEl.innerHTML = '<span class="font-medium text-sm text-amber-600">⚠️ Geolocation not supported</span><p class="text-xs text-gray-500">Please enter your full address</p>';
+            spinner.style.display = 'none';
+            retryBtn.style.display = 'inline-block';
+            locationDetectionAttempted = true;
+            locationDetectionInProgress = false;
+            return;
         }
-
-        // ============================================================
-        // CALCULATE SHIPPING COST
-        // ============================================================
-        function calculateShippingCost(distanceKm) {
-            console.log('📦 Calculating shipping for distance:', distanceKm, 'km');
-            
-            const MIN_FEE = 100;
-            const FREE_DISTANCE = 5;
-            const RATE_PER_KM = 50;
-            const MAX_SHIPPING = 5000;
-            const FREE_SHIPPING_THRESHOLD = 50000;
-            const VALUE_PERCENTAGE = 0.08;
-            
-            if (subtotal >= FREE_SHIPPING_THRESHOLD) {
-                console.log('🎉 FREE SHIPPING (order over KSh 50,000)');
-                return 0;
-            }
-            
-            let distanceFee = 0;
-            if (distanceKm > FREE_DISTANCE) {
-                distanceFee = (distanceKm - FREE_DISTANCE) * RATE_PER_KM;
-            }
-            
-            let valueFee = subtotal * VALUE_PERCENTAGE;
-            let shipping = Math.max(distanceFee, valueFee);
-            shipping = Math.max(shipping, MIN_FEE);
-            
-            if (subtotal < 5000) {
-                const maxShippingForSmallOrders = subtotal * 0.5;
-                shipping = Math.min(shipping, Math.max(maxShippingForSmallOrders, MIN_FEE));
-            }
-            
-            shipping = Math.min(shipping, MAX_SHIPPING);
-            const result = Math.round(shipping);
-            
-            console.log(`📦 Shipping calculation: Distance fee: ${distanceFee}, Value fee: ${valueFee}, Final: ${result}`);
-            
-            return result;
-        }
-
-        // ============================================================
-        // UPDATE SHIPPING DISPLAY
-        // ============================================================
-        function updateShippingDisplay(distance) {
-            console.log('📦 Updating shipping display for distance:', distance);
-            
-            shippingDistance = distance;
-            shippingCost = calculateShippingCost(distance);
-            shippingCalculated = true;
-            
-            document.getElementById('shippingCostContainer').style.display = 'block';
-            document.getElementById('shippingPending').style.display = 'none';
-            
-            const costDisplay = document.getElementById('shippingCostDisplay');
-            const costDisplay2 = document.getElementById('shippingCostDisplay2');
-            const totalDisplay = document.getElementById('totalDisplay');
-            const orderTotal = document.getElementById('orderTotal');
-            const distanceInfo = document.getElementById('shippingDistanceInfo');
-            const methodLabel = document.getElementById('shippingMethodLabel');
-            
-            totalAmount = subtotal + shippingCost;
-            
-            if (shippingCost === 0) {
-                costDisplay.textContent = 'FREE 🎉';
-                costDisplay2.textContent = 'FREE 🎉';
-                methodLabel.textContent = 'Free shipping (Order over KSh 50,000)';
-            } else {
-                costDisplay.textContent = 'KSh ' + shippingCost.toLocaleString();
-                costDisplay2.textContent = 'KSh ' + shippingCost.toLocaleString();
+        
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                userLat = position.coords.latitude;
+                userLng = position.coords.longitude;
                 
-                if (subtotal < 5000) {
-                    const percentage = Math.round((shippingCost / subtotal) * 100);
-                    methodLabel.textContent = `${percentage}% of order value (capped)`;
-                } else if (shippingCost === 100) {
-                    methodLabel.textContent = 'Minimum fee (within 5km)';
-                } else if (shippingCost >= 5000) {
-                    methodLabel.textContent = 'Maximum fee (long distance)';
-                } else {
-                    methodLabel.textContent = `KSh ${(shippingCost / distance).toFixed(1)} per km`;
-                }
-            }
-            
-            totalDisplay.textContent = 'KSh ' + totalAmount.toLocaleString();
-            if (orderTotal) orderTotal.textContent = 'KSh ' + totalAmount.toLocaleString();
-            distanceInfo.textContent = `Distance: ${distance.toFixed(1)} km from our store | Order: KSh ${subtotal.toLocaleString()}`;
-            
-            const freeShippingInfo = document.getElementById('freeShippingInfo');
-            if (subtotal >= 50000) {
-                freeShippingInfo.innerHTML = '<i class="fas fa-gift text-[#0b2b1e]"></i> <span class="text-[#0b2b1e] font-semibold">🎉 FREE SHIPPING applied!</span>';
-            } else {
-                const remaining = 50000 - subtotal;
-                freeShippingInfo.innerHTML = `<i class="fas fa-info-circle text-[#0b2b1e]"></i> <span>Add KSh ${remaining.toLocaleString()} more for free shipping</span>';
-            }
-            
-            console.log(`📦 Shipping updated: KSh ${shippingCost}, Total: KSh ${totalAmount}`);
-        }
-
-        // ============================================================
-        // DETECT LOCATION (GPS)
-        // ============================================================
-        function detectLocation() {
-            console.log('📍 Detecting location via GPS...');
-            
-            const spinner = document.getElementById('locationSpinner');
-            const messageEl = document.getElementById('locationMessage');
-            const retryBtn = document.getElementById('locationRetryBtn');
-            
-            spinner.style.display = 'block';
-            messageEl.innerHTML = '<span class="font-medium text-sm">Detecting your location...</span><p class="text-xs text-gray-500">Please allow location access</p>';
-            retryBtn.style.display = 'none';
-            
-            if (!navigator.geolocation) {
-                console.log('⚠️ Geolocation not supported');
-                messageEl.innerHTML = '<span class="font-medium text-sm text-amber-600">⚠️ Geolocation not supported</span><p class="text-xs text-gray-500">Please enter your full address</p>';
+                const distance = haversineDistance(storeLat, storeLng, userLat, userLng);
+                
+                console.log(`📍 GPS location found: (${userLat}, ${userLng}) Distance: ${distance.toFixed(1)} km`);
+                
+                spinner.style.display = 'none';
+                messageEl.innerHTML = `
+                    <span class="font-medium text-sm text-green-600">
+                        <i class="fas fa-check-circle text-[#10b981]"></i> Location detected!
+                    </span>
+                    <p class="text-xs text-gray-500">Distance from store: ${distance.toFixed(1)} km</p>
+                `;
+                
+                updateShippingDisplay(distance);
+                showToast('📍 Location detected!', 'success', `Distance: ${distance.toFixed(1)} km`);
+                locationDetectionAttempted = true;
+                locationDetectionInProgress = false;
+            },
+            (error) => {
+                console.log('⚠️ GPS error:', error.message);
                 spinner.style.display = 'none';
                 retryBtn.style.display = 'inline-block';
-                return;
-            }
-            
-            navigator.geolocation.getCurrentPosition(
-                (position) => {
-                    userLat = position.coords.latitude;
-                    userLng = position.coords.longitude;
+                
+                let errorMsg = 'Unable to detect location. Please enter your address manually.';
+                if (error.code === 1) {
+                    errorMsg = '⚠️ Location access denied. Please enter your address.';
+                } else if (error.code === 2) {
+                    errorMsg = '⚠️ Location unavailable. Please enter your address.';
+                } else if (error.code === 3) {
+                    errorMsg = '⚠️ Location timeout. Please enter your address.';
+                }
+                
+                messageEl.innerHTML = `
+                    <span class="font-medium text-sm text-amber-600">${errorMsg}</span>
+                    <p class="text-xs text-gray-500">Enter your full address to calculate shipping</p>
+                `;
+                locationDetectionAttempted = true;
+                locationDetectionInProgress = false;
+            },
+            { enableHighAccuracy: true, timeout: 10000 }
+        );
+    }
+
+    // ============================================================
+    // ✅ FIXED: RETRY LOCATION (reset flag so it can run again)
+    // ============================================================
+    function retryLocation() {
+        console.log('📍 Retrying location...');
+        locationDetectionAttempted = false;
+        locationDetectionInProgress = false;
+        detectLocation();
+    }
+
+    // ============================================================
+    // GEOCODE ADDRESS USING NOMINATIM
+    // ============================================================
+    function geocodeAddress() {
+        console.log('📍 Geocoding address...');
+        
+        const address = document.getElementById('address').value.trim();
+        const city = document.getElementById('city').value.trim();
+        const country = document.getElementById('country').value.trim();
+        
+        if (!address || !city) {
+            console.log('⚠️ Address or city missing');
+            document.getElementById('shippingCostContainer').style.display = 'none';
+            document.getElementById('shippingPending').style.display = 'flex';
+            document.getElementById('shippingCostDisplay2').innerHTML = '⏳ Pending';
+            document.getElementById('totalDisplay').textContent = 'KSh ' + subtotal.toLocaleString();
+            shippingCalculated = false;
+            return;
+        }
+        
+        document.getElementById('shippingPending').style.display = 'flex';
+        document.getElementById('shippingPending').innerHTML = `
+            <i class="fas fa-spinner fa-spin"></i>
+            <span>📍 Geocoding your address...</span>
+        `;
+        
+        const fullAddress = `${address}, ${city}, ${country || 'Kenya'}`;
+        const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(fullAddress)}&format=json&limit=1`;
+        
+        console.log('📍 Geocoding URL:', url);
+        
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                console.log('📍 Geocoding response:', data);
+                
+                if (data && data.length > 0) {
+                    const lat = parseFloat(data[0].lat);
+                    const lon = parseFloat(data[0].lon);
                     
-                    const distance = haversineDistance(storeLat, storeLng, userLat, userLng);
+                    userLat = lat;
+                    userLng = lon;
                     
-                    console.log(`📍 GPS location found: (${userLat}, ${userLng}) Distance: ${distance.toFixed(1)} km`);
+                    const distance = haversineDistance(storeLat, storeLng, lat, lon);
                     
-                    spinner.style.display = 'none';
-                    messageEl.innerHTML = `
+                    console.log(`📍 Location found: (${lat}, ${lon}) Distance: ${distance.toFixed(1)} km`);
+                    
+                    document.getElementById('shippingPending').style.display = 'none';
+                    document.getElementById('locationMessage').innerHTML = `
                         <span class="font-medium text-sm text-green-600">
-                            <i class="fas fa-check-circle text-[#10b981]"></i> Location detected!
+                            <i class="fas fa-check-circle text-[#10b981]"></i> Location found!
                         </span>
                         <p class="text-xs text-gray-500">Distance from store: ${distance.toFixed(1)} km</p>
                     `;
                     
                     updateShippingDisplay(distance);
-                    showToast('📍 Location detected!', 'success', `Distance: ${distance.toFixed(1)} km`);
-                },
-                (error) => {
-                    console.log('⚠️ GPS error:', error.message);
-                    spinner.style.display = 'none';
-                    retryBtn.style.display = 'inline-block';
-                    
-                    let errorMsg = 'Unable to detect location. Please enter your address manually.';
-                    if (error.code === 1) {
-                        errorMsg = '⚠️ Location access denied. Please enter your address.';
-                    } else if (error.code === 2) {
-                        errorMsg = '⚠️ Location unavailable. Please enter your address.';
-                    } else if (error.code === 3) {
-                        errorMsg = '⚠️ Location timeout. Please enter your address.';
-                    }
-                    
-                    messageEl.innerHTML = `
-                        <span class="font-medium text-sm text-amber-600">${errorMsg}</span>
-                        <p class="text-xs text-gray-500">Enter your full address to calculate shipping</p>
-                    `;
-                },
-                { enableHighAccuracy: true, timeout: 10000 }
-            );
-        }
-
-        // ============================================================
-        // STEP NAVIGATION
-        // ============================================================
-        function goToStep(step) {
-            console.log(`🔄 Going to step ${step}`);
-            
-            if (step === 2 && !shippingCalculated) {
-                console.log('⚠️ Shipping not calculated yet');
-                showToast('⚠️ Please enter your full address to calculate shipping', 'warning');
-                return;
-            }
-            
-            document.querySelectorAll('.checkout-step').forEach(el => el.classList.remove('active'));
-            document.getElementById('step' + step).classList.add('active');
-
-            for (let i = 1; i <= 3; i++) {
-                const dot = document.getElementById('step' + i + 'Dot');
-                const num = document.getElementById('step' + i + 'Num');
-                dot.classList.remove('active', 'completed');
-                num.classList.remove('active', 'completed');
-                if (i < step) { dot.classList.add('completed'); num.classList.add('completed'); }
-                if (i === step) { dot.classList.add('active'); num.classList.add('active'); }
-            }
-            currentStep = step;
-            document.querySelector('.glass-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
-        }
-
-        // ============================================================
-        // GET CUSTOMER DATA
-        // ============================================================
-        function getCustomerData() {
-            return {
-                first_name: document.getElementById('firstName').value.trim(),
-                last_name: document.getElementById('lastName').value.trim(),
-                email: document.getElementById('email').value.trim(),
-                phone: document.getElementById('phone').value.trim(),
-                address: document.getElementById('address').value.trim(),
-                city: document.getElementById('city').value.trim(),
-                zip: document.getElementById('zip').value.trim(),
-                country: document.getElementById('country').value.trim() || 'Kenya',
-                delivery_notes: document.getElementById('deliveryNotes').value.trim(),
-                shipping_distance: shippingDistance,
-                shipping_cost: shippingCost,
-                user_lat: userLat,
-                user_lng: userLng
-            };
-        }
-
-        function validateCustomerData() {
-            console.log('🔍 Validating customer data...');
-            
-            const data = getCustomerData();
-            
-            if (!data.first_name || !data.last_name || !data.email || !data.phone || !data.address || !data.city) {
-                console.log('⚠️ Missing required fields');
-                showToast('⚠️ Please fill in all required fields', 'warning');
-                goToStep(1);
-                document.querySelectorAll('.form-input').forEach(el => {
-                    if (!el.value.trim()) {
-                        el.style.borderColor = '#dc2626';
-                        setTimeout(() => el.style.borderColor = '', 2000);
-                    }
-                });
-                return false;
-            }
-            
-            if (!shippingCalculated) {
-                console.log('⚠️ Shipping not calculated');
-                showToast('⚠️ Please enter your full address to calculate shipping', 'warning');
-                goToStep(1);
-                return false;
-            }
-            
-            console.log('✅ Customer data validated');
-            return true;
-        }
-
-        // ============================================================
-        // GENERATE TRACKING NUMBER
-        // ============================================================
-        function generateTrackingNumber() {
-            const prefix = 'AC';
-            const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
-            let code = '';
-            for (let i = 0; i < 8; i++) {
-                code += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
-            return prefix + '-' + code + '-KE';
-        }
-
-        // ============================================================
-        // UPDATE SHIPPING STATUS
-        // ============================================================
-        function updateShippingStatus() {
-            const steps = [
-                { id: 'stepProcessing', label: 'Processing', delay: 3000 },
-                { id: 'stepShipping', label: 'Shipped', delay: 6000 },
-                { id: 'stepDelivered', label: 'Delivered', delay: 9000 }
-            ];
-
-            const statusBadge = document.getElementById('statusBadge');
-            
-            steps.forEach((step, index) => {
-                setTimeout(() => {
-                    const el = document.getElementById(step.id);
-                    if (el) {
-                        el.classList.add('active');
-                        el.querySelector('.circle').innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-                        statusBadge.textContent = '⏳ ' + step.label + '...';
-                    }
-                }, step.delay - 1000);
-
-                setTimeout(() => {
-                    const el = document.getElementById(step.id);
-                    if (el) {
-                        el.classList.remove('active');
-                        el.classList.add('completed');
-                        el.querySelector('.circle').innerHTML = '<i class="fas fa-check"></i>';
-                        if (index === steps.length - 1) {
-                            statusBadge.textContent = '✅ Delivered!';
-                            showToast('📦 Your order has been delivered!', 'success');
-                        } else {
-                            statusBadge.textContent = '✅ ' + step.label;
-                        }
-                    }
-                }, step.delay);
-            });
-        }
-
-        // ============================================================
-        // ✅ PAY WITH M-PESA - COMPLETE IMPLEMENTATION
-        // ============================================================
-        function payWithMpesa() {
-            console.log('📱 payWithMpesa called');
-            
-            if (isProcessingPayment) {
-                console.log('⚠️ Payment already processing');
-                return;
-            }
-            
-            if (orderPlaced) {
-                console.log('⚠️ Order already placed');
-                return;
-            }
-            
-            if (!validateCustomerData()) {
-                console.log('⚠️ Validation failed');
-                return;
-            }
-
-            const phone = document.getElementById('phone').value.trim();
-            if (!phone) {
-                showToast('⚠️ Please enter your phone number for M-Pesa', 'warning');
-                document.getElementById('phone').focus();
-                return;
-            }
-
-            // Format phone number for M-Pesa
-            let formattedPhone = phone.replace(/\s/g, '');
-            if (formattedPhone.startsWith('0')) {
-                formattedPhone = '254' + formattedPhone.substring(1);
-            } else if (!formattedPhone.startsWith('254')) {
-                formattedPhone = '254' + formattedPhone;
-            }
-
-            if (formattedPhone.length !== 12) {
-                showToast('⚠️ Please enter a valid phone number (e.g., 0712345678)', 'warning');
-                return;
-            }
-
-            isProcessingPayment = true;
-            
-            // Disable buttons
-            const mpesaBtn = document.getElementById('mpesaPayBtn');
-            const cashBtn = document.getElementById('cashPayBtn');
-            if (mpesaBtn) {
-                mpesaBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-                mpesaBtn.disabled = true;
-            }
-            if (cashBtn) {
-                cashBtn.disabled = true;
-            }
-
-            // Show status
-            const statusDiv = document.getElementById('mpesaStatus');
-            const statusMsg = document.getElementById('mpesaStatusMessage');
-            const loader = document.getElementById('mpesaStatusLoader');
-            
-            statusDiv.style.display = 'block';
-            statusMsg.innerHTML = '⏳ Sending STK Push to your phone...';
-            loader.style.display = 'block';
-
-            const orderId = 'ORD-' + Date.now().toString(36).toUpperCase();
-
-            fetch('/mpesa/initiate', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({
-                    phone: formattedPhone,
-                    amount: totalAmount,
-                    order_id: orderId
-                })
-            })
-            .then(r => r.json())
-            .then(data => {
-                console.log('📱 M-Pesa response:', data);
-                
-                if (data.success) {
-                    mpesaCheckoutId = data.checkout_request_id;
-                    statusMsg.innerHTML = '✅ STK Push sent! <br><small style="font-weight:400;">Check your phone and enter PIN to confirm payment.</small>';
-                    loader.style.display = 'none';
-                    
-                    showToast('📱 STK Push sent to your phone', 'success');
-                    
-                    // Start polling for status
-                    pollMpesaStatus(mpesaCheckoutId);
+                    showToast('📍 Location found!', 'success', `Distance: ${distance.toFixed(1)} km`);
                 } else {
-                    statusMsg.innerHTML = '❌ ' + data.message;
-                    loader.style.display = 'none';
-                    showToast('❌ ' + data.message, 'error');
-                    isProcessingPayment = false;
-                    
-                    // Re-enable buttons
-                    if (mpesaBtn) {
-                        mpesaBtn.innerHTML = '<i class="fas fa-mobile-alt"></i> Pay KSh ' + totalAmount.toLocaleString();
-                        mpesaBtn.disabled = false;
-                    }
-                    if (cashBtn) {
-                        cashBtn.disabled = false;
-                    }
+                    console.log('⚠️ Address not found');
+                    document.getElementById('shippingPending').style.display = 'flex';
+                    document.getElementById('shippingPending').innerHTML = `
+                        <i class="fas fa-exclamation-triangle text-amber-500"></i>
+                        <span>⚠️ Address not found. Please check and try again.</span>
+                    `;
+                    showToast('⚠️ Address not found. Please check your address.', 'warning');
                 }
             })
-            .catch(err => {
-                console.error('❌ M-Pesa error:', err);
-                statusMsg.innerHTML = '❌ Error: ' + err.message;
+            .catch(error => {
+                console.error('❌ Geocoding error:', error);
+                document.getElementById('shippingPending').style.display = 'flex';
+                document.getElementById('shippingPending').innerHTML = `
+                    <i class="fas fa-exclamation-triangle text-amber-500"></i>
+                    <span>⚠️ Error geocoding address. Please check your address.</span>
+                `;
+                showToast('⚠️ Error finding location. Please check your address.', 'error');
+            });
+    }
+
+    // ============================================================
+    // CALCULATE SHIPPING COST
+    // ============================================================
+    function calculateShippingCost(distanceKm) {
+        console.log('📦 Calculating shipping for distance:', distanceKm, 'km');
+        
+        const MIN_FEE = 100;
+        const FREE_DISTANCE = 5;
+        const RATE_PER_KM = 50;
+        const MAX_SHIPPING = 5000;
+        const FREE_SHIPPING_THRESHOLD = 50000;
+        const VALUE_PERCENTAGE = 0.08;
+        
+        if (subtotal >= FREE_SHIPPING_THRESHOLD) {
+            console.log('🎉 FREE SHIPPING (order over KSh 50,000)');
+            return 0;
+        }
+        
+        let distanceFee = 0;
+        if (distanceKm > FREE_DISTANCE) {
+            distanceFee = (distanceKm - FREE_DISTANCE) * RATE_PER_KM;
+        }
+        
+        let valueFee = subtotal * VALUE_PERCENTAGE;
+        let shipping = Math.max(distanceFee, valueFee);
+        shipping = Math.max(shipping, MIN_FEE);
+        
+        if (subtotal < 5000) {
+            const maxShippingForSmallOrders = subtotal * 0.5;
+            shipping = Math.min(shipping, Math.max(maxShippingForSmallOrders, MIN_FEE));
+        }
+        
+        shipping = Math.min(shipping, MAX_SHIPPING);
+        const result = Math.round(shipping);
+        
+        console.log(`📦 Shipping calculation: Distance fee: ${distanceFee}, Value fee: ${valueFee}, Final: ${result}`);
+        
+        return result;
+    }
+
+    // ============================================================
+    // UPDATE SHIPPING DISPLAY
+    // ============================================================
+    function updateShippingDisplay(distance) {
+        console.log('📦 Updating shipping display for distance:', distance);
+        
+        shippingDistance = distance;
+        shippingCost = calculateShippingCost(distance);
+        shippingCalculated = true;
+        
+        document.getElementById('shippingCostContainer').style.display = 'block';
+        document.getElementById('shippingPending').style.display = 'none';
+        
+        const costDisplay = document.getElementById('shippingCostDisplay');
+        const costDisplay2 = document.getElementById('shippingCostDisplay2');
+        const totalDisplay = document.getElementById('totalDisplay');
+        const orderTotal = document.getElementById('orderTotal');
+        const distanceInfo = document.getElementById('shippingDistanceInfo');
+        const methodLabel = document.getElementById('shippingMethodLabel');
+        
+        totalAmount = subtotal + shippingCost;
+        
+        if (shippingCost === 0) {
+            costDisplay.textContent = 'FREE 🎉';
+            costDisplay2.textContent = 'FREE 🎉';
+            methodLabel.textContent = 'Free shipping (Order over KSh 50,000)';
+        } else {
+            costDisplay.textContent = 'KSh ' + shippingCost.toLocaleString();
+            costDisplay2.textContent = 'KSh ' + shippingCost.toLocaleString();
+            
+            if (subtotal < 5000) {
+                const percentage = Math.round((shippingCost / subtotal) * 100);
+                methodLabel.textContent = `${percentage}% of order value (capped)`;
+            } else if (shippingCost === 100) {
+                methodLabel.textContent = 'Minimum fee (within 5km)';
+            } else if (shippingCost >= 5000) {
+                methodLabel.textContent = 'Maximum fee (long distance)';
+            } else {
+                methodLabel.textContent = `KSh ${(shippingCost / distance).toFixed(1)} per km`;
+            }
+        }
+        
+        totalDisplay.textContent = 'KSh ' + totalAmount.toLocaleString();
+        if (orderTotal) orderTotal.textContent = 'KSh ' + totalAmount.toLocaleString();
+        distanceInfo.textContent = `Distance: ${distance.toFixed(1)} km from our store | Order: KSh ${subtotal.toLocaleString()}`;
+        
+        const freeShippingInfo = document.getElementById('freeShippingInfo');
+        if (subtotal >= 50000) {
+            freeShippingInfo.innerHTML = '<i class="fas fa-gift text-[#0b2b1e]"></i> <span class="text-[#0b2b1e] font-semibold">🎉 FREE SHIPPING applied!</span>';
+        } else {
+            const remaining = 50000 - subtotal;
+            freeShippingInfo.innerHTML = `<i class="fas fa-info-circle text-[#0b2b1e]"></i> <span>Add KSh ${remaining.toLocaleString()} more for free shipping</span>`;
+        }
+        
+        console.log(`📦 Shipping updated: KSh ${shippingCost}, Total: KSh ${totalAmount}`);
+    }
+
+    // ============================================================
+    // STEP NAVIGATION
+    // ============================================================
+    function goToStep(step) {
+        console.log(`🔄 Going to step ${step}`);
+        
+        if (step === 2 && !shippingCalculated) {
+            console.log('⚠️ Shipping not calculated yet');
+            showToast('⚠️ Please enter your full address to calculate shipping', 'warning');
+            return;
+        }
+        
+        document.querySelectorAll('.checkout-step').forEach(el => el.classList.remove('active'));
+        document.getElementById('step' + step).classList.add('active');
+
+        for (let i = 1; i <= 3; i++) {
+            const dot = document.getElementById('step' + i + 'Dot');
+            const num = document.getElementById('step' + i + 'Num');
+            dot.classList.remove('active', 'completed');
+            num.classList.remove('active', 'completed');
+            if (i < step) { dot.classList.add('completed'); num.classList.add('completed'); }
+            if (i === step) { dot.classList.add('active'); num.classList.add('active'); }
+        }
+        currentStep = step;
+        document.querySelector('.glass-card').scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+
+    // ============================================================
+    // GET CUSTOMER DATA
+    // ============================================================
+    function getCustomerData() {
+        return {
+            first_name: document.getElementById('firstName').value.trim(),
+            last_name: document.getElementById('lastName').value.trim(),
+            email: document.getElementById('email').value.trim(),
+            phone: document.getElementById('phone').value.trim(),
+            address: document.getElementById('address').value.trim(),
+            city: document.getElementById('city').value.trim(),
+            zip: document.getElementById('zip').value.trim(),
+            country: document.getElementById('country').value.trim() || 'Kenya',
+            delivery_notes: document.getElementById('deliveryNotes').value.trim(),
+            shipping_distance: shippingDistance,
+            shipping_cost: shippingCost,
+            user_lat: userLat,
+            user_lng: userLng
+        };
+    }
+
+    function validateCustomerData() {
+        console.log('🔍 Validating customer data...');
+        
+        const data = getCustomerData();
+        
+        if (!data.first_name || !data.last_name || !data.email || !data.phone || !data.address || !data.city) {
+            console.log('⚠️ Missing required fields');
+            showToast('⚠️ Please fill in all required fields', 'warning');
+            goToStep(1);
+            document.querySelectorAll('.form-input').forEach(el => {
+                if (!el.value.trim()) {
+                    el.style.borderColor = '#dc2626';
+                    setTimeout(() => el.style.borderColor = '', 2000);
+                }
+            });
+            return false;
+        }
+        
+        if (!shippingCalculated) {
+            console.log('⚠️ Shipping not calculated');
+            showToast('⚠️ Please enter your full address to calculate shipping', 'warning');
+            goToStep(1);
+            return false;
+        }
+        
+        console.log('✅ Customer data validated');
+        return true;
+    }
+
+    // ============================================================
+    // GENERATE TRACKING NUMBER
+    // ============================================================
+    function generateTrackingNumber() {
+        const prefix = 'AC';
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+        let code = '';
+        for (let i = 0; i < 8; i++) {
+            code += chars.charAt(Math.floor(Math.random() * chars.length));
+        }
+        return prefix + '-' + code + '-KE';
+    }
+
+    // ============================================================
+    // UPDATE SHIPPING STATUS
+    // ============================================================
+    function updateShippingStatus() {
+        const steps = [
+            { id: 'stepProcessing', label: 'Processing', delay: 3000 },
+            { id: 'stepShipping', label: 'Shipped', delay: 6000 },
+            { id: 'stepDelivered', label: 'Delivered', delay: 9000 }
+        ];
+
+        const statusBadge = document.getElementById('statusBadge');
+        
+        steps.forEach((step, index) => {
+            setTimeout(() => {
+                const el = document.getElementById(step.id);
+                if (el) {
+                    el.classList.add('active');
+                    el.querySelector('.circle').innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                    statusBadge.textContent = '⏳ ' + step.label + '...';
+                }
+            }, step.delay - 1000);
+
+            setTimeout(() => {
+                const el = document.getElementById(step.id);
+                if (el) {
+                    el.classList.remove('active');
+                    el.classList.add('completed');
+                    el.querySelector('.circle').innerHTML = '<i class="fas fa-check"></i>';
+                    if (index === steps.length - 1) {
+                        statusBadge.textContent = '✅ Delivered!';
+                        showToast('📦 Your order has been delivered!', 'success');
+                    } else {
+                        statusBadge.textContent = '✅ ' + step.label;
+                    }
+                }
+            }, step.delay);
+        });
+    }
+
+    // ============================================================
+    // PAY WITH M-PESA
+    // ============================================================
+    function payWithMpesa() {
+        console.log('📱 payWithMpesa called');
+        
+        if (isProcessingPayment) {
+            console.log('⚠️ Payment already processing');
+            return;
+        }
+        
+        if (orderPlaced) {
+            console.log('⚠️ Order already placed');
+            return;
+        }
+        
+        if (!validateCustomerData()) {
+            console.log('⚠️ Validation failed');
+            return;
+        }
+
+        const phone = document.getElementById('phone').value.trim();
+        if (!phone) {
+            showToast('⚠️ Please enter your phone number for M-Pesa', 'warning');
+            document.getElementById('phone').focus();
+            return;
+        }
+
+        let formattedPhone = phone.replace(/\s/g, '');
+        if (formattedPhone.startsWith('0')) {
+            formattedPhone = '254' + formattedPhone.substring(1);
+        } else if (!formattedPhone.startsWith('254')) {
+            formattedPhone = '254' + formattedPhone;
+        }
+
+        if (formattedPhone.length !== 12) {
+            showToast('⚠️ Please enter a valid phone number (e.g., 0712345678)', 'warning');
+            return;
+        }
+
+        isProcessingPayment = true;
+        
+        const mpesaBtn = document.getElementById('mpesaPayBtn');
+        const cashBtn = document.getElementById('cashPayBtn');
+        if (mpesaBtn) {
+            mpesaBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            mpesaBtn.disabled = true;
+        }
+        if (cashBtn) {
+            cashBtn.disabled = true;
+        }
+
+        const statusDiv = document.getElementById('mpesaStatus');
+        const statusMsg = document.getElementById('mpesaStatusMessage');
+        const loader = document.getElementById('mpesaStatusLoader');
+        
+        statusDiv.style.display = 'block';
+        statusMsg.innerHTML = '⏳ Sending STK Push to your phone...';
+        loader.style.display = 'block';
+
+        const orderId = 'ORD-' + Date.now().toString(36).toUpperCase();
+
+        fetch('/mpesa/initiate', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+                phone: formattedPhone,
+                amount: totalAmount,
+                order_id: orderId
+            })
+        })
+        .then(r => r.json())
+        .then(data => {
+            console.log('📱 M-Pesa response:', data);
+            
+            if (data.success) {
+                mpesaCheckoutId = data.checkout_request_id;
+                statusMsg.innerHTML = '✅ STK Push sent! <br><small style="font-weight:400;">Check your phone and enter PIN to confirm payment.</small>';
                 loader.style.display = 'none';
-                showToast('❌ Payment initiation failed', 'error');
+                
+                showToast('📱 STK Push sent to your phone', 'success');
+                
+                pollMpesaStatus(mpesaCheckoutId);
+            } else {
+                statusMsg.innerHTML = '❌ ' + data.message;
+                loader.style.display = 'none';
+                showToast('❌ ' + data.message, 'error');
                 isProcessingPayment = false;
                 
                 if (mpesaBtn) {
@@ -1365,64 +1359,62 @@
                 if (cashBtn) {
                     cashBtn.disabled = false;
                 }
-            });
-        }
+            }
+        })
+        .catch(err => {
+            console.error('❌ M-Pesa error:', err);
+            statusMsg.innerHTML = '❌ Error: ' + err.message;
+            loader.style.display = 'none';
+            showToast('❌ Payment initiation failed', 'error');
+            isProcessingPayment = false;
+            
+            if (mpesaBtn) {
+                mpesaBtn.innerHTML = '<i class="fas fa-mobile-alt"></i> Pay KSh ' + totalAmount.toLocaleString();
+                mpesaBtn.disabled = false;
+            }
+            if (cashBtn) {
+                cashBtn.disabled = false;
+            }
+        });
+    }
 
-        // ============================================================
-        // POLL M-PESA STATUS
-        // ============================================================
-        function pollMpesaStatus(checkoutId) {
-            console.log('📱 Polling M-Pesa status for:', checkoutId);
+    // ============================================================
+    // POLL M-PESA STATUS
+    // ============================================================
+    function pollMpesaStatus(checkoutId) {
+        console.log('📱 Polling M-Pesa status for:', checkoutId);
+        
+        if (mpesaStatusInterval) clearInterval(mpesaStatusInterval);
+        
+        let attempts = 0;
+        const maxAttempts = 30;
+        
+        mpesaStatusInterval = setInterval(() => {
+            attempts++;
+            console.log(`📱 Polling attempt ${attempts}/${maxAttempts}`);
             
-            if (mpesaStatusInterval) clearInterval(mpesaStatusInterval);
-            
-            let attempts = 0;
-            const maxAttempts = 30;
-            
-            mpesaStatusInterval = setInterval(() => {
-                attempts++;
-                console.log(`📱 Polling attempt ${attempts}/${maxAttempts}`);
+            fetch('/mpesa/status', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ checkout_request_id: checkoutId })
+            })
+            .then(r => r.json())
+            .then(data => {
+                console.log('📱 Status response:', data);
                 
-                fetch('/mpesa/status', {
-                    method: 'POST',
-                    headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ checkout_request_id: checkoutId })
-                })
-                .then(r => r.json())
-                .then(data => {
-                    console.log('📱 Status response:', data);
-                    
-                    if (data.success) {
-                        if (data.status === 'completed') {
-                            clearInterval(mpesaStatusInterval);
-                            document.getElementById('mpesaStatusMessage').innerHTML = '✅ Payment successful!';
-                            document.getElementById('mpesaStatusLoader').style.display = 'none';
-                            showToast('✅ Payment completed successfully!', 'success');
-                            
-                            // Complete order with M-Pesa
-                            completeOrder('mpesa');
-                        } else if (data.status === 'failed') {
-                            clearInterval(mpesaStatusInterval);
-                            document.getElementById('mpesaStatusMessage').innerHTML = '❌ ' + data.message;
-                            document.getElementById('mpesaStatusLoader').style.display = 'none';
-                            showToast('❌ Payment failed: ' + data.message, 'error');
-                            isProcessingPayment = false;
-                            
-                            const mpesaBtn = document.getElementById('mpesaPayBtn');
-                            if (mpesaBtn) {
-                                mpesaBtn.innerHTML = '<i class="fas fa-mobile-alt"></i> Pay KSh ' + totalAmount.toLocaleString();
-                                mpesaBtn.disabled = false;
-                            }
-                            const cashBtn = document.getElementById('cashPayBtn');
-                            if (cashBtn) cashBtn.disabled = false;
-                        }
-                    }
-                    
-                    if (attempts >= maxAttempts) {
+                if (data.success) {
+                    if (data.status === 'completed') {
                         clearInterval(mpesaStatusInterval);
-                        document.getElementById('mpesaStatusMessage').innerHTML = '⏳ Payment still pending. We will confirm via SMS.';
+                        document.getElementById('mpesaStatusMessage').innerHTML = '✅ Payment successful!';
                         document.getElementById('mpesaStatusLoader').style.display = 'none';
-                        showToast('⏳ Payment pending. We will confirm via SMS.', 'info');
+                        showToast('✅ Payment completed successfully!', 'success');
+                        
+                        completeOrder('mpesa');
+                    } else if (data.status === 'failed') {
+                        clearInterval(mpesaStatusInterval);
+                        document.getElementById('mpesaStatusMessage').innerHTML = '❌ ' + data.message;
+                        document.getElementById('mpesaStatusLoader').style.display = 'none';
+                        showToast('❌ Payment failed: ' + data.message, 'error');
                         isProcessingPayment = false;
                         
                         const mpesaBtn = document.getElementById('mpesaPayBtn');
@@ -1433,156 +1425,14 @@
                         const cashBtn = document.getElementById('cashPayBtn');
                         if (cashBtn) cashBtn.disabled = false;
                     }
-                })
-                .catch(() => {});
-            }, 5000);
-        }
-
-        // ============================================================
-        // PLACE CASH ORDER
-        // ============================================================
-        function placeCashOrder() {
-            console.log('💵 placeCashOrder called');
-            
-            if (isProcessingPayment) {
-                console.log('⚠️ Payment already processing');
-                return;
-            }
-            
-            if (orderPlaced) {
-                console.log('⚠️ Order already placed');
-                return;
-            }
-            
-            if (!validateCustomerData()) {
-                console.log('⚠️ Validation failed');
-                return;
-            }
-
-            const cashBtn = document.getElementById('cashPayBtn');
-            if (cashBtn) {
-                cashBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
-                cashBtn.disabled = true;
-            }
-            const mpesaBtn = document.getElementById('mpesaPayBtn');
-            if (mpesaBtn) mpesaBtn.disabled = true;
-
-            completeOrder('cash');
-        }
-
-        // ============================================================
-        // ✅ COMPLETE ORDER - FIXED with WhatsApp support
-        // ============================================================
-        function completeOrder(method) {
-            console.log('🛒 completeOrder called with method:', method);
-            
-            const data = getCustomerData();
-            const customerName = data.first_name + ' ' + data.last_name;
-            const fullAddress = data.address + ', ' + data.city + ', ' + data.country;
-
-            const cartItems = [];
-            document.querySelectorAll('.order-item').forEach(el => {
-                const nameEl = el.querySelector('.order-item-name');
-                const priceEl = el.querySelector('.order-item-price');
-                const qtyEl = el.querySelector('.order-item-quantity');
-                const imgEl = el.querySelector('.order-item-image img');
-                if (nameEl && priceEl) {
-                    const price = parseFloat(priceEl.textContent.replace('KSh ', '').replace(/,/g, ''));
-                    const qty = qtyEl ? parseInt(qtyEl.textContent.replace('×', '')) : 1;
-                    cartItems.push({
-                        name: nameEl.textContent.trim(),
-                        price: price,
-                        quantity: qty,
-                        image: imgEl ? imgEl.src : ''
-                    });
                 }
-            });
-
-            const trackingNumber = generateTrackingNumber();
-            const orderId = 'PP-' + Date.now().toString(36).toUpperCase();
-
-            const orderData = {
-                order_id: orderId,
-                tracking_number: trackingNumber,
-                items: cartItems,
-                subtotal: subtotal,
-                shipping: shippingCost,
-                total: totalAmount,
-                payment_method: method,
-                status: 'processing',
-                source: 'web',
-                created_at: new Date().toISOString(),
-                customer_name: customerName,
-                customer_email: data.email,
-                customer_phone: data.phone,
-                customer_address: fullAddress,
-                delivery_notes: data.delivery_notes,
-                estimated_delivery: shippingDistance <= 5 ? '1-2 days' : 
-                                   shippingDistance <= 20 ? '2-3 days' : 
-                                   shippingDistance <= 50 ? '3-4 days' : '4-5 days',
-                customer: {
-                    name: customerName,
-                    email: data.email,
-                    phone: data.phone,
-                    address: fullAddress
-                },
-                location: {
-                    user_lat: data.user_lat,
-                    user_lng: data.user_lng,
-                    store_lat: storeLat,
-                    store_lng: storeLng,
-                    distance_km: shippingDistance
-                }
-            };
-
-            console.log('📤 Sending order to server with shipping:', shippingCost);
-            console.log('📤 Full order data:', orderData);
-
-            fetch('/place-order', {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify(orderData)
-            })
-            .then(response => {
-                console.log('📥 Server response status:', response.status);
-                return response.json();
-            })
-            .then(result => {
-                console.log('📥 Server response data:', result);
                 
-                if (result.success) {
-                    orderPlaced = true;
+                if (attempts >= maxAttempts) {
+                    clearInterval(mpesaStatusInterval);
+                    document.getElementById('mpesaStatusMessage').innerHTML = '⏳ Payment still pending. We will confirm via SMS.';
+                    document.getElementById('mpesaStatusLoader').style.display = 'none';
+                    showToast('⏳ Payment pending. We will confirm via SMS.', 'info');
                     isProcessingPayment = false;
-                    
-                    // Update confirmation page
-                    document.getElementById('orderId').textContent = result.order_id || orderId;
-                    document.getElementById('trackingNumber').textContent = trackingNumber;
-                    document.getElementById('deliveryName').textContent = customerName;
-                    document.getElementById('deliveryAddress').textContent = fullAddress;
-                    
-                    const notes = document.getElementById('deliveryNotesDisplay');
-                    notes.textContent = data.delivery_notes ? '📝 ' + data.delivery_notes : 'No special instructions';
-                    
-                    document.getElementById('shippingMethodDisplay').textContent = `📦 Distance: ${shippingDistance.toFixed(1)} km · Shipping: KSh ${shippingCost.toFixed(0)}`;
-                    document.getElementById('estimatedDelivery').textContent = '🚚 Estimated delivery: ' + orderData.estimated_delivery;
-                    
-                    goToStep(3);
-                    launchConfetti();
-                    showToast('🎉 Order placed successfully!', 'success', 'Your order #' + (result.order_id || orderId) + ' is being processed');
-                    
-                    // ✅ OPEN WHATSAPP AUTOMATICALLY if URL is returned
-                    if (result.whatsapp_url) {
-                        console.log('📱 Opening WhatsApp:', result.whatsapp_url);
-                        setTimeout(() => {
-                            window.open(result.whatsapp_url, '_blank');
-                        }, 1500);
-                    }
-                    
-                    setTimeout(updateShippingStatus, 2000);
-                    
-                } else {
-                    console.log('❌ Order failed:', result.message);
-                    showToast('❌ ' + (result.message || 'Failed to place order'), 'error');
                     
                     const mpesaBtn = document.getElementById('mpesaPayBtn');
                     if (mpesaBtn) {
@@ -1590,16 +1440,152 @@
                         mpesaBtn.disabled = false;
                     }
                     const cashBtn = document.getElementById('cashPayBtn');
-                    if (cashBtn) {
-                        cashBtn.innerHTML = '<i class="fas fa-money-bill-wave"></i> Place Order';
-                        cashBtn.disabled = false;
-                    }
-                    isProcessingPayment = false;
+                    if (cashBtn) cashBtn.disabled = false;
                 }
             })
-            .catch(error => {
-                console.error('❌ Order error:', error);
-                showToast('❌ Something went wrong. Please try again.', 'error');
+            .catch(() => {});
+        }, 5000);
+    }
+
+    // ============================================================
+    // PLACE CASH ORDER
+    // ============================================================
+    function placeCashOrder() {
+        console.log('💵 placeCashOrder called');
+        
+        if (isProcessingPayment) {
+            console.log('⚠️ Payment already processing');
+            return;
+        }
+        
+        if (orderPlaced) {
+            console.log('⚠️ Order already placed');
+            return;
+        }
+        
+        if (!validateCustomerData()) {
+            console.log('⚠️ Validation failed');
+            return;
+        }
+
+        const cashBtn = document.getElementById('cashPayBtn');
+        if (cashBtn) {
+            cashBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
+            cashBtn.disabled = true;
+        }
+        const mpesaBtn = document.getElementById('mpesaPayBtn');
+        if (mpesaBtn) mpesaBtn.disabled = true;
+
+        completeOrder('cash');
+    }
+
+    // ============================================================
+    // COMPLETE ORDER
+    // ============================================================
+    function completeOrder(method) {
+        console.log('🛒 completeOrder called with method:', method);
+        
+        const data = getCustomerData();
+        const customerName = data.first_name + ' ' + data.last_name;
+        const fullAddress = data.address + ', ' + data.city + ', ' + data.country;
+
+        const cartItems = [];
+        document.querySelectorAll('.order-item').forEach(el => {
+            const nameEl = el.querySelector('.order-item-name');
+            const priceEl = el.querySelector('.order-item-price');
+            const qtyEl = el.querySelector('.order-item-quantity');
+            const imgEl = el.querySelector('.order-item-image img');
+            if (nameEl && priceEl) {
+                const price = parseFloat(priceEl.textContent.replace('KSh ', '').replace(/,/g, ''));
+                const qty = qtyEl ? parseInt(qtyEl.textContent.replace('×', '')) : 1;
+                cartItems.push({
+                    name: nameEl.textContent.trim(),
+                    price: price,
+                    quantity: qty,
+                    image: imgEl ? imgEl.src : ''
+                });
+            }
+        });
+
+        const trackingNumber = generateTrackingNumber();
+        const orderId = 'PP-' + Date.now().toString(36).toUpperCase();
+
+        const orderData = {
+            order_id: orderId,
+            tracking_number: trackingNumber,
+            items: cartItems,
+            subtotal: subtotal,
+            shipping: shippingCost,
+            total: totalAmount,
+            payment_method: method,
+            status: 'processing',
+            source: 'web',
+            created_at: new Date().toISOString(),
+            customer_name: customerName,
+            customer_email: data.email,
+            customer_phone: data.phone,
+            customer_address: fullAddress,
+            delivery_notes: data.delivery_notes,
+            estimated_delivery: shippingDistance <= 5 ? '1-2 days' : 
+                               shippingDistance <= 20 ? '2-3 days' : 
+                               shippingDistance <= 50 ? '3-4 days' : '4-5 days',
+            customer: {
+                name: customerName,
+                email: data.email,
+                phone: data.phone,
+                address: fullAddress
+            },
+            location: {
+                user_lat: data.user_lat,
+                user_lng: data.user_lng,
+                store_lat: storeLat,
+                store_lng: storeLng,
+                distance_km: shippingDistance
+            }
+        };
+
+        console.log('📤 Sending order to server with shipping:', shippingCost);
+
+        fetch('/place-order', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(orderData)
+        })
+        .then(response => response.json())
+        .then(result => {
+            console.log('📥 Server response:', result);
+            
+            if (result.success) {
+                orderPlaced = true;
+                isProcessingPayment = false;
+                
+                document.getElementById('orderId').textContent = result.order_id || orderId;
+                document.getElementById('trackingNumber').textContent = trackingNumber;
+                document.getElementById('deliveryName').textContent = customerName;
+                document.getElementById('deliveryAddress').textContent = fullAddress;
+                
+                const notes = document.getElementById('deliveryNotesDisplay');
+                notes.textContent = data.delivery_notes ? '📝 ' + data.delivery_notes : 'No special instructions';
+                
+                document.getElementById('shippingMethodDisplay').textContent = `📦 Distance: ${shippingDistance.toFixed(1)} km · Shipping: KSh ${shippingCost.toFixed(0)}`;
+                document.getElementById('estimatedDelivery').textContent = '🚚 Estimated delivery: ' + orderData.estimated_delivery;
+                
+                goToStep(3);
+                launchConfetti();
+                showToast('🎉 Order placed successfully!', 'success', 'Your order #' + (result.order_id || orderId) + ' is being processed');
+                
+                if (result.whatsapp_url) {
+                    console.log('📱 Opening WhatsApp:', result.whatsapp_url);
+                    setTimeout(() => {
+                        window.open(result.whatsapp_url, '_blank');
+                    }, 1500);
+                }
+                
+                setTimeout(updateShippingStatus, 2000);
+                
+            } else {
+                console.log('❌ Order failed:', result.message);
+                showToast('❌ ' + (result.message || 'Failed to place order'), 'error');
                 
                 const mpesaBtn = document.getElementById('mpesaPayBtn');
                 if (mpesaBtn) {
@@ -1612,101 +1598,123 @@
                     cashBtn.disabled = false;
                 }
                 isProcessingPayment = false;
-            });
-        }
-
-        // ============================================================
-        // CONFETTI
-        // ============================================================
-        function launchConfetti() {
-            const container = document.getElementById('confettiContainer');
-            const colors = ['#0b2b1e', '#c7a86b', '#2563eb', '#f59e0b', '#10b981', '#8b5cf6', '#f43f5e', '#06b6d4'];
-
-            for (let i = 0; i < 120; i++) {
-                const piece = document.createElement('div');
-                piece.className = 'confetti-piece';
-                piece.style.left = Math.random() * 100 + '%';
-                piece.style.background = colors[Math.floor(Math.random() * colors.length)];
-                piece.style.width = (Math.random() * 10 + 4) + 'px';
-                piece.style.height = (Math.random() * 10 + 4) + 'px';
-                piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
-                piece.style.animationDuration = (Math.random() * 2.5 + 1.5) + 's';
-                piece.style.animationDelay = (Math.random() * 2.5) + 's';
-                container.appendChild(piece);
-                setTimeout(() => piece.remove(), 5000);
             }
-        }
-
-        // ============================================================
-        // TOAST
-        // ============================================================
-        function showToast(message, type = 'success', subMessage = '') {
-            console.log('🔔 Toast:', message, type, subMessage);
+        })
+        .catch(error => {
+            console.error('❌ Order error:', error);
+            showToast('❌ Something went wrong. Please try again.', 'error');
             
+            const mpesaBtn = document.getElementById('mpesaPayBtn');
+            if (mpesaBtn) {
+                mpesaBtn.innerHTML = '<i class="fas fa-mobile-alt"></i> Pay KSh ' + totalAmount.toLocaleString();
+                mpesaBtn.disabled = false;
+            }
+            const cashBtn = document.getElementById('cashPayBtn');
+            if (cashBtn) {
+                cashBtn.innerHTML = '<i class="fas fa-money-bill-wave"></i> Place Order';
+                cashBtn.disabled = false;
+            }
+            isProcessingPayment = false;
+        });
+    }
+
+    // ============================================================
+    // CONFETTI
+    // ============================================================
+    function launchConfetti() {
+        const container = document.getElementById('confettiContainer');
+        const colors = ['#0b2b1e', '#c7a86b', '#2563eb', '#f59e0b', '#10b981', '#8b5cf6', '#f43f5e', '#06b6d4'];
+
+        for (let i = 0; i < 120; i++) {
+            const piece = document.createElement('div');
+            piece.className = 'confetti-piece';
+            piece.style.left = Math.random() * 100 + '%';
+            piece.style.background = colors[Math.floor(Math.random() * colors.length)];
+            piece.style.width = (Math.random() * 10 + 4) + 'px';
+            piece.style.height = (Math.random() * 10 + 4) + 'px';
+            piece.style.borderRadius = Math.random() > 0.5 ? '50%' : '2px';
+            piece.style.animationDuration = (Math.random() * 2.5 + 1.5) + 's';
+            piece.style.animationDelay = (Math.random() * 2.5) + 's';
+            container.appendChild(piece);
+            setTimeout(() => piece.remove(), 5000);
+        }
+    }
+
+    // ============================================================
+    // TOAST
+    // ============================================================
+    function showToast(message, type = 'success', subMessage = '') {
+        console.log('🔔 Toast:', message, type, subMessage);
+        
+        const toast = document.getElementById('toast');
+        const msgEl = document.getElementById('toastMessage');
+        const subEl = document.getElementById('toastSubMessage');
+        const iconEl = document.getElementById('toastIcon');
+        
+        msgEl.textContent = message;
+        subEl.textContent = subMessage || '';
+        
+        const icons = {
+            success: 'fas fa-check-circle text-[#0b2b1e] text-xl',
+            error: 'fas fa-times-circle text-red-500 text-xl',
+            warning: 'fas fa-exclamation-triangle text-amber-500 text-xl',
+            info: 'fas fa-info-circle text-blue-500 text-xl'
+        };
+        iconEl.className = icons[type] || icons.success;
+        
+        toast.classList.remove('hidden');
+        clearTimeout(window.toastTimeout);
+        window.toastTimeout = setTimeout(() => toast.classList.add('hidden'), 5000);
+    }
+
+    // ============================================================
+    // KEYBOARD SHORTCUTS
+    // ============================================================
+    document.addEventListener('keydown', (e) => {
+        if (e.key === 'Escape') {
             const toast = document.getElementById('toast');
-            const msgEl = document.getElementById('toastMessage');
-            const subEl = document.getElementById('toastSubMessage');
-            const iconEl = document.getElementById('toastIcon');
-            
-            msgEl.textContent = message;
-            subEl.textContent = subMessage || '';
-            
-            const icons = {
-                success: 'fas fa-check-circle text-[#0b2b1e] text-xl',
-                error: 'fas fa-times-circle text-red-500 text-xl',
-                warning: 'fas fa-exclamation-triangle text-amber-500 text-xl',
-                info: 'fas fa-info-circle text-blue-500 text-xl'
-            };
-            iconEl.className = icons[type] || icons.success;
-            
-            toast.classList.remove('hidden');
-            clearTimeout(window.toastTimeout);
-            window.toastTimeout = setTimeout(() => toast.classList.add('hidden'), 5000);
+            if (!toast.classList.contains('hidden')) {
+                toast.classList.add('hidden');
+            }
         }
+        if (e.key === 'Enter' && currentStep === 1) {
+            const active = document.activeElement;
+            if (active && active.tagName === 'INPUT') {
+                geocodeAddress();
+            }
+        }
+    });
 
-        // ============================================================
-        // KEYBOARD SHORTCUTS
-        // ============================================================
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape') {
-                const toast = document.getElementById('toast');
-                if (!toast.classList.contains('hidden')) {
-                    toast.classList.add('hidden');
-                }
+    // ============================================================
+    // ✅ INIT - FIXED: Only call detectLocation ONCE
+    // ============================================================
+    document.addEventListener('DOMContentLoaded', () => {
+        console.log('✅ DOM loaded, initializing...');
+        
+        const firstInput = document.querySelector('#step1 input');
+        if (firstInput) setTimeout(() => firstInput.focus(), 300);
+        
+        document.getElementById('summarySubtotal').textContent = 'KSh ' + subtotal.toLocaleString();
+        document.getElementById('totalDisplay').textContent = 'KSh ' + subtotal.toLocaleString();
+        
+        const freeShippingInfo = document.getElementById('freeShippingInfo');
+        if (subtotal >= 50000) {
+            freeShippingInfo.innerHTML = '<i class="fas fa-gift text-[#0b2b1e]"></i> <span class="text-[#0b2b1e] font-semibold">🎉 FREE SHIPPING eligible!</span>';
+        } else {
+            const remaining = 50000 - subtotal;
+            freeShippingInfo.innerHTML = `<i class="fas fa-info-circle text-[#0b2b1e]"></i> <span>Add KSh ${remaining.toLocaleString()} more for free shipping</span>`;
+        }
+        
+        // ✅ ONLY CALL ONCE with a delay
+        setTimeout(() => {
+            if (!locationDetectionAttempted) {
+                detectLocation();
             }
-            if (e.key === 'Enter' && currentStep === 1) {
-                const active = document.activeElement;
-                if (active && active.tagName === 'INPUT') {
-                    geocodeAddress();
-                }
-            }
-        });
-
-        // ============================================================
-        // INIT
-        // ============================================================
-        document.addEventListener('DOMContentLoaded', () => {
-            console.log('✅ DOM loaded, initializing...');
-            
-            const firstInput = document.querySelector('#step1 input');
-            if (firstInput) setTimeout(() => firstInput.focus(), 300);
-            
-            document.getElementById('summarySubtotal').textContent = 'KSh ' + subtotal.toLocaleString();
-            document.getElementById('totalDisplay').textContent = 'KSh ' + subtotal.toLocaleString();
-            
-            const freeShippingInfo = document.getElementById('freeShippingInfo');
-            if (subtotal >= 50000) {
-                freeShippingInfo.innerHTML = '<i class="fas fa-gift text-[#0b2b1e]"></i> <span class="text-[#0b2b1e] font-semibold">🎉 FREE SHIPPING eligible!</span>';
-            } else {
-                const remaining = 50000 - subtotal;
-                freeShippingInfo.innerHTML = `<i class="fas fa-info-circle text-[#0b2b1e]"></i> <span>Add KSh ${remaining.toLocaleString()} more for free shipping</span>`;
-            }
-            
-            setTimeout(detectLocation, 1000);
-            
-            console.log('✅ ACACIAMART Checkout initialized');
-            console.log('📦 Subtotal: KSh ' + subtotal.toLocaleString());
-        });
-    </script>
+        }, 1500);
+        
+        console.log('✅ ACACIAMART Checkout initialized');
+        console.log('📦 Subtotal: KSh ' + subtotal.toLocaleString());
+    });
+</script>
 </body>
 </html>
