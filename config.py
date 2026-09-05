@@ -34,3 +34,23 @@ class Config:
     }
 
     DATA_FILE = os.path.join(PROJECT_ROOT, 'offline_data.json')
+
+    # ============================================================
+    # M-PESA CONFIGURATION (Sandbox)
+    # ============================================================
+    # ✅ USE ENVIRONMENT VARIABLES FOR PRODUCTION!
+    MPESA_CONSUMER_KEY = os.environ.get('MPESA_CONSUMER_KEY', 'EwweXrZdaoB6Tgs8J9ROVe8lDL0OEIFml0rZDWzVTvG319D1')
+    MPESA_CONSUMER_SECRET = os.environ.get('MPESA_CONSUMER_SECRET', 'QjhDN1Kablkw9NolMZDmIQ8ybS5gEcBdFg1iLGRqYlUzMczkVGzIAN8jsX9R5iL7')
+    MPESA_PASSKEY = os.environ.get('MPESA_PASSKEY', 'bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919')
+    MPESA_SHORTCODE = os.environ.get('MPESA_SHORTCODE', '174379')
+    
+    # ⚠️ IMPORTANT: Change this to your actual domain for production
+    # For local testing, use ngrok or your local IP
+    MPESA_CALLBACK_URL = os.environ.get('MPESA_CALLBACK_URL', 'https://your-domain.com/mpesa/callback')
+    
+    # For local testing with ngrok:
+    # MPESA_CALLBACK_URL = os.environ.get('MPESA_CALLBACK_URL', 'https://your-ngrok-url.ngrok.io/mpesa/callback')
+    
+    print(f"📱 M-Pesa configured:")
+    print(f"   Shortcode: {MPESA_SHORTCODE}")
+    print(f"   Callback URL: {MPESA_CALLBACK_URL}")
