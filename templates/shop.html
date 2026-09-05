@@ -247,7 +247,7 @@
         #mobileToggle.open .icon-close { display:inline-block; }
 
         /* ============================================================
-           HERO CAROUSEL
+           HERO CAROUSEL - UPDATED WITH SUPERMARKET IMAGES
            ============================================================ */
         .hero-carousel { position:relative; min-height: 440px; display:flex; align-items:center; justify-content:center; overflow:hidden; padding:36px 20px; background: var(--gray-900); }
         .hero-slide { position:absolute; inset:0; opacity:0; transition:opacity 1.1s ease; z-index:0; }
@@ -544,22 +544,26 @@
          ============================================================ -->
     <div id="homeView">
 
-        <!-- ===== HERO CAROUSEL ===== -->
+        <!-- ===== HERO CAROUSEL - UPDATED WITH SUPERMARKET IMAGES ===== -->
         <section class="hero-carousel" aria-label="Hero banner" id="heroCarousel">
-            <div class="hero-slide active" data-caption="Fresh Produce Daily">
-                <img class="slide-img" src="https://images.unsplash.com/photo-1579113800032-c38bd7635818?w=1800&h=900&fit=crop&auto=format" alt="Fresh produce" />
+            <!-- Slide 1: Supermarket aisle -->
+            <div class="hero-slide active" data-caption="Shop Everything You Need">
+                <img class="slide-img" src="https://images.unsplash.com/photo-1583258292688-d0213dc5a3a7?w=1800&h=900&fit=crop&auto=format" alt="Supermarket aisle" />
                 <div class="slide-overlay"></div>
             </div>
-            <div class="hero-slide" data-caption="Everything You Need">
-                <img class="slide-img" src="https://images.unsplash.com/photo-1583258292688-d0213dc5a3a7?w=1800&h=900&fit=crop&auto=format" alt="Supermarket shopping" />
+            <!-- Slide 2: Shopping cart in supermarket -->
+            <div class="hero-slide" data-caption="Fresh Groceries Delivered">
+                <img class="slide-img" src="https://images.unsplash.com/photo-1556909212-d5b6e26a4c33?w=1800&h=900&fit=crop&auto=format" alt="Shopping cart" />
                 <div class="slide-overlay"></div>
             </div>
-            <div class="hero-slide" data-caption="Fresh &amp; Healthy">
-                <img class="slide-img" src="https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=1800&h=900&fit=crop&auto=format" alt="Fresh fruits" />
+            <!-- Slide 3: Supermarket fresh produce section -->
+            <div class="hero-slide" data-caption="Fresh Produce Daily">
+                <img class="slide-img" src="https://images.unsplash.com/photo-1543168256-418811576931?w=1800&h=900&fit=crop&auto=format" alt="Fresh produce section" />
                 <div class="slide-overlay"></div>
             </div>
-            <div class="hero-slide" data-caption="Best Beverages">
-                <img class="slide-img" src="https://images.unsplash.com/photo-1621263764928-df1444c5e859?w=1800&h=900&fit=crop&auto=format" alt="Beverages" />
+            <!-- Slide 4: Supermarket checkout -->
+            <div class="hero-slide" data-caption="Easy Checkout &amp; Delivery">
+                <img class="slide-img" src="https://images.unsplash.com/photo-1556742049-0cfed4f6a45d?w=1800&h=900&fit=crop&auto=format" alt="Supermarket checkout" />
                 <div class="slide-overlay"></div>
             </div>
 
@@ -965,8 +969,9 @@
             if (!e.target.closest('.cat-mega-btn') && !e.target.closest('.cat-mega-panel')) closeCatMega();
         });
 
-        // Representative real photos per category, matched by keyword. Falls back to a generic
-        // grocery-basket shot if a category name doesn't match anything below.
+        // ============================================================
+        // CATEGORY IMAGE MAP - UPDATED WITH REALISTIC IMAGES
+        // ============================================================
         const CATEGORY_IMAGE_MAP = [
             [['beverage', 'drink', 'juice', 'soda', 'water'], 'https://images.unsplash.com/photo-1544145945-f90425340c7e?w=400&h=300&fit=crop&auto=format'],
             [['snack', 'chip', 'biscuit', 'confection'], 'https://images.unsplash.com/photo-1613919113640-25732ec5e61f?w=400&h=300&fit=crop&auto=format'],
@@ -976,7 +981,8 @@
             [['meat', 'butchery', 'chicken', 'beef'], 'https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?w=400&h=300&fit=crop&auto=format'],
             [['household', 'clean', 'homecare', 'laundry'], 'https://images.unsplash.com/photo-1585421514738-01798e348b17?w=400&h=300&fit=crop&auto=format'],
             [['health', 'beauty', 'personal care', 'cosmetic'], 'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&h=300&fit=crop&auto=format'],
-            [['baby', 'kid'], 'https://images.unsplash.com/photo-1522771930-78848d9293e8?w=400&h=300&fit=crop&auto=format'],
+            // 🔥 UPDATED: Baby/Period Care image changed to pads/feminine care
+            [['baby', 'kid', 'period', 'pads', 'sanitary', 'feminine'], 'https://images.unsplash.com/photo-1582750433449-648ed127bb54?w=400&h=300&fit=crop&auto=format'],
             [['frozen'], 'https://images.unsplash.com/photo-1584362917165-526a968579e8?w=400&h=300&fit=crop&auto=format'],
             [['grain', 'cereal', 'rice', 'flour', 'cupboard'], 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400&h=300&fit=crop&auto=format'],
             [['electronic', 'appliance'], 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=400&h=300&fit=crop&auto=format'],
