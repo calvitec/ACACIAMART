@@ -8,7 +8,7 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" />
     <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap" rel="stylesheet" />
     <style>
-        /* ===== ALL STYLES SAME AS BEFORE ===== */
+        /* ===== ALL STYLES ===== */
         * { font-family: 'Inter', sans-serif; margin: 0; padding: 0; box-sizing: border-box; }
         body { background: #f0f4f8; color: #0b1a2f; min-height: 100vh; }
 
@@ -522,7 +522,7 @@
                                 <span class="font-medium text-sm">Detecting your location...</span>
                                 <p class="text-xs text-gray-500">We'll calculate shipping distance from our store</p>
                             </div>
-                            <button onclick="detectLocation()" class="text-xs bg-[#0b2b1e] text-white px-3 py-1 rounded-full font-semibold ml-auto hover:bg-[#061a12] transition" id="locationRetryBtn" style="display:none;">
+                            <button onclick="retryLocation()" class="text-xs bg-[#0b2b1e] text-white px-3 py-1 rounded-full font-semibold ml-auto hover:bg-[#061a12] transition" id="locationRetryBtn" style="display:none;">
                                 <i class="fas fa-redo"></i> Retry
                             </button>
                         </div>
@@ -648,7 +648,8 @@
                         </div>
 
                         <div class="grid md:grid-cols-2 gap-4">
-                            <div class="payment-option" onclick="placeOrder('mpesa')">
+                            <!-- M-Pesa Option -->
+                            <div class="payment-option" id="mpesaOption">
                                 <span class="icon">📱</span>
                                 <div class="title">M-Pesa</div>
                                 <div class="subtitle">Pay via M-Pesa Paybill</div>
@@ -656,22 +657,32 @@
                                     <span class="badge mpesa">💳 M-Pesa</span>
                                     <span class="badge popular">✓ Fast</span>
                                 </div>
-                                <button class="mt-3 w-full bg-[#0b2b1e] text-white py-2.5 px-4 rounded-full font-semibold text-sm hover:bg-[#061a12] transition-all shadow-lg shadow-[#0b2b1e]/20">
-                                    <i class="fas fa-mobile-alt"></i> Pay with M-Pesa
+                                <button class="mt-3 w-full bg-[#0b2b1e] text-white py-2.5 px-4 rounded-full font-semibold text-sm hover:bg-[#061a12] transition-all shadow-lg shadow-[#0b2b1e]/20" id="mpesaPayBtn">
+                                    <i class="fas fa-mobile-alt"></i> Pay KSh {{ "%.0f"|format(total) }}
                                 </button>
                             </div>
 
-                            <div class="payment-option" onclick="placeOrder('card')">
-                                <span class="icon">💳</span>
-                                <div class="title">Card Payment</div>
-                                <div class="subtitle">Pay with debit or credit card</div>
+                            <!-- Cash Option -->
+                            <div class="payment-option" id="cashOption">
+                                <span class="icon">💵</span>
+                                <div class="title">Cash</div>
+                                <div class="subtitle">Pay with cash at the store or upon delivery</div>
                                 <div class="flex flex-wrap gap-2 mt-2">
                                     <span class="badge popular">✓ Secure</span>
                                     <span class="badge" style="background:#e0e7ff;color:#4f46e5;">🔒 Encrypted</span>
                                 </div>
-                                <button class="mt-3 w-full bg-[#0b2b1e] text-white py-2.5 px-4 rounded-full font-semibold text-sm hover:bg-[#061a12] transition-all shadow-lg shadow-[#0b2b1e]/20">
-                                    <i class="fas fa-credit-card"></i> Pay Now
+                                <button class="mt-3 w-full bg-[#0b2b1e] text-white py-2.5 px-4 rounded-full font-semibold text-sm hover:bg-[#061a12] transition-all shadow-lg shadow-[#0b2b1e]/20" id="cashPayBtn">
+                                    <i class="fas fa-money-bill-wave"></i> Place Order
                                 </button>
+                            </div>
+                        </div>
+
+                        <!-- M-Pesa Status -->
+                        <div id="mpesaStatus" style="display:none;margin-top:16px;padding:16px;border-radius:12px;border:2px solid #0b2b1e;background:#f0fdf4;">
+                            <div id="mpesaStatusMessage" style="font-size:0.9rem;font-weight:600;color:#0b2b1e;"></div>
+                            <div id="mpesaStatusLoader" style="display:none;text-align:center;margin-top:8px;">
+                                <i class="fas fa-spinner fa-spin" style="font-size:1.5rem;color:#0b2b1e;"></i>
+                                <p style="font-size:0.7rem;color:#5a6d7a;margin-top:4px;">Waiting for confirmation...</p>
                             </div>
                         </div>
 
@@ -834,10 +845,17 @@
         </div>
     </div>
 
-   <script>
+    <script>
+    // ============================================================
+    // ACACIAMART CHECKOUT - COMPLETE FIXED VERSION
+    // ============================================================
+
     console.log('🚀 ACACIAMART Checkout Loaded');
     console.log('📍 Store: Nairobi CBD (Lat: -1.286389, Lng: 36.817223)');
 
+    // ============================================================
+    // GLOBAL VARIABLES
+    // ============================================================
     let currentStep = 1;
     let orderPlaced = false;
     let shippingCost = 0;
@@ -852,8 +870,8 @@
     let mpesaCheckoutId = null;
     let mpesaStatusInterval = null;
     let isProcessingPayment = false;
-    let locationDetectionAttempted = false;  // ✅ NEW: Prevents infinite loop
-    let locationDetectionInProgress = false; // ✅ NEW: Prevents multiple simultaneous attempts
+    let locationDetectionAttempted = false;
+    let locationDetectionInProgress = false;
 
     // ============================================================
     // HAVERSINE FORMULA
@@ -871,14 +889,13 @@
     }
 
     // ============================================================
-    // ✅ FIXED: DETECT LOCATION (runs only once)
+    // DETECT LOCATION (ONCE)
     // ============================================================
     function detectLocation() {
-        console.log('📍 detectLocation called, attempted:', locationDetectionAttempted, 'inProgress:', locationDetectionInProgress);
+        console.log('📍 detectLocation called');
         
-        // ✅ PREVENT MULTIPLE ATTEMPTS
         if (locationDetectionAttempted || locationDetectionInProgress) {
-            console.log('⚠️ Location detection already attempted or in progress');
+            console.log('⚠️ Location detection already attempted');
             return;
         }
         
@@ -950,7 +967,7 @@
     }
 
     // ============================================================
-    // ✅ FIXED: RETRY LOCATION (reset flag so it can run again)
+    // RETRY LOCATION
     // ============================================================
     function retryLocation() {
         console.log('📍 Retrying location...');
@@ -960,7 +977,7 @@
     }
 
     // ============================================================
-    // GEOCODE ADDRESS USING NOMINATIM
+    // GEOCODE ADDRESS
     // ============================================================
     function geocodeAddress() {
         console.log('📍 Geocoding address...');
@@ -988,13 +1005,9 @@
         const fullAddress = `${address}, ${city}, ${country || 'Kenya'}`;
         const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(fullAddress)}&format=json&limit=1`;
         
-        console.log('📍 Geocoding URL:', url);
-        
         fetch(url)
             .then(response => response.json())
             .then(data => {
-                console.log('📍 Geocoding response:', data);
-                
                 if (data && data.length > 0) {
                     const lat = parseFloat(data[0].lat);
                     const lon = parseFloat(data[0].lon);
@@ -1072,7 +1085,7 @@
         shipping = Math.min(shipping, MAX_SHIPPING);
         const result = Math.round(shipping);
         
-        console.log(`📦 Shipping calculation: Distance fee: ${distanceFee}, Value fee: ${valueFee}, Final: ${result}`);
+        console.log(`📦 Shipping calculation: Final: ${result}`);
         
         return result;
     }
@@ -1225,46 +1238,7 @@
     }
 
     // ============================================================
-    // UPDATE SHIPPING STATUS
-    // ============================================================
-    function updateShippingStatus() {
-        const steps = [
-            { id: 'stepProcessing', label: 'Processing', delay: 3000 },
-            { id: 'stepShipping', label: 'Shipped', delay: 6000 },
-            { id: 'stepDelivered', label: 'Delivered', delay: 9000 }
-        ];
-
-        const statusBadge = document.getElementById('statusBadge');
-        
-        steps.forEach((step, index) => {
-            setTimeout(() => {
-                const el = document.getElementById(step.id);
-                if (el) {
-                    el.classList.add('active');
-                    el.querySelector('.circle').innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
-                    statusBadge.textContent = '⏳ ' + step.label + '...';
-                }
-            }, step.delay - 1000);
-
-            setTimeout(() => {
-                const el = document.getElementById(step.id);
-                if (el) {
-                    el.classList.remove('active');
-                    el.classList.add('completed');
-                    el.querySelector('.circle').innerHTML = '<i class="fas fa-check"></i>';
-                    if (index === steps.length - 1) {
-                        statusBadge.textContent = '✅ Delivered!';
-                        showToast('📦 Your order has been delivered!', 'success');
-                    } else {
-                        statusBadge.textContent = '✅ ' + step.label;
-                    }
-                }
-            }, step.delay);
-        });
-    }
-
-    // ============================================================
-    // PAY WITH M-PESA
+    // ✅ PAY WITH M-PESA - FIXED
     // ============================================================
     function payWithMpesa() {
         console.log('📱 payWithMpesa called');
@@ -1307,6 +1281,7 @@
         
         const mpesaBtn = document.getElementById('mpesaPayBtn');
         const cashBtn = document.getElementById('cashPayBtn');
+        
         if (mpesaBtn) {
             mpesaBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...';
             mpesaBtn.disabled = true;
@@ -1324,6 +1299,12 @@
         loader.style.display = 'block';
 
         const orderId = 'ORD-' + Date.now().toString(36).toUpperCase();
+
+        console.log('📤 Sending M-Pesa request:', {
+            phone: formattedPhone,
+            amount: totalAmount,
+            order_id: orderId
+        });
 
         fetch('/mpesa/initiate', {
             method: 'POST',
@@ -1544,7 +1525,7 @@
             }
         };
 
-        console.log('📤 Sending order to server with shipping:', shippingCost);
+        console.log('📤 Sending order to server...');
 
         fetch('/place-order', {
             method: 'POST',
@@ -1619,6 +1600,45 @@
     }
 
     // ============================================================
+    // UPDATE SHIPPING STATUS
+    // ============================================================
+    function updateShippingStatus() {
+        const steps = [
+            { id: 'stepProcessing', label: 'Processing', delay: 3000 },
+            { id: 'stepShipping', label: 'Shipped', delay: 6000 },
+            { id: 'stepDelivered', label: 'Delivered', delay: 9000 }
+        ];
+
+        const statusBadge = document.getElementById('statusBadge');
+        
+        steps.forEach((step, index) => {
+            setTimeout(() => {
+                const el = document.getElementById(step.id);
+                if (el) {
+                    el.classList.add('active');
+                    el.querySelector('.circle').innerHTML = '<i class="fas fa-spinner fa-spin"></i>';
+                    statusBadge.textContent = '⏳ ' + step.label + '...';
+                }
+            }, step.delay - 1000);
+
+            setTimeout(() => {
+                const el = document.getElementById(step.id);
+                if (el) {
+                    el.classList.remove('active');
+                    el.classList.add('completed');
+                    el.querySelector('.circle').innerHTML = '<i class="fas fa-check"></i>';
+                    if (index === steps.length - 1) {
+                        statusBadge.textContent = '✅ Delivered!';
+                        showToast('📦 Your order has been delivered!', 'success');
+                    } else {
+                        statusBadge.textContent = '✅ ' + step.label;
+                    }
+                }
+            }, step.delay);
+        });
+    }
+
+    // ============================================================
     // CONFETTI
     // ============================================================
     function launchConfetti() {
@@ -1668,32 +1688,60 @@
     }
 
     // ============================================================
-    // KEYBOARD SHORTCUTS
+    // ✅ EVENT LISTENERS - FIXED
     // ============================================================
-    document.addEventListener('keydown', (e) => {
-        if (e.key === 'Escape') {
-            const toast = document.getElementById('toast');
-            if (!toast.classList.contains('hidden')) {
-                toast.classList.add('hidden');
-            }
-        }
-        if (e.key === 'Enter' && currentStep === 1) {
-            const active = document.activeElement;
-            if (active && active.tagName === 'INPUT') {
-                geocodeAddress();
-            }
-        }
-    });
-
-    // ============================================================
-    // ✅ INIT - FIXED: Only call detectLocation ONCE
-    // ============================================================
-    document.addEventListener('DOMContentLoaded', () => {
+    document.addEventListener('DOMContentLoaded', function() {
         console.log('✅ DOM loaded, initializing...');
         
-        const firstInput = document.querySelector('#step1 input');
-        if (firstInput) setTimeout(() => firstInput.focus(), 300);
+        // ✅ M-Pesa Button - Direct click handler
+        const mpesaBtn = document.getElementById('mpesaPayBtn');
+        if (mpesaBtn) {
+            console.log('✅ M-Pesa button found, attaching click handler');
+            mpesaBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('🖱️ M-Pesa button clicked');
+                payWithMpesa();
+            });
+        } else {
+            console.error('❌ M-Pesa button not found!');
+        }
         
+        // ✅ Cash Button
+        const cashBtn = document.getElementById('cashPayBtn');
+        if (cashBtn) {
+            console.log('✅ Cash button found, attaching click handler');
+            cashBtn.addEventListener('click', function(e) {
+                e.preventDefault();
+                e.stopPropagation();
+                console.log('🖱️ Cash button clicked');
+                placeCashOrder();
+            });
+        }
+        
+        // ✅ M-Pesa Option click
+        const mpesaOption = document.getElementById('mpesaOption');
+        if (mpesaOption) {
+            mpesaOption.addEventListener('click', function(e) {
+                if (e.target.tagName !== 'BUTTON') {
+                    const btn = document.getElementById('mpesaPayBtn');
+                    if (btn) btn.click();
+                }
+            });
+        }
+        
+        // ✅ Cash Option click
+        const cashOption = document.getElementById('cashOption');
+        if (cashOption) {
+            cashOption.addEventListener('click', function(e) {
+                if (e.target.tagName !== 'BUTTON') {
+                    const btn = document.getElementById('cashPayBtn');
+                    if (btn) btn.click();
+                }
+            });
+        }
+        
+        // Init totals
         document.getElementById('summarySubtotal').textContent = 'KSh ' + subtotal.toLocaleString();
         document.getElementById('totalDisplay').textContent = 'KSh ' + subtotal.toLocaleString();
         
@@ -1705,7 +1753,7 @@
             freeShippingInfo.innerHTML = `<i class="fas fa-info-circle text-[#0b2b1e]"></i> <span>Add KSh ${remaining.toLocaleString()} more for free shipping</span>`;
         }
         
-        // ✅ ONLY CALL ONCE with a delay
+        // Try location detection once
         setTimeout(() => {
             if (!locationDetectionAttempted) {
                 detectLocation();
@@ -1714,7 +1762,8 @@
         
         console.log('✅ ACACIAMART Checkout initialized');
         console.log('📦 Subtotal: KSh ' + subtotal.toLocaleString());
+        console.log('📦 Total: KSh ' + totalAmount.toLocaleString());
     });
-</script>
+    </script>
 </body>
 </html>
