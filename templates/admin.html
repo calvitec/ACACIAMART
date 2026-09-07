@@ -492,7 +492,7 @@
         background: var(--bg-card);
         border-radius: var(--radius);
         padding: 28px;
-        max-width: 750px;
+        max-width: 780px;
         width: 100%;
         max-height: 90vh;
         overflow-y: auto;
@@ -1276,6 +1276,9 @@
                             <button onclick="openRecordPaymentModal('{{ customer.customer_id }}', '{{ customer.full_name }}', '{{ customer.current_balance|default(0) }}')" class="btn-success" style="font-size:0.55rem;padding:2px 8px;" title="Pay">
                                 <i class="fas fa-money-bill-wave"></i>
                             </button>
+                            <button onclick="viewCreditProducts('{{ customer.customer_id }}')" class="btn-gradient" style="font-size:0.55rem;padding:2px 8px;background:linear-gradient(135deg, #059669, #10B981);" title="View Products">
+                                <i class="fas fa-boxes"></i>
+                            </button>
                         </td>
                     </tr>
                     {% endfor %}
@@ -1599,6 +1602,74 @@
     </div>
 </div>
 
+<!-- ============================================================
+     [NEW] CREDIT PRODUCTS MODAL
+     ============================================================ -->
+<div id="creditProductsModal" class="modal-overlay hidden" onclick="closeModal(event, 'creditProductsModal')">
+    <div class="modal" onclick="event.stopPropagation()" style="max-width:780px;">
+        <button class="close" onclick="document.getElementById('creditProductsModal').classList.add('hidden')">✕</button>
+        <div class="title">🛍️ Credit Products Purchased</div>
+        
+        <div id="creditProductsContent">
+            <!-- Customer Info -->
+            <div id="creditProductsCustomerInfo" style="margin-bottom:12px;"></div>
+            
+            <!-- Summary Stats -->
+            <div id="creditProductsSummary" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:12px;padding:8px 12px;background:var(--bg-input);border-radius:8px;">
+                <div>
+                    <span style="font-size:0.55rem;color:var(--text-muted);">Total Products</span>
+                    <br><span style="font-weight:700;color:var(--info);font-size:1.1rem;" id="cpTotalProducts">0</span>
+                </div>
+                <div>
+                    <span style="font-size:0.55rem;color:var(--text-muted);">Total Items</span>
+                    <br><span style="font-weight:700;font-size:1.1rem;" id="cpTotalQuantity">0</span>
+                </div>
+                <div>
+                    <span style="font-size:0.55rem;color:var(--text-muted);">Total Spent</span>
+                    <br><span style="font-weight:700;color:var(--danger);font-size:1.1rem;" id="cpTotalSpent">KSh 0</span>
+                </div>
+                <div>
+                    <span style="font-size:0.55rem;color:var(--text-muted);">Avg Per Item</span>
+                    <br><span style="font-weight:700;color:var(--primary-light);font-size:1.1rem;" id="cpAvgPerItem">KSh 0</span>
+                </div>
+            </div>
+            
+            <!-- Products Table -->
+            <div class="table-wrap" style="max-height:400px;overflow-y:auto;">
+                <table>
+                    <thead style="position:sticky;top:0;z-index:10;background:var(--bg-card);">
+                        <tr>
+                            <th style="min-width:150px;">Product</th>
+                            <th style="text-align:center;width:80px;">Quantity</th>
+                            <th style="text-align:right;width:120px;">Total Spent</th>
+                            <th style="text-align:right;width:100px;">Avg Price</th>
+                            <th style="text-align:center;width:120px;">Last Purchased</th>
+                        </tr>
+                    </thead>
+                    <tbody id="creditProductsBody">
+                        <tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text-muted);">
+                            <div style="font-size:2rem;margin-bottom:8px;">📦</div>
+                            Loading products...
+                        </td></tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Footer -->
+            <div style="margin-top:12px;padding-top:12px;border-top:1px solid var(--border-color);display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;">
+                <div style="font-size:0.6rem;color:var(--text-muted);">
+                    <span id="cpShowingCount">0</span> products found
+                </div>
+                <div style="display:flex;gap:8px;">
+                    <button onclick="document.getElementById('creditProductsModal').classList.add('hidden')" class="btn-outline" style="font-size:0.7rem;padding:6px 20px;">
+                        ✕ Close
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
 <!-- Supplier Modal -->
 <div id="supplierModal" class="modal-overlay hidden" onclick="closeModal(event, 'supplierModal')">
     <div class="modal" onclick="event.stopPropagation()" style="max-width:500px;">
@@ -1841,7 +1912,6 @@ function loadCategories() {
             }
             
             if (categoryNames.length === 0) {
-                // Fallback: try to get from products
                 return fetch('/admin/api/products?limit=100&t=' + Date.now())
                     .then(function(r) { return r.json(); })
                     .then(function(prodData) {
@@ -3137,12 +3207,13 @@ function viewCreditCustomer(customerId) {
             }
             html += '</div>';
             
-            // Action buttons
+            // Action buttons - UPDATED with View Products button
             html += '<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border-color);display:flex;gap:8px;flex-wrap:wrap;">';
-            html += '<button onclick="document.getElementById(\'viewCreditModal\').classList.add(\'hidden\');openRecordPaymentModal(\'' + c.customer_id + '\',\'' + c.full_name + '\',\'' + (c.current_balance || 0) + '\')" class="btn-success" style="font-size:0.7rem;padding:4px 16px;">💵 Record Payment</button>';
-            html += '<button onclick="editCreditCustomer(\'' + c.customer_id + '\');document.getElementById(\'viewCreditModal\').classList.add(\'hidden\')" class="btn-outline" style="font-size:0.7rem;padding:4px 16px;color:var(--primary-light);">✏️ Edit</button>';
-            html += '<button onclick="viewCreditTransactions(\'' + c.customer_id + '\')" class="btn-gradient" style="font-size:0.7rem;padding:4px 16px;">📋 Full History</button>';
-            html += '<button onclick="document.getElementById(\'viewCreditModal\').classList.add(\'hidden\')" class="btn-outline" style="font-size:0.7rem;padding:4px 16px;">Close</button>';
+            html += '<button onclick="document.getElementById(\'viewCreditModal\').classList.add(\'hidden\');openRecordPaymentModal(\'' + c.customer_id + '\',\'' + c.full_name + '\',\'' + (c.current_balance || 0) + '\')" class="btn-success" style="font-size:0.7rem;padding:6px 16px;">💵 Record Payment</button>';
+            html += '<button onclick="editCreditCustomer(\'' + c.customer_id + '\');document.getElementById(\'viewCreditModal\').classList.add(\'hidden\')" class="btn-outline" style="font-size:0.7rem;padding:6px 16px;color:var(--primary-light);">✏️ Edit</button>';
+            html += '<button onclick="viewCreditTransactions(\'' + c.customer_id + '\')" class="btn-gradient" style="font-size:0.7rem;padding:6px 16px;">📋 Full History</button>';
+            html += '<button onclick="viewCreditProducts(\'' + c.customer_id + '\')" class="btn-gradient green" style="font-size:0.7rem;padding:6px 16px;">🛍️ View Products</button>';
+            html += '<button onclick="document.getElementById(\'viewCreditModal\').classList.add(\'hidden\')" class="btn-outline" style="font-size:0.7rem;padding:6px 16px;">Close</button>';
             html += '</div>';
             
             document.getElementById('viewCreditContent').innerHTML = html;
@@ -3451,6 +3522,137 @@ function goToTxnPage(page) {
 }
 
 // ============================================================
+// [NEW] CREDIT PRODUCTS FUNCTIONS
+// ============================================================
+
+function viewCreditProducts(customerId) {
+    console.log('🛍️ Viewing credit products for:', customerId);
+    
+    var modal = document.getElementById('creditProductsModal');
+    if (!modal) {
+        showToast('❌ Modal not found', 'error');
+        return;
+    }
+    
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+    modal.style.zIndex = '99999';
+    
+    // Show loading state
+    document.getElementById('creditProductsBody').innerHTML = 
+        '<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text-muted);">' +
+        '<div style="font-size:2rem;margin-bottom:8px;">⏳</div>Loading products...</td></tr>';
+    document.getElementById('creditProductsCustomerInfo').innerHTML = '';
+    
+    // Reset summary
+    document.getElementById('cpTotalProducts').textContent = '0';
+    document.getElementById('cpTotalQuantity').textContent = '0';
+    document.getElementById('cpTotalSpent').textContent = 'KSh 0';
+    document.getElementById('cpAvgPerItem').textContent = 'KSh 0';
+    document.getElementById('cpShowingCount').textContent = '0';
+    
+    // Fetch customer info and products
+    Promise.all([
+        fetch('/admin/api/credit/customers/' + customerId + '?t=' + Date.now()).then(r => r.json()),
+        fetch('/admin/api/credit/products/' + customerId + '?t=' + Date.now()).then(r => r.json())
+    ])
+    .then(function(results) {
+        var customerData = results[0];
+        var productData = results[1];
+        
+        // Customer info
+        if (customerData.success && customerData.customer) {
+            var c = customerData.customer;
+            document.getElementById('creditProductsCustomerInfo').innerHTML = 
+                '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:10px 14px;background:var(--bg-input);border-radius:8px;border:1px solid var(--border-color);">' +
+                '<div><span style="font-weight:700;font-size:1rem;color:var(--text-primary);">' + c.full_name + '</span> ' +
+                '<span style="color:var(--text-muted);font-size:0.75rem;">' + (c.phone || 'No phone') + '</span></div>' +
+                '<div><span style="color:var(--text-muted);font-size:0.65rem;">Credit Limit:</span> ' +
+                '<span style="font-weight:600;">KSh ' + (c.credit_limit || 0).toLocaleString() + '</span> | ' +
+                '<span style="color:var(--text-muted);font-size:0.65rem;">Balance:</span> ' +
+                '<span style="font-weight:700;color:' + (c.current_balance > 0 ? 'var(--warning)' : 'var(--success)') + ';">KSh ' + (c.current_balance || 0).toLocaleString() + '</span></div>' +
+                '</div>';
+        } else {
+            document.getElementById('creditProductsCustomerInfo').innerHTML = 
+                '<div style="padding:10px 14px;background:var(--bg-input);border-radius:8px;color:var(--text-muted);border:1px solid var(--border-color);">Customer not found</div>';
+        }
+        
+        // Render products
+        renderCreditProducts(productData);
+    })
+    .catch(function(err) {
+        console.error('Error:', err);
+        document.getElementById('creditProductsBody').innerHTML = 
+            '<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--danger);">❌ Error loading products: ' + err.message + '</td></tr>';
+        showToast('❌ Error loading credit products', 'error');
+    });
+}
+
+function renderCreditProducts(productData) {
+    var body = document.getElementById('creditProductsBody');
+    if (!body) return;
+    
+    if (productData.success && productData.products) {
+        var products = productData.products;
+        var totalProducts = productData.total_products || 0;
+        var totalQuantity = productData.total_quantity || 0;
+        var totalSpent = productData.total_spent || 0;
+        
+        // Update summary
+        document.getElementById('cpTotalProducts').textContent = totalProducts;
+        document.getElementById('cpTotalQuantity').textContent = totalQuantity;
+        document.getElementById('cpTotalSpent').textContent = 'KSh ' + totalSpent.toLocaleString();
+        document.getElementById('cpAvgPerItem').textContent = totalQuantity > 0 ? 'KSh ' + (totalSpent / totalQuantity).toFixed(2) : 'KSh 0';
+        document.getElementById('cpShowingCount').textContent = products.length;
+        
+        if (products.length === 0) {
+            body.innerHTML = 
+                '<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text-muted);">' +
+                '<div style="font-size:2rem;margin-bottom:8px;">📭</div>No credit products found</td></tr>';
+            return;
+        }
+        
+        var html = '';
+        for (var i = 0; i < products.length; i++) {
+            var p = products[i];
+            var avgPrice = p.avg_price || 0;
+            
+            // Set color based on quantity
+            var qtyColor = p.total_quantity > 10 ? 'var(--success)' : p.total_quantity > 5 ? 'var(--warning)' : 'var(--info)';
+            
+            html += '<tr>';
+            html += '<td><div style="display:flex;align-items:center;gap:10px;">';
+            html += '<span style="font-size:1.2rem;">📦</span>';
+            html += '<div><div style="font-weight:600;font-size:0.85rem;color:var(--text-primary);">' + escapeHtml(p.name) + '</div>';
+            if (p.product_id) {
+                html += '<div style="font-size:0.5rem;color:var(--text-muted);font-family:monospace;">ID: ' + escapeHtml(p.product_id) + '</div>';
+            }
+            html += '</div></div></td>';
+            html += '<td style="text-align:center;font-weight:700;color:' + qtyColor + ';font-size:1rem;">' + p.total_quantity + '</td>';
+            html += '<td style="text-align:right;font-weight:600;color:var(--danger);">KSh ' + p.total_revenue.toLocaleString() + '</td>';
+            html += '<td style="text-align:right;color:var(--text-secondary);">KSh ' + avgPrice.toFixed(2) + '</td>';
+            html += '<td style="text-align:center;font-size:0.6rem;color:var(--text-muted);">' + (p.last_purchased_str || 'N/A') + '</td>';
+            html += '</tr>';
+        }
+        
+        body.innerHTML = html;
+        console.log('✅ Credit products loaded:', products.length);
+    } else {
+        body.innerHTML = 
+            '<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--danger);">' + 
+            (productData.message || '❌ Error loading products') + '</td></tr>';
+    }
+}
+
+// Helper function to escape HTML
+function escapeHtml(text) {
+    if (!text) return '';
+    var div = document.createElement('div');
+    div.textContent = text;
+    return div.innerHTML;
+}
+
+// ============================================================
 // SUPPLIER FUNCTIONS
 // ============================================================
 function showAddSupplierModal() {
@@ -3653,6 +3855,7 @@ console.log('  • Products with supplier linking');
 console.log('  • Dynamic categories (not hardcoded)');
 console.log('  • Credit management with period filters');
 console.log('  • Full transaction history with pagination');
+console.log('  • Credit products view (what customers bought)');
 console.log('  • Supplier management');
 console.log('  • Order management');
 console.log('  • Analytics with charts');
