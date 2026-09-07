@@ -1603,7 +1603,7 @@
 </div>
 
 <!-- ============================================================
-     [NEW] CREDIT PRODUCTS MODAL
+     CREDIT PRODUCTS MODAL
      ============================================================ -->
 <div id="creditProductsModal" class="modal-overlay hidden" onclick="closeModal(event, 'creditProductsModal')">
     <div class="modal" onclick="event.stopPropagation()" style="max-width:780px;">
@@ -1670,7 +1670,9 @@
     </div>
 </div>
 
-<!-- Supplier Modal -->
+<!-- ============================================================
+     SUPPLIER MODAL - FIXED WITH DYNAMIC CATEGORIES + RETAIL PAYMENT TERMS
+     ============================================================ -->
 <div id="supplierModal" class="modal-overlay hidden" onclick="closeModal(event, 'supplierModal')">
     <div class="modal" onclick="event.stopPropagation()" style="max-width:500px;">
         <button class="close" onclick="document.getElementById('supplierModal').classList.add('hidden')">✕</button>
@@ -1697,21 +1699,20 @@
                 <div>
                     <label class="form-label">Category</label>
                     <select id="businessCategory" class="form-input">
-                        <option value="">Select</option>
-                        <option value="Electronics">📱 Electronics</option>
-                        <option value="Furniture">🪑 Furniture</option>
-                        <option value="Clothing">👕 Clothing</option>
-                        <option value="Food">🍔 Food</option>
-                        <option value="Hardware">🔧 Hardware</option>
-                        <option value="Other">📦 Other</option>
+                        <option value="">Select Category</option>
+                        <!-- Categories loaded dynamically from products -->
                     </select>
                 </div>
                 <div>
                     <label class="form-label">Payment Terms</label>
                     <select id="paymentTerms" class="form-input">
-                        <option value="Net 30">Net 30</option>
-                        <option value="Net 45">Net 45</option>
-                        <option value="Cash on Delivery">Cash on Delivery</option>
+                        <option value="Cash">💰 Cash</option>
+                        <option value="Credit">💳 Credit (7 days)</option>
+                        <option value="Credit 14">💳 Credit (14 days)</option>
+                        <option value="Credit 30">💳 Credit (30 days)</option>
+                        <option value="M-Pesa">📱 M-Pesa</option>
+                        <option value="Bank Transfer">🏦 Bank Transfer</option>
+                        <option value="Cheque">📝 Cheque</option>
                     </select>
                 </div>
             </div>
@@ -1932,6 +1933,7 @@ function loadCategories() {
         .then(function(categories) {
             categories.sort();
             allCategories = categories;
+            window.allCategories = categories;
             populateCategorySelects(categories);
             console.log('✅ Categories loaded:', categories.length, 'categories');
         })
@@ -1939,6 +1941,7 @@ function loadCategories() {
             console.error('❌ Error loading categories:', err);
             var fallback = ['General'];
             allCategories = fallback;
+            window.allCategories = fallback;
             populateCategorySelects(fallback);
             showToast('Using default category', 'warning');
         });
@@ -1976,6 +1979,7 @@ function addNewCategoryIfNeeded(categoryName) {
     
     allCategories.push(categoryName);
     allCategories.sort();
+    window.allCategories = allCategories;
     populateCategorySelects(allCategories);
     
     fetch('/api/categories', {
@@ -2030,6 +2034,68 @@ function loadSuppliersForProducts() {
         .catch(function(err) {
             console.error('❌ Error loading suppliers:', err);
         });
+}
+
+// ============================================================
+// [NEW] LOAD CATEGORIES FOR SUPPLIER MODAL
+// ============================================================
+function loadSupplierCategories() {
+    console.log('🔄 Loading categories for supplier modal...');
+    
+    var categorySelect = document.getElementById('businessCategory');
+    if (!categorySelect) return;
+    
+    var currentValue = categorySelect.value;
+    categorySelect.innerHTML = '<option value="">Select Category</option>';
+    
+    var categories = window.allCategories || [];
+    
+    if (categories.length === 0) {
+        fetch('/api/categories?t=' + Date.now())
+            .then(function(r) { return r.json(); })
+            .then(function(data) {
+                var catNames = [];
+                if (data && typeof data === 'object') {
+                    for (var key in data) {
+                        if (key && key !== 'All' && data[key] && data[key].name) {
+                            catNames.push(data[key].name);
+                        }
+                    }
+                }
+                if (catNames.length === 0) {
+                    catNames = ['General'];
+                }
+                catNames.sort();
+                window.allCategories = catNames;
+                allCategories = catNames;
+                populateSupplierCategories(catNames, currentValue);
+            })
+            .catch(function() {
+                populateSupplierCategories(['General'], currentValue);
+            });
+    } else {
+        populateSupplierCategories(categories, currentValue);
+    }
+}
+
+function populateSupplierCategories(categories, currentValue) {
+    var categorySelect = document.getElementById('businessCategory');
+    if (!categorySelect) return;
+    
+    categorySelect.innerHTML = '<option value="">Select Category</option>';
+    
+    for (var i = 0; i < categories.length; i++) {
+        var opt = document.createElement('option');
+        opt.value = categories[i];
+        opt.textContent = categories[i];
+        categorySelect.appendChild(opt);
+    }
+    
+    if (currentValue && categories.indexOf(currentValue) !== -1) {
+        categorySelect.value = currentValue;
+    }
+    
+    console.log('✅ Supplier categories loaded:', categories.length);
 }
 
 // ============================================================
@@ -3194,9 +3260,26 @@ function viewCreditCustomer(customerId) {
                 html += '<div style="max-height:200px;overflow-y:auto;">';
                 for (var i = 0; i < recent.length; i++) {
                     var t = recent[i];
-                    var isPurchase = t.type === 'purchase';
+                    var isPurchase = t.transaction_type === 'purchase';
+                    
+                    // Date formatting with fallback
+                    var dateStr = 'N/A';
+                    var rawDate = t.created_at || t.date || t.transaction_date || '';
+                    if (rawDate && rawDate !== 'N/A') {
+                        try {
+                            var parsedDate = new Date(rawDate);
+                            if (parsedDate && !isNaN(parsedDate.getTime())) {
+                                dateStr = parsedDate.toLocaleDateString('en-US', {
+                                    year: 'numeric',
+                                    month: 'short',
+                                    day: 'numeric'
+                                });
+                            }
+                        } catch(e) {}
+                    }
+                    
                     html += '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border-color);font-size:0.7rem;">';
-                    html += '<span style="color:var(--text-muted);">' + new Date(t.date).toLocaleDateString() + '</span>';
+                    html += '<span style="color:var(--text-muted);">' + dateStr + '</span>';
                     html += '<span>' + (isPurchase ? '🛒 Purchase' : '💵 Payment') + '</span>';
                     html += '<span style="' + (isPurchase ? 'color:var(--danger);' : 'color:var(--success);') + ' font-weight:600;">' + (isPurchase ? '- ' : '+ ') + 'KSh ' + (t.amount || 0).toLocaleString() + '</span>';
                     html += '</div>';
@@ -3207,7 +3290,7 @@ function viewCreditCustomer(customerId) {
             }
             html += '</div>';
             
-            // Action buttons - UPDATED with View Products button
+            // Action buttons
             html += '<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border-color);display:flex;gap:8px;flex-wrap:wrap;">';
             html += '<button onclick="document.getElementById(\'viewCreditModal\').classList.add(\'hidden\');openRecordPaymentModal(\'' + c.customer_id + '\',\'' + c.full_name + '\',\'' + (c.current_balance || 0) + '\')" class="btn-success" style="font-size:0.7rem;padding:6px 16px;">💵 Record Payment</button>';
             html += '<button onclick="editCreditCustomer(\'' + c.customer_id + '\');document.getElementById(\'viewCreditModal\').classList.add(\'hidden\')" class="btn-outline" style="font-size:0.7rem;padding:6px 16px;color:var(--primary-light);">✏️ Edit</button>';
@@ -3420,6 +3503,9 @@ function loadCreditTransactions(customerId, page) {
     });
 }
 
+// ============================================================
+// FIXED: RENDER CREDIT TRANSACTIONS WITH PROPER DATE HANDLING
+// ============================================================
 function renderCreditTransactions(txnData) {
     var body = document.getElementById('creditTransactionsBody');
     if (!body) return;
@@ -3445,12 +3531,63 @@ function renderCreditTransactions(txnData) {
         var html = '';
         for (var i = 0; i < transactions.length; i++) {
             var t = transactions[i];
-            var isPurchase = t.type === 'purchase';
+            var isPurchase = t.transaction_type === 'purchase';
             
             if (isPurchase) totalPurchases += t.amount || 0;
             else totalPayments += t.amount || 0;
             
-            var dateStr = t.date ? new Date(t.date).toLocaleDateString() + ' ' + new Date(t.date).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : 'N/A';
+            // ============================================================
+            // FIX: Better date handling with fallbacks
+            // ============================================================
+            var dateStr = 'N/A';
+            var rawDate = t.created_at || t.date || t.transaction_date || '';
+            
+            if (rawDate && rawDate !== 'N/A' && rawDate !== '') {
+                try {
+                    var parsedDate = null;
+                    
+                    if (typeof rawDate === 'string') {
+                        if (rawDate.includes('T')) {
+                            parsedDate = new Date(rawDate);
+                        } else if (rawDate.includes(' ') && rawDate.includes('-')) {
+                            parsedDate = new Date(rawDate.replace(' ', 'T'));
+                        } else if (rawDate.includes('-') && rawDate.length === 10) {
+                            parsedDate = new Date(rawDate + 'T00:00:00');
+                        } else if (!isNaN(rawDate)) {
+                            parsedDate = new Date(parseInt(rawDate));
+                        } else {
+                            parsedDate = new Date(rawDate);
+                        }
+                    } else if (rawDate instanceof Date) {
+                        parsedDate = rawDate;
+                    }
+                    
+                    if (parsedDate && !isNaN(parsedDate.getTime())) {
+                        dateStr = parsedDate.toLocaleDateString('en-US', {
+                            year: 'numeric',
+                            month: 'short',
+                            day: 'numeric'
+                        }) + ' ' + parsedDate.toLocaleTimeString('en-US', {
+                            hour: '2-digit',
+                            minute: '2-digit'
+                        });
+                    } else {
+                        dateStr = rawDate;
+                    }
+                } catch (e) {
+                    dateStr = rawDate;
+                }
+            }
+            
+            // Fallback: use transaction ID or index
+            if (dateStr === 'N/A' || dateStr === '') {
+                var txnId = t.transaction_id || t.id || '';
+                if (txnId) {
+                    dateStr = 'TX: ' + txnId.slice(0, 8);
+                } else {
+                    dateStr = '#' + (i + 1);
+                }
+            }
             
             html += '<tr>';
             html += '<td style="font-size:0.7rem;">' + dateStr + '</td>';
@@ -3522,7 +3659,7 @@ function goToTxnPage(page) {
 }
 
 // ============================================================
-// [NEW] CREDIT PRODUCTS FUNCTIONS
+// CREDIT PRODUCTS FUNCTIONS
 // ============================================================
 
 function viewCreditProducts(customerId) {
@@ -3538,20 +3675,17 @@ function viewCreditProducts(customerId) {
     modal.style.display = 'flex';
     modal.style.zIndex = '99999';
     
-    // Show loading state
     document.getElementById('creditProductsBody').innerHTML = 
         '<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text-muted);">' +
         '<div style="font-size:2rem;margin-bottom:8px;">⏳</div>Loading products...</td></tr>';
     document.getElementById('creditProductsCustomerInfo').innerHTML = '';
     
-    // Reset summary
     document.getElementById('cpTotalProducts').textContent = '0';
     document.getElementById('cpTotalQuantity').textContent = '0';
     document.getElementById('cpTotalSpent').textContent = 'KSh 0';
     document.getElementById('cpAvgPerItem').textContent = 'KSh 0';
     document.getElementById('cpShowingCount').textContent = '0';
     
-    // Fetch customer info and products
     Promise.all([
         fetch('/admin/api/credit/customers/' + customerId + '?t=' + Date.now()).then(r => r.json()),
         fetch('/admin/api/credit/products/' + customerId + '?t=' + Date.now()).then(r => r.json())
@@ -3560,7 +3694,6 @@ function viewCreditProducts(customerId) {
         var customerData = results[0];
         var productData = results[1];
         
-        // Customer info
         if (customerData.success && customerData.customer) {
             var c = customerData.customer;
             document.getElementById('creditProductsCustomerInfo').innerHTML = 
@@ -3577,7 +3710,6 @@ function viewCreditProducts(customerId) {
                 '<div style="padding:10px 14px;background:var(--bg-input);border-radius:8px;color:var(--text-muted);border:1px solid var(--border-color);">Customer not found</div>';
         }
         
-        // Render products
         renderCreditProducts(productData);
     })
     .catch(function(err) {
@@ -3598,7 +3730,6 @@ function renderCreditProducts(productData) {
         var totalQuantity = productData.total_quantity || 0;
         var totalSpent = productData.total_spent || 0;
         
-        // Update summary
         document.getElementById('cpTotalProducts').textContent = totalProducts;
         document.getElementById('cpTotalQuantity').textContent = totalQuantity;
         document.getElementById('cpTotalSpent').textContent = 'KSh ' + totalSpent.toLocaleString();
@@ -3616,8 +3747,6 @@ function renderCreditProducts(productData) {
         for (var i = 0; i < products.length; i++) {
             var p = products[i];
             var avgPrice = p.avg_price || 0;
-            
-            // Set color based on quantity
             var qtyColor = p.total_quantity > 10 ? 'var(--success)' : p.total_quantity > 5 ? 'var(--warning)' : 'var(--info)';
             
             html += '<tr>';
@@ -3644,7 +3773,6 @@ function renderCreditProducts(productData) {
     }
 }
 
-// Helper function to escape HTML
 function escapeHtml(text) {
     if (!text) return '';
     var div = document.createElement('div');
@@ -3653,7 +3781,7 @@ function escapeHtml(text) {
 }
 
 // ============================================================
-// SUPPLIER FUNCTIONS
+// SUPPLIER FUNCTIONS - FIXED
 // ============================================================
 function showAddSupplierModal() {
     document.getElementById('modalTitle').textContent = '🏢 Add Supplier';
@@ -3661,6 +3789,9 @@ function showAddSupplierModal() {
     document.getElementById('editSupplierId').value = '';
     document.getElementById('supplierModal').classList.remove('hidden');
     document.getElementById('supplierModal').style.display = 'flex';
+    
+    // Load categories dynamically
+    loadSupplierCategories();
 }
 
 function editSupplier(supplierId) {
@@ -3670,6 +3801,9 @@ function editSupplier(supplierId) {
         modal.style.display = 'flex';
         modal.style.zIndex = '99999';
     }
+    
+    // Load categories first
+    loadSupplierCategories();
     
     fetch('/admin/api/suppliers/' + supplierId + '?t=' + Date.now())
         .then(function(r) { return r.json(); })
@@ -3683,7 +3817,7 @@ function editSupplier(supplierId) {
                 document.getElementById('phone').value = s.phone || '';
                 document.getElementById('email').value = s.email || '';
                 document.getElementById('businessCategory').value = s.business_category || '';
-                document.getElementById('paymentTerms').value = s.payment_terms || 'Net 30';
+                document.getElementById('paymentTerms').value = s.payment_terms || 'Cash';
                 showToast('✅ Supplier loaded', 'success');
             } else {
                 showToast('❌ Supplier not found', 'error');
@@ -3856,7 +3990,8 @@ console.log('  • Dynamic categories (not hardcoded)');
 console.log('  • Credit management with period filters');
 console.log('  • Full transaction history with pagination');
 console.log('  • Credit products view (what customers bought)');
-console.log('  • Supplier management');
+console.log('  • Supplier management with dynamic categories');
+console.log('  • Retail payment terms (Cash, Credit, M-Pesa, etc.)');
 console.log('  • Order management');
 console.log('  • Analytics with charts');
 </script>
