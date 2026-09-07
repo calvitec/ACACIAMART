@@ -289,6 +289,10 @@
         text-transform: uppercase;
         font-size: 0.6rem;
         letter-spacing: 0.5px;
+        position: sticky;
+        top: 0;
+        z-index: 10;
+        background: var(--bg-card);
     }
     
     .table-wrap table tbody td {
@@ -476,19 +480,19 @@
         background: rgba(0, 0, 0, 0.6);
         backdrop-filter: blur(4px);
         z-index: 9999;
-        display: flex;
+        display: none;
         align-items: center;
         justify-content: center;
         padding: 20px;
     }
     
-    .modal-overlay.hidden { display: none !important; }
+    .modal-overlay:not(.hidden) { display: flex !important; }
     
     .modal {
         background: var(--bg-card);
         border-radius: var(--radius);
         padding: 28px;
-        max-width: 650px;
+        max-width: 750px;
         width: 100%;
         max-height: 90vh;
         overflow-y: auto;
@@ -553,13 +557,28 @@
         .quick-actions-grid { grid-template-columns: repeat(3, 1fr); }
         .glass-card { padding: 14px 16px; }
         .stat-card-modern .stat-value { font-size: 1.1rem; }
-        .modal { padding: 20px; margin: 10px; }
+        .modal { padding: 20px; margin: 10px; max-width: 100%; }
+        .table-wrap table thead th { font-size: 0.5rem; padding: 6px 8px; }
+        .table-wrap table tbody td { padding: 6px 8px; font-size: 0.7rem; }
+        .sm-table-cell { display: none !important; }
     }
     
     @media (max-width: 480px) {
         .stats-grid { grid-template-columns: 1fr; }
         .quick-actions-grid { grid-template-columns: repeat(2, 1fr); }
         .modal { padding: 16px; }
+        .md-table-cell { display: none !important; }
+        .live-ticker { flex-direction: column; align-items: flex-start; }
+    }
+    
+    @media (min-width: 769px) {
+        .sm-table-cell { display: table-cell !important; }
+    }
+    @media (min-width: 992px) {
+        .md-table-cell { display: table-cell !important; }
+    }
+    @media (min-width: 1200px) {
+        .lg-table-cell { display: table-cell !important; }
     }
 
     /* Scrollbar */
@@ -571,6 +590,10 @@
     .hidden { display: none !important; }
     .section { display: block; }
     .section.hidden { display: none !important; }
+    
+    /* Edit Modal Override */
+    #editModal { display: none; }
+    #editModal[style*="display: flex"] { display: flex !important; }
 </style>
 
 <!-- ============================================================
@@ -705,6 +728,10 @@
         <div class="quick-action-btn" onclick="showSection('credit')">
             <span class="icon">💰</span>
             <span class="label">Credit</span>
+        </div>
+        <div class="quick-action-btn" onclick="showSection('suppliers')">
+            <span class="icon">🏢</span>
+            <span class="label">Suppliers</span>
         </div>
         <div class="quick-action-btn" onclick="location.href='/admin/pos'">
             <span class="icon">🛒</span>
@@ -871,11 +898,11 @@
                 <thead>
                     <tr>
                         <th>Order ID</th>
-                        <th style="display:none;" class="sm-table-cell">Customer</th>
+                        <th class="sm-table-cell">Customer</th>
                         <th style="text-align:right;">Amount</th>
                         <th style="text-align:center;">Payment</th>
                         <th style="text-align:center;">Status</th>
-                        <th style="text-align:right;display:none;" class="lg-table-cell">Profit</th>
+                        <th style="text-align:right;" class="lg-table-cell">Profit</th>
                         <th style="text-align:center;">Time</th>
                     </tr>
                 </thead>
@@ -888,7 +915,7 @@
 </div>
 
 <!-- ============================================================
-     PRODUCTS SECTION - FIXED WITH CATEGORIES PRE-FILLED
+     PRODUCTS SECTION - WITH SUPPLIER COLUMN
      ============================================================ -->
 <div id="products-section" class="section hidden">
     <div style="display:flex;flex-wrap:wrap;gap:10px;margin-bottom:16px;">
@@ -908,18 +935,19 @@
     <div class="glass-card" style="padding:0;overflow:hidden;">
         <div class="table-wrap" style="max-height:500px;overflow-y:auto;">
             <table>
-                <thead style="position:sticky;top:0;z-index:10;background:var(--bg-card);">
+                <thead>
                     <tr>
                         <th>Product</th>
-                        <th style="display:none;" class="sm-table-cell">Category</th>
+                        <th class="sm-table-cell">Category</th>
+                        <th>Supplier</th>
                         <th style="text-align:right;">Price</th>
-                        <th style="text-align:right;display:none;" class="md-table-cell">Cost</th>
+                        <th style="text-align:right;" class="md-table-cell">Cost</th>
                         <th style="text-align:center;">Stock</th>
                         <th style="text-align:center;">Actions</th>
                     </tr>
                 </thead>
                 <tbody id="productsTableBody">
-                    <tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text-muted);">Loading products...</td></tr>
+                    <tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-muted);">Loading products...</td></tr>
                 </tbody>
             </table>
         </div>
@@ -934,7 +962,7 @@
 </div>
 
 <!-- ============================================================
-     ADD PRODUCT SECTION - FIXED WITH ALL FIELDS
+     ADD PRODUCT SECTION - WITH SUPPLIER FIELD
      ============================================================ -->
 <div id="add-product-section" class="section hidden">
     <div class="glass-card">
@@ -953,6 +981,12 @@
                     <label class="form-label">Category *</label>
                     <select id="prodCategory" class="form-input" required>
                         <option value="">Select Category</option>
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">Supplier</label>
+                    <select id="prodSupplier" class="form-input">
+                        <option value="">Select Supplier (Optional)</option>
                     </select>
                 </div>
                 <div>
@@ -1026,13 +1060,13 @@
     <div class="glass-card" style="padding:0;overflow:hidden;">
         <div class="table-wrap" style="max-height:500px;overflow-y:auto;">
             <table>
-                <thead style="position:sticky;top:0;z-index:10;background:var(--bg-card);">
+                <thead>
                     <tr>
                         <th>Order ID</th>
-                        <th style="display:none;" class="sm-table-cell">Customer</th>
+                        <th class="sm-table-cell">Customer</th>
                         <th style="text-align:right;">Total</th>
                         <th style="text-align:center;">Status</th>
-                        <th style="display:none;" class="md-table-cell">Date</th>
+                        <th class="md-table-cell">Date</th>
                         <th style="text-align:center;">Actions</th>
                     </tr>
                 </thead>
@@ -1040,7 +1074,7 @@
                     {% for order in orders %}
                     <tr>
                         <td class="font-mono">#{{ (order.order_id or order.id)[:8] }}</td>
-                        <td style="display:none;" class="sm-table-cell">{{ order.customer_name or 'Customer' }}</td>
+                        <td class="sm-table-cell">{{ order.customer_name or 'Customer' }}</td>
                         <td style="text-align:right;font-weight:600;color:var(--success);">KSh {{ "%.0f"|format(order.total|default(0)) }}</td>
                         <td style="text-align:center;">
                             <select onchange="updateOrderStatus('{{ order.order_id }}', this.value)" 
@@ -1051,7 +1085,7 @@
                                 <option value="delivered" {% if order.status == 'delivered' %}selected{% endif %}>🎯 Delivered</option>
                             </select>
                         </td>
-                        <td style="display:none;" class="md-table-cell">{{ (order.created_at or '')[:10] }}</td>
+                        <td class="md-table-cell">{{ (order.created_at or '')[:10] }}</td>
                         <td style="text-align:center;">
                             <button onclick="viewOrder('{{ order.order_id }}')" class="btn-outline" style="font-size:0.6rem;padding:2px 10px;">
                                 <i class="fas fa-eye"></i>
@@ -1097,11 +1131,11 @@
     <div class="glass-card" style="padding:0;overflow:hidden;">
         <div class="table-wrap" style="max-height:500px;overflow-y:auto;">
             <table>
-                <thead style="position:sticky;top:0;z-index:10;background:var(--bg-card);">
+                <thead>
                     <tr>
                         <th>Customer</th>
-                        <th style="display:none;" class="sm-table-cell">Email</th>
-                        <th style="display:none;" class="md-table-cell">Phone</th>
+                        <th class="sm-table-cell">Email</th>
+                        <th class="md-table-cell">Phone</th>
                         <th style="text-align:center;">Orders</th>
                         <th style="text-align:right;">Total Spent</th>
                     </tr>
@@ -1111,8 +1145,8 @@
                         {% for customer in customers %}
                         <tr>
                             <td><span style="font-weight:600;">{{ customer.name }}</span></td>
-                            <td style="display:none;" class="sm-table-cell">{{ customer.email or 'N/A' }}</td>
-                            <td style="display:none;" class="md-table-cell">{{ customer.phone or 'N/A' }}</td>
+                            <td class="sm-table-cell">{{ customer.email or 'N/A' }}</td>
+                            <td class="md-table-cell">{{ customer.phone or 'N/A' }}</td>
                             <td style="text-align:center;"><span class="badge badge-info">{{ customer.orders }}</span></td>
                             <td style="text-align:right;font-weight:600;color:var(--success);">KSh {{ "%.0f"|format(customer.total_spent|default(0)) }}</td>
                         </tr>
@@ -1211,10 +1245,10 @@
     <div class="glass-card" style="padding:0;overflow:hidden;margin-top:16px;">
         <div class="table-wrap" style="max-height:500px;overflow-y:auto;">
             <table>
-                <thead style="position:sticky;top:0;z-index:10;background:var(--bg-card);">
+                <thead>
                     <tr>
                         <th>Customer</th>
-                        <th style="display:none;" class="sm-table-cell">Phone</th>
+                        <th class="sm-table-cell">Phone</th>
                         <th style="text-align:center;">Balance</th>
                         <th style="text-align:center;">Limit</th>
                         <th style="text-align:center;">Actions</th>
@@ -1227,7 +1261,7 @@
                             <span style="font-weight:600;">{{ customer.full_name }}</span>
                             <div style="font-size:0.55rem;color:var(--text-muted);font-family:monospace;">{{ customer.customer_id }}</div>
                         </td>
-                        <td style="display:none;" class="sm-table-cell">{{ customer.phone }}</td>
+                        <td class="sm-table-cell">{{ customer.phone }}</td>
                         <td style="text-align:center;font-weight:700;{% if customer.current_balance|default(0) > customer.credit_limit|default(0) %}color:var(--danger);{% elif customer.current_balance|default(0) > 0 %}color:var(--warning);{% else %}color:var(--success);{% endif %}">
                             KSh {{ customer.current_balance|default(0)|int }}
                         </td>
@@ -1288,11 +1322,11 @@
     <div class="glass-card" style="padding:0;overflow:hidden;margin-top:16px;">
         <div class="table-wrap" style="max-height:500px;overflow-y:auto;">
             <table>
-                <thead style="position:sticky;top:0;z-index:10;background:var(--bg-card);">
+                <thead>
                     <tr>
                         <th>Business Name</th>
-                        <th style="display:none;" class="sm-table-cell">Contact</th>
-                        <th style="display:none;" class="md-table-cell">Phone</th>
+                        <th class="sm-table-cell">Contact</th>
+                        <th class="md-table-cell">Phone</th>
                         <th style="text-align:center;">Products</th>
                         <th style="text-align:center;">Status</th>
                         <th style="text-align:center;">Actions</th>
@@ -1305,8 +1339,8 @@
                             <span style="font-weight:600;">{{ supplier.business_name }}</span>
                             <div style="font-size:0.55rem;color:var(--text-muted);font-family:monospace;">{{ supplier.supplier_id }}</div>
                         </td>
-                        <td style="display:none;" class="sm-table-cell">{{ supplier.contact_person or 'N/A' }}</td>
-                        <td style="display:none;" class="md-table-cell">{{ supplier.phone }}</td>
+                        <td class="sm-table-cell">{{ supplier.contact_person or 'N/A' }}</td>
+                        <td class="md-table-cell">{{ supplier.phone }}</td>
                         <td style="text-align:center;font-weight:600;color:var(--info);">{{ supplier.total_products|default(0) }}</td>
                         <td style="text-align:center;">
                             {% if supplier.status == 'active' %}
@@ -1352,14 +1386,14 @@
 
 <!-- Order View Modal -->
 <div id="orderModal" class="modal-overlay hidden" onclick="closeModal(event, 'orderModal')">
-    <div class="modal" onclick="event.stopPropagation()">
+    <div class="modal" onclick="event.stopPropagation()" style="max-width:600px;">
         <button class="close" onclick="document.getElementById('orderModal').classList.add('hidden')">✕</button>
         <div class="title">📋 Order Details</div>
         <div id="orderDetails"></div>
     </div>
 </div>
 
-<!-- EDIT PRODUCT MODAL - FIXED WITH ALL FIELDS PRE-FILLED -->
+<!-- EDIT PRODUCT MODAL - WITH SUPPLIER FIELD -->
 <div id="editModal" style="display:none;position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.7);z-index:999999;align-items:center;justify-content:center;padding:20px;">
     <div style="background:var(--bg-card);border-radius:16px;padding:28px;max-width:650px;width:100%;max-height:90vh;overflow-y:auto;position:relative;box-shadow:0 20px 60px rgba(0,0,0,0.3);">
         <button onclick="closeEditModal()" style="position:absolute;top:12px;right:16px;background:none;border:none;font-size:1.5rem;color:var(--text-muted);cursor:pointer;">✕</button>
@@ -1379,6 +1413,12 @@
                     <label class="form-label">Category *</label>
                     <select id="editCategory" class="form-input" required>
                         <!-- Categories loaded dynamically -->
+                    </select>
+                </div>
+                <div>
+                    <label class="form-label">Supplier</label>
+                    <select id="editSupplier" class="form-input">
+                        <option value="">Select Supplier (Optional)</option>
                     </select>
                 </div>
                 <div>
@@ -1487,10 +1527,75 @@
 
 <!-- View Credit Modal -->
 <div id="viewCreditModal" class="modal-overlay hidden" onclick="closeModal(event, 'viewCreditModal')">
-    <div class="modal" onclick="event.stopPropagation()" style="max-width:500px;">
+    <div class="modal" onclick="event.stopPropagation()" style="max-width:550px;">
         <button class="close" onclick="document.getElementById('viewCreditModal').classList.add('hidden')">✕</button>
         <div class="title">👤 Customer Details</div>
         <div id="viewCreditContent"></div>
+    </div>
+</div>
+
+<!-- CREDIT TRANSACTIONS MODAL - WITH PERIOD FILTERS -->
+<div id="creditTransactionsModal" class="modal-overlay hidden" onclick="closeModal(event, 'creditTransactionsModal')">
+    <div class="modal" onclick="event.stopPropagation()" style="max-width:780px;">
+        <button class="close" onclick="document.getElementById('creditTransactionsModal').classList.add('hidden')">✕</button>
+        <div class="title">📋 Credit Transaction History</div>
+        
+        <!-- Period Filter Controls -->
+        <div style="display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px;padding:12px;background:var(--bg-input);border-radius:8px;">
+            <div style="display:flex;align-items:center;gap:6px;flex-wrap:wrap;">
+                <span style="font-size:0.6rem;color:var(--text-muted);font-weight:600;">PERIOD:</span>
+                <button onclick="filterCreditTransactions('today')" class="btn-outline" style="font-size:0.55rem;padding:4px 12px;" id="filterToday">Today</button>
+                <button onclick="filterCreditTransactions('week')" class="btn-outline" style="font-size:0.55rem;padding:4px 12px;" id="filterWeek">This Week</button>
+                <button onclick="filterCreditTransactions('month')" class="btn-outline" style="font-size:0.55rem;padding:4px 12px;" id="filterMonth">This Month</button>
+                <button onclick="filterCreditTransactions('quarter')" class="btn-outline" style="font-size:0.55rem;padding:4px 12px;" id="filterQuarter">This Quarter</button>
+                <button onclick="filterCreditTransactions('year')" class="btn-outline" style="font-size:0.55rem;padding:4px 12px;" id="filterYear">This Year</button>
+                <button onclick="filterCreditTransactions('all')" class="btn-gradient" style="font-size:0.55rem;padding:4px 12px;" id="filterAll">All Time</button>
+            </div>
+            <div style="display:flex;align-items:center;gap:6px;margin-left:auto;">
+                <span style="font-size:0.6rem;color:var(--text-muted);font-weight:600;">TYPE:</span>
+                <select id="txnTypeFilter" onchange="applyTransactionFilters()" class="form-input" style="width:auto;font-size:0.55rem;padding:4px 10px;">
+                    <option value="all">All Types</option>
+                    <option value="purchase">🛒 Purchases</option>
+                    <option value="payment">💰 Payments</option>
+                </select>
+            </div>
+        </div>
+        
+        <div id="creditTransactionsContent">
+            <div id="creditCustomerInfo" style="margin-bottom:12px;"></div>
+            
+            <!-- Summary Stats -->
+            <div id="txnSummaryStats" style="display:grid;grid-template-columns:repeat(auto-fit,minmax(120px,1fr));gap:8px;margin-bottom:12px;padding:8px 12px;background:var(--bg-input);border-radius:8px;">
+                <div><span style="font-size:0.55rem;color:var(--text-muted);">Total Purchases</span><br><span style="font-weight:700;color:var(--danger);" id="txnTotalPurchases">KSh 0</span></div>
+                <div><span style="font-size:0.55rem;color:var(--text-muted);">Total Payments</span><br><span style="font-weight:700;color:var(--success);" id="txnTotalPayments">KSh 0</span></div>
+                <div><span style="font-size:0.55rem;color:var(--text-muted);">Current Balance</span><br><span style="font-weight:700;color:var(--warning);" id="txnBalance">KSh 0</span></div>
+                <div><span style="font-size:0.55rem;color:var(--text-muted);">Transaction Count</span><br><span style="font-weight:700;" id="txnCount">0</span></div>
+            </div>
+            
+            <div class="table-wrap" style="max-height:400px;overflow-y:auto;">
+                <table>
+                    <thead style="position:sticky;top:0;z-index:10;background:var(--bg-card);">
+                        <tr>
+                            <th style="width:120px;">Date</th>
+                            <th>Type</th>
+                            <th style="text-align:right;">Amount</th>
+                            <th style="text-align:right;">Balance After</th>
+                            <th class="sm-table-cell">Reference</th>
+                        </tr>
+                    </thead>
+                    <tbody id="creditTransactionsBody">
+                        <tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-muted);">Loading transactions...</td></tr>
+                    </tbody>
+                </table>
+            </div>
+            
+            <div style="margin-top:12px;display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;padding-top:12px;border-top:1px solid var(--border-color);">
+                <div style="font-size:0.6rem;color:var(--text-muted);">
+                    Showing <span id="txnShowingStart">0</span> - <span id="txnShowingEnd">0</span> of <span id="txnShowingTotal">0</span>
+                </div>
+                <div style="display:flex;gap:4px;" id="txnPaginationControls"></div>
+            </div>
+        </div>
     </div>
 </div>
 
@@ -1582,6 +1687,13 @@ var filterType = 'all';
 var currentPage = 1;
 var perPageLimit = 10;
 var allCategories = [];
+
+// Transaction History Variables
+var currentTxnPage = 1;
+var currentTxnPeriod = 'all';
+var currentTxnType = 'all';
+var currentTxnCustomerId = null;
+var txnPerPage = 20;
 
 // ============================================================
 // TOAST NOTIFICATION
@@ -1706,10 +1818,10 @@ function closeModal(event, modalId) {
 }
 
 // ============================================================
-// LOAD CATEGORIES DYNAMICALLY - FIXED
+// LOAD CATEGORIES DYNAMICALLY
 // ============================================================
 function loadCategories() {
-    console.log('🔄 Loading categories...');
+    console.log('🔄 Loading categories dynamically...');
     
     fetch('/api/categories?t=' + Date.now())
         .then(function(r) { 
@@ -1728,26 +1840,37 @@ function loadCategories() {
                 }
             }
             
-            // If no categories found, use defaults from product data
             if (categoryNames.length === 0) {
-                console.log('⚠️ No categories from API, using defaults');
-                categoryNames = ['Beverages', 'Snacks', 'Groceries', 'Food', 'Electronics', 
-                                 'Phones', 'Clothing', 'Home', 'Books', 'Toys', 'Health', 'Beauty'];
+                // Fallback: try to get from products
+                return fetch('/admin/api/products?limit=100&t=' + Date.now())
+                    .then(function(r) { return r.json(); })
+                    .then(function(prodData) {
+                        var cats = [];
+                        if (prodData.success && prodData.products) {
+                            for (var i = 0; i < prodData.products.length; i++) {
+                                if (prodData.products[i].category && cats.indexOf(prodData.products[i].category) === -1) {
+                                    cats.push(prodData.products[i].category);
+                                }
+                            }
+                        }
+                        if (cats.length === 0) cats = ['General'];
+                        return cats;
+                    });
             }
-            
-            categoryNames.sort();
-            allCategories = categoryNames;
-            populateCategorySelects(categoryNames);
-            console.log('✅ Categories loaded:', categoryNames.length, 'categories');
+            return categoryNames;
+        })
+        .then(function(categories) {
+            categories.sort();
+            allCategories = categories;
+            populateCategorySelects(categories);
+            console.log('✅ Categories loaded:', categories.length, 'categories');
         })
         .catch(function(err) {
             console.error('❌ Error loading categories:', err);
-            // Fallback categories
-            var fallback = ['Beverages', 'Snacks', 'Groceries', 'Food', 'Electronics', 
-                           'Phones', 'Clothing', 'Home', 'Books', 'Toys', 'Health', 'Beauty'];
+            var fallback = ['General'];
             allCategories = fallback;
             populateCategorySelects(fallback);
-            showToast('Using default categories', 'warning');
+            showToast('Using default category', 'warning');
         });
 }
 
@@ -1761,13 +1884,9 @@ function populateCategorySelects(categories) {
         var select = selects[i];
         if (!select) continue;
         
-        // Store current value
         var currentValue = select.value;
-        
-        // Clear options
         select.innerHTML = '<option value="">Select Category</option>';
         
-        // Add categories
         for (var j = 0; j < categories.length; j++) {
             var opt = document.createElement('option');
             opt.value = categories[j];
@@ -1775,11 +1894,72 @@ function populateCategorySelects(categories) {
             select.appendChild(opt);
         }
         
-        // Restore value if it exists and is valid
         if (currentValue && categories.indexOf(currentValue) !== -1) {
             select.value = currentValue;
         }
     }
+}
+
+function addNewCategoryIfNeeded(categoryName) {
+    if (!categoryName) return;
+    if (allCategories.indexOf(categoryName) !== -1) return;
+    
+    allCategories.push(categoryName);
+    allCategories.sort();
+    populateCategorySelects(allCategories);
+    
+    fetch('/api/categories', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ name: categoryName })
+    }).catch(function(err) {
+        console.warn('Could not save category to server:', err);
+    });
+}
+
+// ============================================================
+// LOAD SUPPLIERS FOR PRODUCT FORMS
+// ============================================================
+function loadSuppliersForProducts() {
+    console.log('🔄 Loading suppliers for product forms...');
+    
+    fetch('/admin/api/suppliers?t=' + Date.now())
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (data.success && data.suppliers) {
+                var selects = [
+                    document.getElementById('prodSupplier'),
+                    document.getElementById('editSupplier')
+                ];
+                
+                for (var i = 0; i < selects.length; i++) {
+                    var select = selects[i];
+                    if (!select) continue;
+                    
+                    var currentValue = select.value;
+                    select.innerHTML = '<option value="">Select Supplier (Optional)</option>';
+                    
+                    for (var j = 0; j < data.suppliers.length; j++) {
+                        var s = data.suppliers[j];
+                        if (s.status !== 'active') continue;
+                        
+                        var opt = document.createElement('option');
+                        opt.value = s.supplier_id;
+                        opt.textContent = s.business_name + (s.contact_person ? ' (' + s.contact_person + ')' : '');
+                        select.appendChild(opt);
+                    }
+                    
+                    if (currentValue) {
+                        select.value = currentValue;
+                    }
+                }
+                
+                console.log('✅ Suppliers loaded:', data.suppliers.length);
+            }
+        })
+        .catch(function(err) {
+            console.error('❌ Error loading suppliers:', err);
+        });
 }
 
 // ============================================================
@@ -1822,7 +2002,7 @@ function renderOrders(orders) {
         
         html += '<tr>';
         html += '<td class="font-mono">#' + orderId.slice(0, 8) + '</td>';
-        html += '<td style="display:none;" class="sm-table-cell">' + customerName + '</td>';
+        html += '<td class="sm-table-cell">' + customerName + '</td>';
         html += '<td style="text-align:right;font-weight:600;color:var(--success);">KSh ' + (order.total || 0).toLocaleString() + '</td>';
         html += '<td style="text-align:center;">';
         html += '<select onchange="updateOrderStatus(\'' + orderId + '\', this.value)" class="badge" style="border:none;cursor:pointer;font-size:0.55rem;padding:2px 12px;background:var(--bg-input);color:var(--text-primary);">';
@@ -1831,7 +2011,7 @@ function renderOrders(orders) {
         html += '<option value="shipped" ' + (order.status === 'shipped' ? 'selected' : '') + '>📦 Shipped</option>';
         html += '<option value="delivered" ' + (order.status === 'delivered' ? 'selected' : '') + '>🎯 Delivered</option>';
         html += '</select></td>';
-        html += '<td style="display:none;" class="md-table-cell">' + (order.created_at || '').slice(0, 10) + '</td>';
+        html += '<td class="md-table-cell">' + (order.created_at || '').slice(0, 10) + '</td>';
         html += '<td style="text-align:center;">';
         html += '<button onclick="viewOrder(\'' + orderId + '\')" class="btn-outline" style="font-size:0.6rem;padding:2px 10px;"><i class="fas fa-eye"></i></button>';
         html += '</td></tr>';
@@ -1891,13 +2071,13 @@ function viewOrder(orderId) {
 }
 
 // ============================================================
-// PRODUCT FUNCTIONS - FIXED WITH CATEGORIES PRE-FILLED
+// PRODUCT FUNCTIONS
 // ============================================================
 function loadProductsWithFilters() {
     var tbody = document.getElementById('productsTableBody');
     if (!tbody) return;
     
-    tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text-muted);">Loading products...</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-muted);">Loading products...</td></tr>';
     
     var params = new URLSearchParams();
     params.append('page', currentPage);
@@ -1913,18 +2093,18 @@ function loadProductsWithFilters() {
                 renderProductsTable(data.products);
                 updateProductsPagination(data);
             } else {
-                tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--danger);">Error loading products</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--danger);">Error loading products</td></tr>';
             }
         })
         .catch(function() {
-            tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--danger);">Error loading products</td></tr>';
+            tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--danger);">Error loading products</td></tr>';
         });
 }
 
 function renderProductsTable(products) {
     var tbody = document.getElementById('productsTableBody');
     if (!products || products.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text-muted);">No products found</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-muted);">No products found</td></tr>';
         return;
     }
     
@@ -1935,6 +2115,7 @@ function renderProductsTable(products) {
         var stockColor = stock > 20 ? 'var(--success)' : stock > 0 ? 'var(--warning)' : 'var(--danger)';
         var profit = (p.price || 0) - (p.cost_price || 0);
         var profitColor = profit > 0 ? 'var(--success)' : profit < 0 ? 'var(--danger)' : 'var(--text-muted)';
+        var supplierName = p.supplier_name || p.supplier || '—';
         
         html += '<tr>';
         html += '<td><div style="display:flex;align-items:center;gap:10px;">';
@@ -1947,7 +2128,8 @@ function renderProductsTable(products) {
         html += '</div>';
         html += '<div><div style="font-weight:600;font-size:0.8rem;color:var(--text-primary);">' + (p.name || '') + '</div>';
         html += '<div style="font-size:0.55rem;color:var(--text-muted);font-family:monospace;">' + (p.id || '') + '</div></div></div></td>';
-        html += '<td style="display:none;" class="sm-table-cell"><span class="badge badge-info">' + (p.category || 'General') + '</span></td>';
+        html += '<td class="sm-table-cell"><span class="badge badge-info">' + (p.category || 'General') + '</span></td>';
+        html += '<td style="font-size:0.6rem;color:var(--text-secondary);">' + supplierName + '</td>';
         html += '<td style="text-align:right;font-weight:600;">KSh ' + (p.price || 0).toLocaleString() + '</td>';
         html += '<td style="text-align:right;display:none;font-size:0.7rem;color:' + profitColor + ';" class="md-table-cell">KSh ' + (p.cost_price || 0).toLocaleString() + '</td>';
         html += '<td style="text-align:center;font-weight:700;color:' + stockColor + ';">' + stock + '</td>';
@@ -2028,7 +2210,7 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 // ============================================================
-// OPEN EDIT MODAL - FIXED WITH ALL FIELDS PRE-FILLED
+// OPEN EDIT MODAL
 // ============================================================
 function openEditModal(productId) {
     console.log('✏️ Opening edit for:', productId);
@@ -2051,6 +2233,7 @@ function openEditModal(productId) {
     document.getElementById('editIdDisplay').value = '';
     document.getElementById('editName').value = '';
     document.getElementById('editCategory').value = '';
+    document.getElementById('editSupplier').value = '';
     document.getElementById('editBarcode').value = '';
     document.getElementById('editPrice').value = '';
     document.getElementById('editCostPrice').value = '';
@@ -2060,10 +2243,10 @@ function openEditModal(productId) {
     document.getElementById('editSpecs').value = '';
     document.getElementById('editBadge').value = '';
     
-    // Make sure categories are loaded
     if (allCategories.length === 0) {
         loadCategories();
     }
+    loadSuppliersForProducts();
     
     fetch('/admin/api/product/' + productId + '?t=' + Date.now())
         .then(function(response) {
@@ -2082,10 +2265,9 @@ function openEditModal(productId) {
                 document.getElementById('editIdDisplay').value = p.id || '';
                 document.getElementById('editName').value = p.name || '';
                 
-                // Set category - it will be pre-selected in the dropdown
+                // Set category
                 var catSelect = document.getElementById('editCategory');
                 if (p.category) {
-                    // Make sure category exists in dropdown
                     var found = false;
                     for (var i = 0; i < catSelect.options.length; i++) {
                         if (catSelect.options[i].value === p.category) {
@@ -2094,7 +2276,6 @@ function openEditModal(productId) {
                         }
                     }
                     if (!found && allCategories.indexOf(p.category) === -1) {
-                        // Add missing category
                         var opt = document.createElement('option');
                         opt.value = p.category;
                         opt.textContent = p.category;
@@ -2102,6 +2283,11 @@ function openEditModal(productId) {
                         allCategories.push(p.category);
                     }
                     catSelect.value = p.category;
+                }
+                
+                // Set supplier
+                if (p.supplier_id) {
+                    document.getElementById('editSupplier').value = p.supplier_id;
                 }
                 
                 document.getElementById('editBarcode').value = p.barcode || '';
@@ -2112,7 +2298,6 @@ function openEditModal(productId) {
                 document.getElementById('editDesc').value = p.description || '';
                 document.getElementById('editBadge').value = p.badge || '';
                 
-                // Handle specs
                 if (p.specs && Array.isArray(p.specs)) {
                     document.getElementById('editSpecs').value = p.specs.join(', ');
                 } else if (p.specs && typeof p.specs === 'string') {
@@ -2121,9 +2306,7 @@ function openEditModal(productId) {
                     document.getElementById('editSpecs').value = '';
                 }
                 
-                // Update profit display
                 updateProfitDisplay('edit');
-                
                 showToast('✅ Product loaded: ' + p.name, 'success');
             } else {
                 showToast('❌ Product not found', 'error');
@@ -2138,7 +2321,7 @@ function openEditModal(productId) {
 }
 
 // ============================================================
-// SAVE EDIT FORM - FIXED
+// SAVE EDIT FORM
 // ============================================================
 function saveEditForm(event) {
     event.preventDefault();
@@ -2149,16 +2332,21 @@ function saveEditForm(event) {
         return;
     }
     
-    // Process specs
     var specsInput = document.getElementById('editSpecs').value.trim();
     var specs = [];
     if (specsInput) {
         specs = specsInput.split(',').map(function(s) { return s.trim(); }).filter(function(s) { return s; });
     }
     
+    var category = document.getElementById('editCategory').value;
+    if (category) {
+        addNewCategoryIfNeeded(category);
+    }
+    
     var data = {
         name: document.getElementById('editName').value.trim(),
-        category: document.getElementById('editCategory').value,
+        category: category,
+        supplier_id: document.getElementById('editSupplier').value || null,
         barcode: document.getElementById('editBarcode').value.trim(),
         price: parseFloat(document.getElementById('editPrice').value) || 0,
         cost_price: parseFloat(document.getElementById('editCostPrice').value) || 0,
@@ -2251,22 +2439,27 @@ function deleteProduct(productId) {
 }
 
 // ============================================================
-// SAVE NEW PRODUCT - FIXED
+// SAVE NEW PRODUCT
 // ============================================================
 function saveProduct(event) {
     event.preventDefault();
     
-    // Process specs
     var specsInput = document.getElementById('prodSpecs').value.trim();
     var specs = [];
     if (specsInput) {
         specs = specsInput.split(',').map(function(s) { return s.trim(); }).filter(function(s) { return s; });
     }
     
+    var category = document.getElementById('prodCategory').value;
+    if (category) {
+        addNewCategoryIfNeeded(category);
+    }
+    
     var data = {
         id: document.getElementById('prodId').value.trim(),
         name: document.getElementById('prodName').value.trim(),
-        category: document.getElementById('prodCategory').value,
+        category: category,
+        supplier_id: document.getElementById('prodSupplier').value || null,
         price: parseFloat(document.getElementById('prodPrice').value) || 0,
         cost_price: parseFloat(document.getElementById('prodCostPrice').value) || 0,
         stock: parseInt(document.getElementById('prodStock').value) || 0,
@@ -2414,7 +2607,7 @@ function loadAllTransactions() {
                 
                 html += '<tr>';
                 html += '<td class="font-mono">#' + orderId.slice(0, 8) + '</td>';
-                html += '<td style="display:none;" class="sm-table-cell">' + customerName + '</td>';
+                html += '<td class="sm-table-cell">' + customerName + '</td>';
                 html += '<td style="text-align:right;font-weight:600;color:var(--success);">KSh ' + (order.total || 0).toLocaleString() + '</td>';
                 html += '<td style="text-align:center;"><span class="badge badge-info">' + paymentMethod + '</span></td>';
                 html += '<td style="text-align:center;"><span class="badge ' + statusClass + '">' + (order.status || 'Pending') + '</span></td>';
@@ -2433,7 +2626,7 @@ function loadAllTransactions() {
 }
 
 // ============================================================
-// ANALYTICS - WITH CHARTS
+// ANALYTICS
 // ============================================================
 function loadAnalyticsData() {
     console.log('🔄 Loading analytics...');
@@ -2443,7 +2636,6 @@ function loadAnalyticsData() {
         .then(function(data) {
             console.log('📊 Analytics data loaded');
             
-            // Update KPIs
             var kpiRevenue = document.getElementById('kpiRevenue');
             var kpiOrders = document.getElementById('kpiOrders');
             var kpiProfit = document.getElementById('kpiProfit');
@@ -2454,7 +2646,6 @@ function loadAnalyticsData() {
             if (kpiProfit) kpiProfit.textContent = 'KSh ' + (data.total_profit || 0).toLocaleString();
             if (kpiCredit) kpiCredit.textContent = 'KSh ' + (data.credit_sales || 0).toLocaleString();
             
-            // Update status counts
             if (data.status_counts) {
                 document.getElementById('statusPending').textContent = data.status_counts.pending || 0;
                 document.getElementById('statusCompleted').textContent = data.status_counts.completed || 0;
@@ -2462,16 +2653,10 @@ function loadAnalyticsData() {
                 document.getElementById('statusCancelled').textContent = data.status_counts.cancelled || 0;
             }
             
-            // Update top products
             updateTopProducts(data.product_sales || {});
             updateCategoryLegend(data.category_sales || {});
-            
-            // Update charts with real data
             updateChartsWithRealData(data);
-            
-            // Load all transactions
             loadAllTransactions();
-            
             console.log('✅ Analytics loaded with real data!');
         })
         .catch(function(err) {
@@ -2547,7 +2732,6 @@ function updateChartsWithRealData(data) {
         return;
     }
     
-    // Destroy existing charts safely
     try {
         if (window.advancedRevenueChart && typeof window.advancedRevenueChart.destroy === 'function') {
             window.advancedRevenueChart.destroy();
@@ -2813,7 +2997,6 @@ function saveCreditCustomer(event) {
         return;
     }
     
-    // Check for duplicates
     if (method === 'POST') {
         fetch('/admin/api/credit/customers')
             .then(function(r) { return r.json(); })
@@ -2907,31 +3090,70 @@ function viewCreditCustomer(customerId) {
     
     document.getElementById('viewCreditContent').innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);">Loading customer details...</div>';
     
-    fetch('/admin/api/credit/customers/' + customerId + '?t=' + Date.now())
-        .then(function(r) { return r.json(); })
-        .then(function(data) {
-            if (data.success && data.customer) {
-                var c = data.customer;
-                document.getElementById('viewCreditContent').innerHTML = 
-                    '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
-                    '<div><span style="color:var(--text-muted);font-size:0.6rem;">Name</span><div style="font-weight:700;">' + c.full_name + '</div></div>' +
-                    '<div><span style="color:var(--text-muted);font-size:0.6rem;">Phone</span><div>' + (c.phone || 'N/A') + '</div></div>' +
-                    '<div><span style="color:var(--text-muted);font-size:0.6rem;">Credit Limit</span><div style="font-weight:600;">KSh ' + (c.credit_limit || 0).toLocaleString() + '</div></div>' +
-                    '<div><span style="color:var(--text-muted);font-size:0.6rem;">Balance</span><div style="font-weight:700;color:' + (c.current_balance > 0 ? 'var(--warning)' : 'var(--success)') + ';">KSh ' + (c.current_balance || 0).toLocaleString() + '</div></div>' +
-                    '<div><span style="color:var(--text-muted);font-size:0.6rem;">Total Purchases</span><div>KSh ' + (c.total_purchases || 0).toLocaleString() + '</div></div>' +
-                    '<div><span style="color:var(--text-muted);font-size:0.6rem;">Total Payments</span><div style="color:var(--success);">KSh ' + (c.total_payments || 0).toLocaleString() + '</div></div>' +
-                    '<div style="grid-column:span 2;margin-top:8px;padding-top:8px;border-top:1px solid var(--border-color);">' +
-                    '<button onclick="document.getElementById(\'viewCreditModal\').classList.add(\'hidden\');openRecordPaymentModal(\'' + c.customer_id + '\',\'' + c.full_name + '\',\'' + (c.current_balance || 0) + '\')" class="btn-success" style="font-size:0.7rem;padding:4px 16px;">💵 Record Payment</button> ' +
-                    '<button onclick="editCreditCustomer(\'' + c.customer_id + '\');document.getElementById(\'viewCreditModal\').classList.add(\'hidden\')" class="btn-outline" style="font-size:0.7rem;padding:4px 16px;color:var(--primary-light);">✏️ Edit</button> ' +
-                    '<button onclick="document.getElementById(\'viewCreditModal\').classList.add(\'hidden\')" class="btn-outline" style="font-size:0.7rem;padding:4px 16px;margin-left:8px;">Close</button>' +
-                    '</div></div>';
+    // Fetch both customer and transactions
+    Promise.all([
+        fetch('/admin/api/credit/customers/' + customerId + '?t=' + Date.now()).then(r => r.json()),
+        fetch('/admin/api/credit/transactions/' + customerId + '?limit=5&t=' + Date.now()).then(r => r.json())
+    ])
+    .then(function(results) {
+        var customerData = results[0];
+        var txnData = results[1];
+        
+        if (customerData.success && customerData.customer) {
+            var c = customerData.customer;
+            var transactions = txnData.success ? txnData.transactions : [];
+            
+            var html = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">';
+            html += '<div><span style="color:var(--text-muted);font-size:0.6rem;">Name</span><div style="font-weight:700;">' + c.full_name + '</div></div>';
+            html += '<div><span style="color:var(--text-muted);font-size:0.6rem;">Phone</span><div>' + (c.phone || 'N/A') + '</div></div>';
+            html += '<div><span style="color:var(--text-muted);font-size:0.6rem;">Credit Limit</span><div style="font-weight:600;">KSh ' + (c.credit_limit || 0).toLocaleString() + '</div></div>';
+            html += '<div><span style="color:var(--text-muted);font-size:0.6rem;">Balance</span><div style="font-weight:700;color:' + (c.current_balance > 0 ? 'var(--warning)' : 'var(--success)') + ';">KSh ' + (c.current_balance || 0).toLocaleString() + '</div></div>';
+            html += '<div><span style="color:var(--text-muted);font-size:0.6rem;">Total Purchases</span><div>KSh ' + (c.total_purchases || 0).toLocaleString() + '</div></div>';
+            html += '<div><span style="color:var(--text-muted);font-size:0.6rem;">Total Payments</span><div style="color:var(--success);">KSh ' + (c.total_payments || 0).toLocaleString() + '</div></div>';
+            html += '</div>';
+            
+            // Transaction history section
+            html += '<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border-color);">';
+            html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">';
+            html += '<span style="font-weight:600;font-size:0.8rem;">📋 Recent Transactions</span>';
+            html += '<button onclick="viewCreditTransactions(\'' + c.customer_id + '\')" class="btn-outline" style="font-size:0.55rem;padding:2px 12px;">View All</button>';
+            html += '</div>';
+            
+            if (transactions.length > 0) {
+                var recent = transactions.slice(0, 5);
+                html += '<div style="max-height:200px;overflow-y:auto;">';
+                for (var i = 0; i < recent.length; i++) {
+                    var t = recent[i];
+                    var isPurchase = t.type === 'purchase';
+                    html += '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border-color);font-size:0.7rem;">';
+                    html += '<span style="color:var(--text-muted);">' + new Date(t.date).toLocaleDateString() + '</span>';
+                    html += '<span>' + (isPurchase ? '🛒 Purchase' : '💵 Payment') + '</span>';
+                    html += '<span style="' + (isPurchase ? 'color:var(--danger);' : 'color:var(--success);') + ' font-weight:600;">' + (isPurchase ? '- ' : '+ ') + 'KSh ' + (t.amount || 0).toLocaleString() + '</span>';
+                    html += '</div>';
+                }
+                html += '</div>';
             } else {
-                document.getElementById('viewCreditContent').innerHTML = '<div style="text-align:center;padding:20px;color:var(--danger);">Customer not found</div>';
+                html += '<div style="text-align:center;padding:12px;color:var(--text-muted);font-size:0.7rem;">No transactions yet</div>';
             }
-        })
-        .catch(function() {
-            document.getElementById('viewCreditContent').innerHTML = '<div style="text-align:center;padding:20px;color:var(--danger);">Error loading customer</div>';
-        });
+            html += '</div>';
+            
+            // Action buttons
+            html += '<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border-color);display:flex;gap:8px;flex-wrap:wrap;">';
+            html += '<button onclick="document.getElementById(\'viewCreditModal\').classList.add(\'hidden\');openRecordPaymentModal(\'' + c.customer_id + '\',\'' + c.full_name + '\',\'' + (c.current_balance || 0) + '\')" class="btn-success" style="font-size:0.7rem;padding:4px 16px;">💵 Record Payment</button>';
+            html += '<button onclick="editCreditCustomer(\'' + c.customer_id + '\');document.getElementById(\'viewCreditModal\').classList.add(\'hidden\')" class="btn-outline" style="font-size:0.7rem;padding:4px 16px;color:var(--primary-light);">✏️ Edit</button>';
+            html += '<button onclick="viewCreditTransactions(\'' + c.customer_id + '\')" class="btn-gradient" style="font-size:0.7rem;padding:4px 16px;">📋 Full History</button>';
+            html += '<button onclick="document.getElementById(\'viewCreditModal\').classList.add(\'hidden\')" class="btn-outline" style="font-size:0.7rem;padding:4px 16px;">Close</button>';
+            html += '</div>';
+            
+            document.getElementById('viewCreditContent').innerHTML = html;
+        } else {
+            document.getElementById('viewCreditContent').innerHTML = '<div style="text-align:center;padding:20px;color:var(--danger);">Customer not found</div>';
+        }
+    })
+    .catch(function(err) {
+        console.error('Error:', err);
+        document.getElementById('viewCreditContent').innerHTML = '<div style="text-align:center;padding:20px;color:var(--danger);">Error loading customer</div>';
+    });
 }
 
 function openRecordPaymentModal(customerId, customerName, balance) {
@@ -3023,6 +3245,209 @@ function refreshCreditData() {
     showToast('🔄 Refreshing credit data...', 'info');
     updateCreditStats();
     setTimeout(function() { location.reload(); }, 1000);
+}
+
+// ============================================================
+// CREDIT TRANSACTIONS WITH PERIOD FILTERING
+// ============================================================
+function viewCreditTransactions(customerId) {
+    currentTxnCustomerId = customerId;
+    currentTxnPage = 1;
+    
+    var modal = document.getElementById('creditTransactionsModal');
+    if (!modal) {
+        showToast('❌ Modal not found', 'error');
+        return;
+    }
+    
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+    modal.style.zIndex = '99999';
+    
+    currentTxnPeriod = 'all';
+    currentTxnType = 'all';
+    document.getElementById('txnTypeFilter').value = 'all';
+    highlightPeriodFilter('all');
+    
+    loadCreditTransactions(customerId, currentTxnPage);
+}
+
+function filterCreditTransactions(period) {
+    currentTxnPeriod = period;
+    currentTxnPage = 1;
+    highlightPeriodFilter(period);
+    if (currentTxnCustomerId) {
+        loadCreditTransactions(currentTxnCustomerId, currentTxnPage);
+    }
+}
+
+function applyTransactionFilters() {
+    currentTxnType = document.getElementById('txnTypeFilter').value;
+    currentTxnPage = 1;
+    if (currentTxnCustomerId) {
+        loadCreditTransactions(currentTxnCustomerId, currentTxnPage);
+    }
+}
+
+function highlightPeriodFilter(period) {
+    var buttons = ['today', 'week', 'month', 'quarter', 'year', 'all'];
+    for (var i = 0; i < buttons.length; i++) {
+        var btn = document.getElementById('filter' + buttons[i].charAt(0).toUpperCase() + buttons[i].slice(1));
+        if (btn) {
+            if (buttons[i] === period) {
+                btn.className = 'btn-gradient';
+                btn.style.fontSize = '0.55rem';
+                btn.style.padding = '4px 12px';
+            } else {
+                btn.className = 'btn-outline';
+                btn.style.fontSize = '0.55rem';
+                btn.style.padding = '4px 12px';
+            }
+        }
+    }
+}
+
+function loadCreditTransactions(customerId, page) {
+    var body = document.getElementById('creditTransactionsBody');
+    if (body) {
+        body.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-muted);">Loading transactions...</td></tr>';
+    }
+    
+    var url = '/admin/api/credit/transactions/' + customerId;
+    var params = new URLSearchParams();
+    params.append('page', page);
+    params.append('per_page', txnPerPage);
+    params.append('period', currentTxnPeriod);
+    params.append('type', currentTxnType);
+    params.append('t', Date.now());
+    
+    Promise.all([
+        fetch('/admin/api/credit/customers/' + customerId + '?t=' + Date.now()).then(r => r.json()),
+        fetch(url + '?' + params.toString()).then(r => r.json())
+    ])
+    .then(function(results) {
+        var customerData = results[0];
+        var txnData = results[1];
+        
+        if (customerData.success && customerData.customer) {
+            var c = customerData.customer;
+            
+            document.getElementById('creditCustomerInfo').innerHTML = 
+                '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:8px 12px;background:var(--bg-input);border-radius:8px;">' +
+                '<span><strong>' + c.full_name + '</strong> <span style="color:var(--text-muted);font-size:0.7rem;">' + (c.phone || 'No phone') + '</span></span>' +
+                '<span>Credit Limit: <strong>KSh ' + (c.credit_limit || 0).toLocaleString() + '</strong> | Balance: <span style="font-weight:700;color:' + (c.current_balance > 0 ? 'var(--warning)' : 'var(--success)') + ';">KSh ' + (c.current_balance || 0).toLocaleString() + '</span></span>' +
+                '</div>';
+            
+            renderCreditTransactions(txnData);
+        } else {
+            document.getElementById('creditTransactionsBody').innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--danger);">Customer not found</td></tr>';
+        }
+    })
+    .catch(function(err) {
+        console.error('Error:', err);
+        document.getElementById('creditTransactionsBody').innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--danger);">Error loading transactions</td></tr>';
+    });
+}
+
+function renderCreditTransactions(txnData) {
+    var body = document.getElementById('creditTransactionsBody');
+    if (!body) return;
+    
+    if (txnData.success && txnData.transactions) {
+        var transactions = txnData.transactions;
+        var pagination = txnData.pagination || {};
+        var total = pagination.total || 0;
+        var currentPage = pagination.page || 1;
+        var totalPages = pagination.total_pages || 1;
+        var perPage = pagination.per_page || txnPerPage;
+        
+        var totalPurchases = 0;
+        var totalPayments = 0;
+        
+        if (transactions.length === 0) {
+            body.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-muted);">No transactions found for this period</td></tr>';
+            updateTxnSummary(0, 0, 0);
+            updateTxnPagination(1, 1, 0);
+            return;
+        }
+        
+        var html = '';
+        for (var i = 0; i < transactions.length; i++) {
+            var t = transactions[i];
+            var isPurchase = t.type === 'purchase';
+            
+            if (isPurchase) totalPurchases += t.amount || 0;
+            else totalPayments += t.amount || 0;
+            
+            var dateStr = t.date ? new Date(t.date).toLocaleDateString() + ' ' + new Date(t.date).toLocaleTimeString([], {hour:'2-digit', minute:'2-digit'}) : 'N/A';
+            
+            html += '<tr>';
+            html += '<td style="font-size:0.7rem;">' + dateStr + '</td>';
+            html += '<td><span class="badge ' + (isPurchase ? 'badge-danger' : 'badge-success') + '">' + (isPurchase ? '🛒 Purchase' : '💰 Payment') + '</span></td>';
+            html += '<td style="text-align:right;' + (isPurchase ? 'color:var(--danger);' : 'color:var(--success);') + ' font-weight:600;">' + (isPurchase ? '- ' : '+ ') + 'KSh ' + (t.amount || 0).toLocaleString() + '</td>';
+            html += '<td style="text-align:right;font-size:0.7rem;font-weight:600;">KSh ' + (t.balance_after || 0).toLocaleString() + '</td>';
+            html += '<td class="sm-table-cell" style="font-size:0.6rem;color:var(--text-muted);">' + (t.reference || t.order_id || '—') + '</td>';
+            html += '</tr>';
+        }
+        
+        body.innerHTML = html;
+        
+        var balance = totalPurchases - totalPayments;
+        updateTxnSummary(totalPurchases, totalPayments, transactions.length);
+        
+        var start = ((currentPage - 1) * perPage) + 1;
+        var end = Math.min(currentPage * perPage, total);
+        document.getElementById('txnShowingStart').textContent = total > 0 ? start : 0;
+        document.getElementById('txnShowingEnd').textContent = end;
+        document.getElementById('txnShowingTotal').textContent = total;
+        
+        updateTxnPagination(currentPage, totalPages, total);
+    } else {
+        body.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--danger);">' + (txnData.message || 'Error loading transactions') + '</td></tr>';
+    }
+}
+
+function updateTxnSummary(totalPurchases, totalPayments, count) {
+    document.getElementById('txnTotalPurchases').textContent = 'KSh ' + totalPurchases.toLocaleString();
+    document.getElementById('txnTotalPayments').textContent = 'KSh ' + totalPayments.toLocaleString();
+    document.getElementById('txnBalance').textContent = 'KSh ' + (totalPurchases - totalPayments).toLocaleString();
+    document.getElementById('txnCount').textContent = count;
+}
+
+function updateTxnPagination(currentPage, totalPages, total) {
+    var container = document.getElementById('txnPaginationControls');
+    if (!container) return;
+    
+    if (totalPages <= 1) {
+        container.innerHTML = '';
+        return;
+    }
+    
+    var html = '';
+    if (currentPage > 1) {
+        html += '<button onclick="goToTxnPage(' + (currentPage - 1) + ')" class="page-link"><i class="fas fa-chevron-left"></i></button>';
+    }
+    
+    for (var p = 1; p <= totalPages; p++) {
+        if (p === currentPage) {
+            html += '<span class="page-link active">' + p + '</span>';
+        } else if (p <= currentPage + 2 && p >= currentPage - 2) {
+            html += '<button onclick="goToTxnPage(' + p + ')" class="page-link">' + p + '</button>';
+        }
+    }
+    
+    if (currentPage < totalPages) {
+        html += '<button onclick="goToTxnPage(' + (currentPage + 1) + ')" class="page-link"><i class="fas fa-chevron-right"></i></button>';
+    }
+    
+    container.innerHTML = html;
+}
+
+function goToTxnPage(page) {
+    currentTxnPage = page;
+    if (currentTxnCustomerId) {
+        loadCreditTransactions(currentTxnCustomerId, page);
+    }
 }
 
 // ============================================================
@@ -3214,6 +3639,7 @@ updateLiveTime();
 document.addEventListener('DOMContentLoaded', function() {
     console.log('🚀 Admin dashboard loaded');
     loadCategories();
+    loadSuppliersForProducts();
     loadProductsWithFilters();
     loadAnalyticsData();
     loadOrders();
@@ -3221,9 +3647,15 @@ document.addEventListener('DOMContentLoaded', function() {
 });
 
 console.log('✅ AcaciaMart Admin - Complete Working Version!');
-console.log('📌 All sections: Dashboard, Products, Orders, Customers, Credit, Suppliers, Analytics');
-console.log('📌 Categories are loaded dynamically from the API');
-console.log('📌 All fields pre-filled when editing products');
+console.log('📌 Features:');
+console.log('  • Dashboard with live stats');
+console.log('  • Products with supplier linking');
+console.log('  • Dynamic categories (not hardcoded)');
+console.log('  • Credit management with period filters');
+console.log('  • Full transaction history with pagination');
+console.log('  • Supplier management');
+console.log('  • Order management');
+console.log('  • Analytics with charts');
 </script>
 
 {% endblock %}
