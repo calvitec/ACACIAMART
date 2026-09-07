@@ -1473,6 +1473,9 @@ def api_get_credit_transactions(customer_id):
                     'total_pages': 0
                 }
             })
+
+
+
         
         # ============================================================
         # PERIOD FILTERING LOGIC
@@ -1563,6 +1566,153 @@ def api_get_credit_transactions(customer_id):
         
     except Exception as e:
         print(f"❌ Credit transactions API error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+
+        # ============================================================
+# [NEW] CREDIT PRODUCT PURCHASES API
+# ============================================================
+
+@admin_bp.route('/admin/api/credit/products/<customer_id>', methods=['GET'])
+@admin_required
+def api_get_credit_products(customer_id):
+    """
+    Get all products purchased on credit by a specific customer
+    Returns aggregated product data with quantities and totals
+    """
+    try:
+        from utils.credit import get_customer_transactions
+        import json
+        from datetime import datetime
+        
+        # Get all transactions for this customer
+        transactions = get_customer_transactions(customer_id)
+        
+        if not transactions:
+            return jsonify({
+                'success': True,
+                'products': [],
+                'total_products': 0,
+                'total_spent': 0,
+                'total_quantity': 0,
+                'message': 'No credit purchases found'
+            })
+        
+        # Filter only purchase transactions
+        purchases = [t for t in transactions if t.get('transaction_type') == 'purchase']
+        
+        if not purchases:
+            return jsonify({
+                'success': True,
+                'products': [],
+                'total_products': 0,
+                'total_spent': 0,
+                'total_quantity': 0,
+                'message': 'No credit purchases found'
+            })
+        
+        # Extract items from each purchase
+        product_map = {}
+        
+        for purchase in purchases:
+            items = purchase.get('items_json', [])
+            if isinstance(items, str):
+                try:
+                    items = json.loads(items)
+                except:
+                    items = []
+            
+            if not items or not isinstance(items, list):
+                continue
+            
+            for item in items:
+                if not isinstance(item, dict):
+                    continue
+                
+                product_id = item.get('product_id', '')
+                product_name = item.get('name', 'Unknown Product')
+                quantity = int(item.get('quantity', 1))
+                price = float(item.get('price', 0))
+                cost_price = float(item.get('cost_price', 0))
+                
+                total_revenue = price * quantity
+                total_cost = cost_price * quantity
+                total_profit = total_revenue - total_cost
+                
+                key = product_id if product_id else product_name
+                
+                if key not in product_map:
+                    product_map[key] = {
+                        'product_id': product_id,
+                        'name': product_name,
+                        'total_quantity': 0,
+                        'total_revenue': 0,
+                        'total_cost': 0,
+                        'total_profit': 0,
+                        'avg_price': 0,
+                        'last_purchased': None
+                    }
+                
+                product_map[key]['total_quantity'] += quantity
+                product_map[key]['total_revenue'] += total_revenue
+                product_map[key]['total_cost'] += total_cost
+                product_map[key]['total_profit'] += total_profit
+                
+                created_at = purchase.get('created_at', '')
+                if created_at:
+                    try:
+                        if isinstance(created_at, str):
+                            if 'T' in created_at:
+                                clean = created_at.replace('Z', '').replace('+00:00', '')
+                                if '.' in clean:
+                                    dt = datetime.fromisoformat(clean)
+                                else:
+                                    dt = datetime.strptime(clean[:10], '%Y-%m-%d')
+                            else:
+                                dt = datetime.strptime(created_at[:10], '%Y-%m-%d')
+                        elif isinstance(created_at, datetime):
+                            dt = created_at
+                        else:
+                            dt = datetime.utcnow()
+                    except:
+                        dt = datetime.utcnow()
+                    
+                    if product_map[key]['last_purchased'] is None or dt > product_map[key]['last_purchased']:
+                        product_map[key]['last_purchased'] = dt
+        
+        # Convert to list and sort by total revenue
+        products_list = []
+        total_spent = 0
+        total_quantity = 0
+        
+        for key, data in product_map.items():
+            if data['total_quantity'] > 0:
+                data['avg_price'] = data['total_revenue'] / data['total_quantity']
+            
+            if data['last_purchased']:
+                data['last_purchased_str'] = data['last_purchased'].strftime('%Y-%m-%d %H:%M')
+            else:
+                data['last_purchased_str'] = 'N/A'
+            
+            total_spent += data['total_revenue']
+            total_quantity += data['total_quantity']
+            products_list.append(data)
+        
+        products_list.sort(key=lambda x: x['total_revenue'], reverse=True)
+        
+        return jsonify({
+            'success': True,
+            'products': products_list,
+            'total_products': len(products_list),
+            'total_spent': total_spent,
+            'total_quantity': total_quantity,
+            'customer_id': customer_id
+        })
+        
+    except Exception as e:
+        print(f"❌ Error getting credit products: {e}")
         import traceback
         traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
