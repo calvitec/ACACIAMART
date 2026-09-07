@@ -185,6 +185,22 @@ def api_products_list():
         
         all_products = load_products()
         
+        # ============================================================
+        # [NEW] GET SUPPLIER NAMES
+        # ============================================================
+        supplier_map = {}
+        try:
+            response = requests.get(
+                f"{Config.SUPABASE_URL}/rest/v1/suppliers?select=supplier_id,business_name",
+                headers=Config.SUPABASE_HEADERS,
+                timeout=10
+            )
+            if response.status_code == 200:
+                for s in response.json():
+                    supplier_map[s['supplier_id']] = s.get('business_name', '')
+        except:
+            pass
+        
         # Apply filters
         filtered_products = []
         search_lower = search.lower() if search else ''
@@ -220,6 +236,13 @@ def api_products_list():
                        search_lower in barcode or 
                        search_lower in product_id):
                     continue
+            
+            # [NEW] Add supplier name to product
+            supplier_id = product.get('supplier_id')
+            if supplier_id and supplier_id in supplier_map:
+                product['supplier_name'] = supplier_map[supplier_id]
+            else:
+                product['supplier_name'] = ''
             
             filtered_products.append(product)
         
@@ -606,7 +629,7 @@ def api_get_product_details(product_id):
         return jsonify({'success': False, 'error': str(e)}), 500
 
 # ============================================================
-# PRODUCT DETAIL API - UPDATE (PUT/PATCH) - FIXES THE 405 ERROR
+# PRODUCT DETAIL API - UPDATE (PUT/PATCH)
 # ============================================================
 
 @admin_bp.route('/admin/api/product/<product_id>', methods=['PUT', 'PATCH'])
@@ -732,9 +755,35 @@ def admin_dashboard():
                 clean_p['cost_price'] = 0
             if clean_p.get('badge') is None:
                 clean_p['badge'] = ''
+            if clean_p.get('supplier_id') is None:
+                clean_p['supplier_id'] = ''
             cleaned_products.append(clean_p)
         
         all_products = cleaned_products
+        
+        # ============================================================
+        # [NEW] GET SUPPLIER DATA FOR PRODUCTS
+        # ============================================================
+        supplier_map = {}
+        try:
+            response = requests.get(
+                f"{Config.SUPABASE_URL}/rest/v1/suppliers?select=supplier_id,business_name",
+                headers=Config.SUPABASE_HEADERS,
+                timeout=10
+            )
+            if response.status_code == 200:
+                for s in response.json():
+                    supplier_map[s['supplier_id']] = s.get('business_name', '')
+                print(f"✅ Loaded {len(supplier_map)} suppliers for product mapping")
+        except Exception as e:
+            print(f"⚠️ Could not load supplier map: {e}")
+        
+        # Attach supplier names to products
+        for p in all_products:
+            if p.get('supplier_id') in supplier_map:
+                p['supplier_name'] = supplier_map[p['supplier_id']]
+            else:
+                p['supplier_name'] = ''
         
         print(f"📡 Loaded: {len(all_products)} products, {len(all_orders)} orders")
 
@@ -749,6 +798,8 @@ def admin_dashboard():
                     p['name'] = 'Unnamed Product'
                 if p.get('category') is None:
                     p['category'] = 'Uncategorized'
+                if p.get('supplier_id') is None:
+                    p['supplier_id'] = ''
             try:
                 for product in all_products:
                     requests.post(
@@ -1003,7 +1054,9 @@ def admin_dashboard():
             'db_mode': 'online',
         }
 
-        # FETCH CREDIT DATA
+        # ============================================================
+        # CREDIT DATA
+        # ============================================================
         credit_summary = {
             'total_customers': 0,
             'active_customers': 0,
@@ -1061,7 +1114,9 @@ def admin_dashboard():
         except Exception as e:
             print(f"❌ Error loading credit data: {e}")
 
-        # FETCH SUPPLIER DATA
+        # ============================================================
+        # SUPPLIER DATA
+        # ============================================================
         supplier_summary = {
             'total_suppliers': 0,
             'active_suppliers': 0,
@@ -1380,16 +1435,136 @@ def api_get_credit_balance(customer_id):
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)}), 500
 
+# ============================================================
+# [NEW] CREDIT TRANSACTIONS API - WITH PERIOD FILTERING
+# ============================================================
+
 @admin_bp.route('/admin/api/credit/transactions/<customer_id>', methods=['GET'])
 @admin_required
 def api_get_credit_transactions(customer_id):
+    """
+    Get credit transactions with period filtering and pagination
+    
+    Query Parameters:
+    - page: int (default 1)
+    - per_page: int (default 20)
+    - period: 'today' | 'week' | 'month' | 'quarter' | 'year' | 'all' (default 'all')
+    - type: 'all' | 'purchase' | 'payment' (default 'all')
+    """
     try:
         from utils.credit import get_customer_transactions
         
-        transactions = get_customer_transactions(customer_id)
-        return jsonify({'success': True, 'transactions': transactions})
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 20, type=int)
+        period = request.args.get('period', 'all')
+        txn_type = request.args.get('type', 'all')
+        
+        # Get all transactions for customer
+        all_transactions = get_customer_transactions(customer_id)
+        
+        if not all_transactions:
+            return jsonify({
+                'success': True,
+                'transactions': [],
+                'pagination': {
+                    'page': 1,
+                    'per_page': per_page,
+                    'total': 0,
+                    'total_pages': 0
+                }
+            })
+        
+        # ============================================================
+        # PERIOD FILTERING LOGIC
+        # ============================================================
+        now = datetime.utcnow()
+        today = now.date()
+        
+        def filter_by_period(tx_date_str):
+            if not tx_date_str:
+                return True  # Keep if no date
+            
+            try:
+                # Parse date
+                if isinstance(tx_date_str, str):
+                    if 'T' in tx_date_str:
+                        clean = tx_date_str.replace('Z', '').replace('+00:00', '')
+                        if '.' in clean:
+                            tx_date = datetime.fromisoformat(clean).date()
+                        else:
+                            tx_date = datetime.strptime(clean[:10], '%Y-%m-%d').date()
+                    elif ' ' in tx_date_str:
+                        tx_date = datetime.strptime(tx_date_str[:10], '%Y-%m-%d').date()
+                    else:
+                        tx_date = datetime.strptime(tx_date_str[:10], '%Y-%m-%d').date()
+                elif isinstance(tx_date_str, datetime):
+                    tx_date = tx_date_str.date()
+                else:
+                    return True
+            except:
+                return True
+            
+            if period == 'today':
+                return tx_date == today
+            elif period == 'week':
+                # Start of week (Monday)
+                start_of_week = today - timedelta(days=today.weekday())
+                return start_of_week <= tx_date <= today
+            elif period == 'month':
+                start_of_month = today.replace(day=1)
+                return start_of_month <= tx_date <= today
+            elif period == 'quarter':
+                # Current quarter
+                quarter_month = ((today.month - 1) // 3) * 3 + 1
+                start_of_quarter = today.replace(month=quarter_month, day=1)
+                return start_of_quarter <= tx_date <= today
+            elif period == 'year':
+                start_of_year = today.replace(month=1, day=1)
+                return start_of_year <= tx_date <= today
+            else:  # 'all'
+                return True
+        
+        # Filter by period
+        filtered_by_period = [t for t in all_transactions if filter_by_period(t.get('created_at', ''))]
+        
+        # Filter by type
+        if txn_type != 'all':
+            filtered_by_period = [t for t in filtered_by_period if t.get('transaction_type') == txn_type]
+        
+        # Sort by date descending (most recent first)
+        filtered_by_period.sort(key=lambda x: x.get('created_at', ''), reverse=True)
+        
+        # ============================================================
+        # PAGINATION
+        # ============================================================
+        total = len(filtered_by_period)
+        total_pages = (total + per_page - 1) // per_page if total > 0 else 1
+        start = (page - 1) * per_page
+        end = min(start + per_page, total)
+        
+        paginated_transactions = filtered_by_period[start:end] if total > 0 else []
+        
+        return jsonify({
+            'success': True,
+            'transactions': paginated_transactions,
+            'pagination': {
+                'page': page,
+                'per_page': per_page,
+                'total': total,
+                'total_pages': total_pages,
+                'start': start + 1 if paginated_transactions else 0,
+                'end': end
+            },
+            'filters': {
+                'period': period,
+                'type': txn_type
+            }
+        })
         
     except Exception as e:
+        print(f"❌ Credit transactions API error: {e}")
+        import traceback
+        traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
 
 # ============================================================
@@ -1629,411 +1804,8 @@ def api_update_credit_transaction(transaction_id):
         return jsonify({'success': False, 'error': str(e)}), 500
 
 # ============================================================
-# SYNC EXISTING CREDIT TRANSACTIONS TO ORDERS
+# [NEW] SUPPLIER-RELATED API ROUTES
 # ============================================================
-
-@admin_bp.route('/admin/api/credit/sync-to-orders', methods=['POST'])
-@admin_required
-def sync_credit_to_orders():
-    """Sync existing credit transactions to orders table"""
-    try:
-        import json
-        from datetime import datetime
-        import uuid
-        
-        print("🔄 Syncing existing credit transactions to orders...")
-        
-        # Get all credit transactions
-        tx_response = requests.get(
-            f"{Config.SUPABASE_URL}/rest/v1/credit_transactions?select=*",
-            headers=Config.SUPABASE_HEADERS,
-            timeout=30
-        )
-        
-        if tx_response.status_code != 200:
-            return jsonify({
-                'success': False, 
-                'message': f'Failed to fetch credit transactions: {tx_response.status_code}'
-            }), 500
-        
-        credit_transactions = tx_response.json()
-        print(f"📦 Found {len(credit_transactions)} credit transactions")
-        
-        # Filter only purchase transactions
-        purchases = [t for t in credit_transactions if t.get('transaction_type') == 'purchase']
-        print(f"🛒 Found {len(purchases)} purchase transactions")
-        
-        if not purchases:
-            return jsonify({
-                'success': True,
-                'synced': 0,
-                'failed': 0,
-                'skipped': 0,
-                'message': 'No purchase transactions found to sync'
-            })
-        
-        # Get credit customers
-        customer_response = requests.get(
-            f"{Config.SUPABASE_URL}/rest/v1/credit_customers?select=customer_id,full_name,phone",
-            headers=Config.SUPABASE_HEADERS,
-            timeout=30
-        )
-        
-        customer_map = {}
-        if customer_response.status_code == 200:
-            for c in customer_response.json():
-                customer_map[c['customer_id']] = {
-                    'name': c.get('full_name', 'Credit Customer'),
-                    'phone': c.get('phone', '')
-                }
-        print(f"👤 Found {len(customer_map)} credit customers")
-        
-        synced = 0
-        failed = 0
-        skipped = 0
-        
-        for tx in purchases:
-            transaction_id = tx.get('transaction_id')
-            customer_id = tx.get('customer_id')
-            amount = float(tx.get('amount', 0))
-            
-            # Check if order already exists
-            check_response = requests.get(
-                f"{Config.SUPABASE_URL}/rest/v1/orders?credit_transaction_id=eq.{transaction_id}",
-                headers=Config.SUPABASE_HEADERS,
-                timeout=10
-            )
-            
-            if check_response.status_code == 200 and check_response.json():
-                print(f"⏭️ Order already exists for {transaction_id}")
-                skipped += 1
-                continue
-            
-            customer_info = customer_map.get(customer_id, {
-                'name': 'Credit Customer',
-                'phone': ''
-            })
-            
-            order_id = f"CREDIT-{datetime.utcnow().strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}"
-            
-            # ✅ FIX: Parse items from items_json
-            items = tx.get('items_json', [])
-            if isinstance(items, str):
-                try:
-                    items = json.loads(items)
-                except:
-                    items = []
-            
-            # ✅ FIX: Always use real product names from the transaction
-            formatted_items = []
-            if items and isinstance(items, list):
-                for item in items:
-                    if isinstance(item, dict):
-                        product_name = item.get('name', 'Unknown Product')
-                        product_id = item.get('product_id', '')
-                        
-                        # Fetch latest cost price if available
-                        cost_price = float(item.get('cost_price', 0))
-                        if cost_price == 0 and product_id:
-                            try:
-                                prod_resp = requests.get(
-                                    f"{Config.SUPABASE_URL}/rest/v1/products?id=eq.{product_id}&select=cost_price",
-                                    headers=Config.SUPABASE_HEADERS,
-                                    timeout=5
-                                )
-                                if prod_resp.status_code == 200:
-                                    products = prod_resp.json()
-                                    if products:
-                                        cost_price = float(products[0].get('cost_price', 0))
-                            except:
-                                pass
-                        
-                        # ✅ Use REAL product name, NEVER "Credit Purchase"
-                        formatted_items.append({
-                            'product_id': product_id,
-                            'name': product_name,
-                            'price': float(item.get('price', 0)),
-                            'quantity': int(item.get('quantity', 1)),
-                            'total': float(item.get('price', 0)) * int(item.get('quantity', 1)),
-                            'cost_price': cost_price
-                        })
-            else:
-                # ✅ FIX: If no items, use customer name instead of generic
-                items_json = tx.get('items_json', [])
-                if isinstance(items_json, str):
-                    try:
-                        items_json = json.loads(items_json)
-                    except:
-                        items_json = []
-                
-                if items_json and len(items_json) > 0:
-                    for item in items_json:
-                        if isinstance(item, dict):
-                            formatted_items.append({
-                                'product_id': item.get('product_id', ''),
-                                'name': item.get('name', f'Credit - {customer_info.get("name", "Customer")}'),
-                                'price': float(item.get('price', 0)),
-                                'quantity': int(item.get('quantity', 1)),
-                                'total': float(item.get('price', 0)) * int(item.get('quantity', 1)),
-                                'cost_price': float(item.get('cost_price', 0))
-                            })
-                else:
-                    # ✅ Last resort: Use customer name
-                    formatted_items.append({
-                        'product_id': '',
-                        'name': f'Credit Purchase - {customer_info.get("name", "Customer")}',
-                        'price': amount,
-                        'quantity': 1,
-                        'total': amount,
-                        'cost_price': amount * 0.65
-                    })
-            
-            order_data = {
-                'order_id': order_id,
-                'items': formatted_items,
-                'subtotal': amount,
-                'shipping': 0,
-                'total': amount,
-                'status': 'confirmed',
-                'source': 'credit',
-                'created_at': tx.get('created_at', datetime.utcnow().isoformat()),
-                'customer_name': customer_info.get('name', 'Credit Customer'),
-                'customer_email': f"credit_{customer_id}@example.com",
-                'customer_phone': customer_info.get('phone', ''),
-                'customer_address': 'Credit Purchase',
-                'customer': {
-                    'name': customer_info.get('name', 'Credit Customer'),
-                    'email': f"credit_{customer_id}@example.com",
-                    'phone': customer_info.get('phone', ''),
-                    'address': 'Credit Purchase'
-                },
-                'user_id': tx.get('staff_name', 'System'),
-                'user_name': tx.get('staff_name', 'System'),
-                'user_role': 'admin',
-                'staff_name': tx.get('staff_name', 'System')
-            }
-            
-            print(f"📤 Creating order for transaction: {transaction_id} with items: {[i['name'] for i in formatted_items]}")
-            
-            order_response = requests.post(
-                f"{Config.SUPABASE_URL}/rest/v1/orders",
-                headers=Config.SUPABASE_HEADERS,
-                json=order_data,
-                timeout=15
-            )
-            
-            if order_response.status_code in [200, 201]:
-                synced += 1
-                print(f"✅ Created order: {order_id}")
-            else:
-                failed += 1
-                print(f"❌ Failed to create order: {order_response.status_code} - {order_response.text[:100]}")
-        
-        # Clear caches
-        try:
-            import utils.data
-            utils.data.orders_cache = []
-            utils.data.products_cache = []
-        except:
-            pass
-        
-        return jsonify({
-            'success': True,
-            'synced': synced,
-            'failed': failed,
-            'skipped': skipped,
-            'total_purchases': len(purchases),
-            'message': f'✅ Synced {synced} credit orders, {failed} failed, {skipped} already existed'
-        })
-        
-    except Exception as e:
-        print(f"❌ Error syncing credit to orders: {e}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-# ============================================================
-# CUSTOMERS API
-# ============================================================
-
-@admin_bp.route('/admin/api/customers', methods=['GET'])
-@admin_required
-def api_customers_paginated():
-    """Get paginated customers for AJAX"""
-    try:
-        page = request.args.get('page', 1, type=int)
-        per_page = request.args.get('per_page', 10, type=int)
-        
-        all_orders = load_orders()
-        
-        customer_dict = {}
-        for order in all_orders:
-            if order.get('status') == 'cancelled':
-                continue
-                
-            name = order.get('customer_name')
-            if not name:
-                customer = order.get('customer', {})
-                if isinstance(customer, dict):
-                    name = customer.get('name')
-                elif isinstance(customer, str):
-                    try:
-                        name = json.loads(customer).get('name')
-                    except:
-                        pass
-            
-            if not name or name in ['Walk-in Customer', 'Web Customer', 'Customer', 'Unknown', '']:
-                continue
-            
-            if name not in customer_dict:
-                customer_dict[name] = {
-                    'name': name,
-                    'email': order.get('customer_email', 'N/A'),
-                    'phone': order.get('customer_phone', 'N/A'),
-                    'orders': 0,
-                    'total_spent': 0
-                }
-            customer_dict[name]['orders'] += 1
-            customer_dict[name]['total_spent'] += order.get('total', 0)
-        
-        customers = list(customer_dict.values())
-        customers.sort(key=lambda x: x['orders'], reverse=True)
-        
-        total = len(customers)
-        start = (page - 1) * per_page
-        end = start + per_page
-        paginated = customers[start:end]
-        
-        return jsonify({
-            'success': True,
-            'customers': paginated,
-            'total': total,
-            'page': page,
-            'per_page': per_page,
-            'total_pages': (total + per_page - 1) // per_page,
-            'start': start + 1 if paginated else 0,
-            'end': min(end, total)
-        })
-    except Exception as e:
-        print(f"❌ Customers API error: {e}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-# ============================================================
-# PROFITABILITY API
-# ============================================================
-
-@admin_bp.route('/admin/api/profitability/summary', methods=['GET'])
-@admin_required
-def api_profitability_summary():
-    try:
-        from utils.profitability import get_profitability_summary, get_monthly_profitability
-        
-        summary = get_profitability_summary()
-        monthly = get_monthly_profitability()
-        
-        return jsonify({
-            'success': True,
-            'summary': summary,
-            'monthly': monthly
-        })
-        
-    except Exception as e:
-        print(f"❌ Profitability API error: {e}")
-        import traceback
-        traceback.print_exc()
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-# ============================================================
-# CLEAR CACHE
-# ============================================================
-
-@admin_bp.route('/admin/api/clear-cache', methods=['GET'])
-@admin_required
-def clear_cache():
-    try:
-        import utils.data
-        utils.data.orders_cache = []
-        utils.data.products_cache = []
-        return jsonify({'success': True, 'message': 'Cache cleared successfully'})
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)}), 500
-
-# ============================================================
-# SUPPLIER MANAGEMENT ROUTES
-# ============================================================
-
-@admin_bp.route('/admin/suppliers')
-@admin_required
-def admin_suppliers():
-    try:
-        from utils.supplier import get_all_suppliers, get_low_stock_products, get_supplier_summary
-        
-        suppliers = get_all_suppliers()
-        low_stock = get_low_stock_products()
-        summary = get_supplier_summary()
-        
-        stats = {
-            'total_orders': 0,
-            'pending_orders': 0,
-            'total_products': summary.get('total_products', 0),
-            'total_customers': 0,
-            'today_revenue': 0,
-            'month_revenue': 0,
-            'total_revenue': 0,
-            'low_stock': len(low_stock),
-            'total_bundles': 0,
-            'total_cart_items': 0,
-            'pos_orders': 0,
-            'web_orders': 0,
-            'credit_orders': 0,
-            'today_growth_pct': 0,
-            'month_growth_pct': 0,
-            'db_mode': 'online'
-        }
-        
-        return render_template('admin_suppliers.html',
-            suppliers=suppliers,
-            low_stock=low_stock,
-            low_stock_count=len(low_stock),
-            summary=summary,
-            stats=stats,
-            DB_CONNECTED=True,
-            IS_VERCEL=IS_VERCEL
-        )
-    except Exception as e:
-        print(f"❌ Error loading suppliers: {e}")
-        flash('Error loading suppliers', 'danger')
-        
-        stats = {
-            'total_orders': 0,
-            'pending_orders': 0,
-            'total_products': 0,
-            'total_customers': 0,
-            'today_revenue': 0,
-            'month_revenue': 0,
-            'total_revenue': 0,
-            'low_stock': 0,
-            'total_bundles': 0,
-            'total_cart_items': 0,
-            'pos_orders': 0,
-            'web_orders': 0,
-            'credit_orders': 0,
-            'today_growth_pct': 0,
-            'month_growth_pct': 0,
-            'db_mode': 'offline'
-        }
-        
-        return render_template('admin_suppliers.html',
-            suppliers=[],
-            low_stock=[],
-            low_stock_count=0,
-            summary={'total_suppliers': 0, 'active_suppliers': 0, 'inactive_suppliers': 0, 'total_products': 0},
-            stats=stats,
-            DB_CONNECTED=False,
-            IS_VERCEL=IS_VERCEL
-        )
 
 @admin_bp.route('/admin/api/suppliers', methods=['GET'])
 @admin_required
@@ -2135,485 +1907,78 @@ def api_get_supplier_summary():
         return jsonify({'success': False, 'error': str(e)}), 500
 
 # ============================================================
-# POS ROUTE
+# [NEW] CATEGORIES API - DYNAMIC
 # ============================================================
 
-@admin_bp.route('/admin/pos')
-def admin_pos():
-    if not session.get('admin_logged_in') and not session.get('user'):
-        flash('Please login first', 'danger')
-        return redirect(url_for('admin.user_login'))
-    
-    if session.get('user') and not session.get('admin_logged_in'):
-        session['admin_logged_in'] = True
-        print("✅ admin_logged_in set for POS user")
-
-    all_products = load_products()
-    for product in all_products:
-        if 'price' not in product or product['price'] is None:
-            product['price'] = 0
-        if 'stock' not in product or product['stock'] is None:
-            product['stock'] = 0
-        if 'image' not in product:
-            product['image'] = ''
-        if 'name' not in product:
-            product['name'] = 'Product'
-        if 'id' not in product:
-            product['id'] = str(uuid.uuid4())
-
-    customers = []
+@admin_bp.route('/api/categories', methods=['GET'])
+@admin_required
+def api_get_categories():
+    """Get all categories dynamically from products"""
     try:
+        # Get all products
         response = requests.get(
-            f"{Config.SUPABASE_URL}/rest/v1/customers",
+            f"{Config.SUPABASE_URL}/rest/v1/products?select=category",
             headers=Config.SUPABASE_HEADERS,
-            timeout=10,
+            timeout=10
         )
+        
+        categories = {}
         if response.status_code == 200:
-            customers_from_db = response.json()
-            for c in customers_from_db:
-                customers.append({
-                    'name': c.get('name', ''),
-                    'email': c.get('email', ''),
-                    'phone': c.get('phone', ''),
-                    'orders': 0,
-                    'total_spent': 0
-                })
+            products = response.json()
+            category_set = set()
+            for p in products:
+                cat = p.get('category', '').strip()
+                if cat:
+                    category_set.add(cat)
+            
+            for cat in sorted(category_set):
+                categories[cat] = {'name': cat, 'count': 0}
+            
+            # Count products per category
+            for p in products:
+                cat = p.get('category', '').strip()
+                if cat and cat in categories:
+                    categories[cat]['count'] += 1
+        
+        # If no categories found, return defaults
+        if not categories:
+            categories = {
+                'General': {'name': 'General', 'count': 0}
+            }
+        
+        return jsonify(categories)
+        
     except Exception as e:
-        print(f"⚠️ Error loading customers: {e}")
-
-    customers.sort(key=lambda x: x['name'])
-
-    return render_template('pos.html',
-        products=all_products,
-        customers=customers,
-        DB_CONNECTED=True
-    )
-
-# ============================================================
-# POS ORDER ROUTE
-# ============================================================
-
-@admin_bp.route('/admin/pos/place-order', methods=['POST'])
-def admin_pos_place_order():
-    if not session.get('admin_logged_in') and not session.get('user'):
-        return jsonify({'success': False, 'message': 'Please login first'}), 401
-    
-    if session.get('user') and not session.get('admin_logged_in'):
-        session['admin_logged_in'] = True
-        print("✅ admin_logged_in set for POS order")
-
-    try:
-        data = request.get_json()
-        if not data or not data.get('items'):
-            return jsonify({'success': False, 'message': 'No items in order'}), 400
-
-        user = session.get('user', {})
-        user_id = user.get('id', 'unknown')
-        user_name = user.get('name', 'Unknown User')
-        user_role = user.get('role', 'user')
-
-        order_id = data.get('order_id', f'POS-{uuid.uuid4().hex[:8].upper()}')
-        items = data.get('items', [])
-        
-        print(f"📦 Received order: {order_id}")
-        print(f"📦 Items: {len(items)}")
-        print(f"👤 User: {user_name} ({user_role})")
-        
-        for item in items:
-            print(f"  - {item.get('name')} x{item.get('quantity')}")
-
-        print("📦 DEDUCTING STOCK...")
-        
-        stock_updated = []
-        stock_failed = []
-        
-        for item in items:
-            product_id = item.get('product_id')
-            quantity = int(item.get('quantity', 1))
-            
-            if not product_id:
-                print(f"⚠️ No product_id for item: {item.get('name')}")
-                stock_failed.append({'name': item.get('name'), 'reason': 'No product_id'})
-                continue
-            
-            try:
-                print(f"🔍 Fetching product: {product_id}")
-                response = requests.get(
-                    f"{Config.SUPABASE_URL}/rest/v1/products?id=eq.{product_id}",
-                    headers=Config.SUPABASE_HEADERS,
-                    timeout=10
-                )
-                
-                if response.status_code == 200:
-                    products = response.json()
-                    if products and len(products) > 0:
-                        product = products[0]
-                        item['cost_price'] = product.get('cost_price', 0)
-                        
-                        current_stock = product.get('stock', 0)
-                        new_stock = max(0, current_stock - quantity)
-                        
-                        print(f"📦 {product.get('name')}: Cost: {item['cost_price']}, Stock: {current_stock} → {new_stock}")
-                        
-                        update_response = requests.patch(
-                            f"{Config.SUPABASE_URL}/rest/v1/products?id=eq.{product_id}",
-                            headers=Config.SUPABASE_HEADERS,
-                            json={'stock': new_stock},
-                            timeout=10
-                        )
-                        
-                        if update_response.status_code in [200, 204]:
-                            print(f"✅ Stock updated: {product.get('name')}")
-                            stock_updated.append({
-                                'name': product.get('name'),
-                                'old_stock': current_stock,
-                                'new_stock': new_stock
-                            })
-                        else:
-                            print(f"❌ Failed to update stock: {update_response.status_code}")
-                            stock_failed.append({
-                                'name': product.get('name'),
-                                'reason': f'HTTP {update_response.status_code}'
-                            })
-                    else:
-                        print(f"⚠️ Product not found: {product_id}")
-                        stock_failed.append({
-                            'name': item.get('name'),
-                            'reason': 'Product not found'
-                        })
-                else:
-                    print(f"❌ Failed to fetch product: {response.status_code}")
-                    stock_failed.append({
-                        'name': item.get('name'),
-                        'reason': f'Fetch error: {response.status_code}'
-                    })
-                    
-            except Exception as e:
-                print(f"❌ Stock deduction error for {product_id}: {e}")
-                stock_failed.append({
-                    'name': item.get('name'),
-                    'reason': str(e)
-                })
-
-        print(f"📊 Stock updated: {len(stock_updated)} items")
-        for s in stock_updated:
-            print(f"  ✅ {s['name']}: {s['old_stock']} → {s['new_stock']}")
-        
-        if stock_failed:
-            print(f"❌ Stock failed: {len(stock_failed)} items")
-            for s in stock_failed:
-                print(f"  ❌ {s['name']}: {s['reason']}")
-
-        subtotal = float(data.get('subtotal', 0))
-        shipping = float(data.get('shipping', 0))
-        total = float(data.get('total', subtotal + shipping))
-
-        customer_name = data.get('customer_name', 'Walk-in Customer')
-        customer_email = data.get('customer_email', 'walkin@example.com')
-        customer_phone = data.get('customer_phone', 'N/A')
-        customer_address = data.get('customer_address', 'In-store purchase')
-
-        order_data = {
-            'order_id': order_id,
-            'items': items,
-            'subtotal': subtotal,
-            'shipping': shipping,
-            'total': total,
-            'status': 'confirmed',
-            'source': 'pos',
-            'created_at': datetime.utcnow().isoformat(),
-            'customer_name': customer_name,
-            'customer_email': customer_email,
-            'customer_phone': customer_phone,
-            'customer_address': customer_address,
-            'customer': {
-                'name': customer_name,
-                'email': customer_email,
-                'phone': customer_phone,
-                'address': customer_address,
-            },
-            'user_id': str(user_id),
-            'user_name': user_name,
-            'user_role': user_role,
-            'staff_name': user_name
-        }
-
-        print(f"💰 Total: KSh {total}")
-
-        try:
-            response = requests.post(
-                f"{Config.SUPABASE_URL}/rest/v1/orders",
-                headers=Config.SUPABASE_HEADERS,
-                json=order_data,
-                timeout=15
-            )
-
-            if response.status_code in [200, 201]:
-                print(f"✅ Order saved to Supabase: {order_id}")
-                
-                import utils.data
-                utils.data.orders_cache = []
-                utils.data.products_cache = []
-
-                return jsonify({
-                    'success': True,
-                    'order_id': order_id,
-                    'order': order_data,
-                    'synced': True,
-                    'stock_updated': stock_updated,
-                    'stock_failed': stock_failed,
-                    'message': f'✅ Order #{order_id} placed! Stock deducted: {len(stock_updated)} items.',
-                    'total': total
-                })
-            else:
-                print(f"❌ Failed to save order: {response.status_code}")
-                print(f"Response: {response.text[:200]}")
-                
-                return jsonify({
-                    'success': False,
-                    'message': f'Failed to save order: {response.status_code}',
-                    'supabase_error': response.text[:500]
-                }), 500
-                
-        except Exception as e:
-            print(f"❌ Order save error: {e}")
-            traceback.print_exc()
-            return jsonify({
-                'success': False,
-                'message': f'Error saving order: {str(e)}'
-            }), 500
-
-    except Exception as exc:
-        print(f'❌ POS Order error: {exc}')
-        traceback.print_exc()
+        print(f"❌ Error loading categories: {e}")
         return jsonify({
-            'success': False, 
-            'message': f'Error: {str(exc)[:100]}'
-        }), 500
-
-# ============================================================
-# SYNC QUEUED ORDERS
-# ============================================================
-
-@admin_bp.route('/admin/api/sync-queue', methods=['POST'])
-def api_sync_queue():
-    try:
-        data = request.get_json()
-        if not data or not data.get('orders'):
-            return jsonify({
-                'success': True,
-                'synced': 0,
-                'failed': 0,
-                'message': 'No orders provided to sync'
-            })
-
-        orders_to_sync = data.get('orders', [])
-        synced = 0
-        failed = 0
-
-        for order in orders_to_sync:
-            try:
-                order_id = order.get('order_id', f'OFF-{uuid.uuid4().hex[:8].upper()}')
-                
-                check_response = requests.get(
-                    f"{Config.SUPABASE_URL}/rest/v1/orders?order_id=eq.{order_id}",
-                    headers=Config.SUPABASE_HEADERS,
-                    timeout=10
-                )
-
-                if check_response.status_code == 200 and check_response.json():
-                    synced += 1
-                    continue
-
-                order_data = {
-                    'order_id': order_id,
-                    'items': order.get('items', []),
-                    'subtotal': float(order.get('subtotal', 0)),
-                    'shipping': float(order.get('shipping', 0)),
-                    'total': float(order.get('total', 0)),
-                    'status': order.get('status', 'confirmed'),
-                    'source': order.get('source', 'pos'),
-                    'created_at': order.get('created_at', datetime.utcnow().isoformat()),
-                    'customer_name': order.get('customer_name', 'Walk-in Customer'),
-                    'customer_email': order.get('customer_email', 'walkin@example.com'),
-                    'customer_phone': order.get('customer_phone', 'N/A'),
-                    'customer_address': order.get('customer_address', 'In-store purchase'),
-                    'customer': order.get('customer', {
-                        'name': order.get('customer_name', 'Walk-in Customer'),
-                        'email': order.get('customer_email', 'walkin@example.com'),
-                        'phone': order.get('customer_phone', 'N/A'),
-                        'address': order.get('customer_address', 'In-store purchase')
-                    }),
-                    'user_id': order.get('user_id', 'unknown'),
-                    'user_name': order.get('user_name', 'Unknown User'),
-                    'user_role': order.get('user_role', 'user'),
-                    'staff_name': order.get('staff_name', order.get('user_name', 'Unknown User'))
-                }
-
-                if not isinstance(order_data['items'], list):
-                    order_data['items'] = []
-
-                for item in order_data['items']:
-                    if not isinstance(item, dict):
-                        continue
-                    if 'product_id' not in item:
-                        item['product_id'] = str(uuid.uuid4())
-                    if 'quantity' not in item:
-                        item['quantity'] = 1
-                    if 'price' not in item:
-                        item['price'] = 0
-                    if 'name' not in item:
-                        item['name'] = 'Unknown Product'
-                    if 'total' not in item:
-                        item['total'] = float(item.get('price', 0)) * float(item.get('quantity', 1))
-
-                response = requests.post(
-                    f"{Config.SUPABASE_URL}/rest/v1/orders",
-                    headers=Config.SUPABASE_HEADERS,
-                    json=order_data,
-                    timeout=15
-                )
-
-                if response.status_code in [200, 201]:
-                    synced += 1
-                else:
-                    failed += 1
-
-            except Exception as e:
-                failed += 1
-                print(f"❌ Sync error for {order.get('order_id', 'unknown')}: {e}")
-
-        if synced > 0:
-            import utils.data
-            utils.data.orders_cache = []
-
-        return jsonify({
-            'success': True,
-            'synced': synced,
-            'failed': failed,
-            'message': f"Synced {synced} items, {failed} failed"
+            'General': {'name': 'General', 'count': 0}
         })
 
+@admin_bp.route('/api/categories', methods=['POST'])
+@admin_required
+def api_add_category():
+    """Add a new category (just track it)"""
+    try:
+        data = request.get_json()
+        if not data or not data.get('name'):
+            return jsonify({'success': False, 'message': 'Category name required'}), 400
+        
+        category_name = data['name'].strip()
+        if not category_name:
+            return jsonify({'success': False, 'message': 'Category name cannot be empty'}), 400
+        
+        # Just return success - categories are tracked in products
+        return jsonify({
+            'success': True,
+            'message': f'Category "{category_name}" added',
+            'category': {'name': category_name}
+        })
+        
     except Exception as e:
-        print(f"❌ Sync queue error: {e}")
-        traceback.print_exc()
         return jsonify({'success': False, 'error': str(e)}), 500
 
 # ============================================================
-# PROCESS RETURN
-# ============================================================
-
-@admin_bp.route('/admin/api/process-return', methods=['POST'])
-def api_process_return():
-    if not session.get('admin_logged_in'):
-        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
-
-    try:
-        data = request.get_json()
-
-        if not data:
-            return jsonify({'success': False, 'message': 'No data provided'}), 400
-
-        items_to_return = data.get('items', [])
-        refund_total = data.get('refund_total', 0)
-        customer_name = data.get('customer_name', 'Customer')
-        reason = data.get('reason', 'Customer return')
-
-        if not items_to_return:
-            return jsonify({'success': False, 'message': 'No items to return'}), 400
-
-        return_items = []
-        for item in items_to_return:
-            item_price = float(item.get('price', 0))
-            item_qty = int(item.get('quantity', 1))
-            return_items.append({
-                'product_id': str(item.get('id', '')),
-                'name': item.get('name', 'Product'),
-                'price': item_price,
-                'quantity': item_qty,
-                'total': item_price * item_qty,
-                'type': 'return'
-            })
-
-        return_order_id = data.get('return_order_id', f'RET-{uuid.uuid4().hex[:8].upper()}')
-
-        return_order_data = {
-            'order_id': return_order_id,
-            'items': return_items,
-            'subtotal': refund_total,
-            'shipping': 0,
-            'total': -refund_total,
-            'status': 'returned',
-            'source': 'pos',
-            'created_at': datetime.utcnow().isoformat(),
-            'customer': {
-                'name': customer_name,
-                'email': 'return@example.com',
-                'phone': 'N/A',
-                'address': 'Return'
-            },
-            'customer_name': customer_name,
-            'customer_email': 'return@example.com',
-            'customer_phone': 'N/A',
-            'customer_address': 'Return',
-            'return_reason': reason,
-            'return_amount': refund_total,
-            'is_return': True
-        }
-
-        # Restock products
-        for item in items_to_return:
-            product_id = str(item.get('id', ''))
-            quantity = int(item.get('quantity', 1))
-            if product_id:
-                try:
-                    products = load_products()
-                    for p in products:
-                        if str(p.get('id')) == product_id:
-                            current_stock = int(p.get('stock', 0))
-                            new_stock = current_stock + quantity
-                            requests.patch(
-                                f"{Config.SUPABASE_URL}/rest/v1/products?id=eq.{product_id}",
-                                headers=Config.SUPABASE_HEADERS,
-                                json={'stock': new_stock},
-                                timeout=10
-                            )
-                            break
-                except Exception as e:
-                    print(f"⚠️ Error restocking product {product_id}: {e}")
-
-        response = requests.post(
-            f"{Config.SUPABASE_URL}/rest/v1/orders",
-            headers=Config.SUPABASE_HEADERS,
-            json=return_order_data,
-            timeout=10,
-        )
-
-        if response.status_code in [200, 201]:
-            import utils.data
-            utils.data.orders_cache = []
-            utils.data.products_cache = []
-
-            return jsonify({
-                'success': True,
-                'order_id': return_order_id,
-                'message': f'Return processed! Refund: KSh {refund_total:,.2f}',
-                'refund_total': refund_total,
-                'revenue_deducted': refund_total
-            })
-        else:
-            return jsonify({
-                'success': False,
-                'message': f'Failed to process return: {response.status_code}'
-            }), 500
-
-    except Exception as e:
-        print(f'❌ Return error: {e}')
-        traceback.print_exc()
-        return jsonify({'success': False, 'message': str(e)}), 500
-
-# ============================================================
-# ANALYTICS API
+# [NEW] ANALYTICS API - WITH CREDIT DATA MERGED
 # ============================================================
 
 @admin_bp.route('/admin/api/analytics')
@@ -2648,8 +2013,7 @@ def admin_api_analytics():
                 credit_cost += cost
                 credit_profit += profit
         
-        # ✅ FIX: Use analytics totals directly (credit is already in orders)
-        # DO NOT add credit on top of orders - it's already included!
+        # Use analytics totals directly (credit is already in orders)
         total_revenue = analytics.get('total_revenue', 0)
         total_cost = analytics.get('total_cost', 0)
         total_profit = analytics.get('total_profit', 0)
@@ -3261,7 +2625,8 @@ def admin_products():
                 'stock': int(request.form.get('stock', 0) or 0),
                 'original_price': float(request.form.get('original_price', 0) or 0) or None,
                 'specs': [s.strip() for s in request.form.get('specs', '').split(',') if s.strip()],
-                'barcode': request.form.get('barcode', '').strip() or ''
+                'barcode': request.form.get('barcode', '').strip() or '',
+                'supplier_id': request.form.get('supplier_id', '').strip() or None
             }
 
         product_id = data.get('id', '').strip()
@@ -3526,5 +2891,810 @@ def api_credit_profit_summary():
     except Exception as e:
         print(f"❌ Profit summary error: {e}")
         return jsonify({'success': False, 'error': str(e)}), 500
+
+# ============================================================
+# SYNC EXISTING CREDIT TRANSACTIONS TO ORDERS
+# ============================================================
+
+@admin_bp.route('/admin/api/credit/sync-to-orders', methods=['POST'])
+@admin_required
+def sync_credit_to_orders():
+    """Sync existing credit transactions to orders table"""
+    try:
+        import json
+        from datetime import datetime
+        import uuid
+        
+        print("🔄 Syncing existing credit transactions to orders...")
+        
+        # Get all credit transactions
+        tx_response = requests.get(
+            f"{Config.SUPABASE_URL}/rest/v1/credit_transactions?select=*",
+            headers=Config.SUPABASE_HEADERS,
+            timeout=30
+        )
+        
+        if tx_response.status_code != 200:
+            return jsonify({
+                'success': False, 
+                'message': f'Failed to fetch credit transactions: {tx_response.status_code}'
+            }), 500
+        
+        credit_transactions = tx_response.json()
+        print(f"📦 Found {len(credit_transactions)} credit transactions")
+        
+        # Filter only purchase transactions
+        purchases = [t for t in credit_transactions if t.get('transaction_type') == 'purchase']
+        print(f"🛒 Found {len(purchases)} purchase transactions")
+        
+        if not purchases:
+            return jsonify({
+                'success': True,
+                'synced': 0,
+                'failed': 0,
+                'skipped': 0,
+                'message': 'No purchase transactions found to sync'
+            })
+        
+        # Get credit customers
+        customer_response = requests.get(
+            f"{Config.SUPABASE_URL}/rest/v1/credit_customers?select=customer_id,full_name,phone",
+            headers=Config.SUPABASE_HEADERS,
+            timeout=30
+        )
+        
+        customer_map = {}
+        if customer_response.status_code == 200:
+            for c in customer_response.json():
+                customer_map[c['customer_id']] = {
+                    'name': c.get('full_name', 'Credit Customer'),
+                    'phone': c.get('phone', '')
+                }
+        print(f"👤 Found {len(customer_map)} credit customers")
+        
+        synced = 0
+        failed = 0
+        skipped = 0
+        
+        for tx in purchases:
+            transaction_id = tx.get('transaction_id')
+            customer_id = tx.get('customer_id')
+            amount = float(tx.get('amount', 0))
+            
+            # Check if order already exists
+            check_response = requests.get(
+                f"{Config.SUPABASE_URL}/rest/v1/orders?credit_transaction_id=eq.{transaction_id}",
+                headers=Config.SUPABASE_HEADERS,
+                timeout=10
+            )
+            
+            if check_response.status_code == 200 and check_response.json():
+                print(f"⏭️ Order already exists for {transaction_id}")
+                skipped += 1
+                continue
+            
+            customer_info = customer_map.get(customer_id, {
+                'name': 'Credit Customer',
+                'phone': ''
+            })
+            
+            order_id = f"CREDIT-{datetime.utcnow().strftime('%Y%m%d')}-{uuid.uuid4().hex[:6].upper()}"
+            
+            # Parse items from items_json
+            items = tx.get('items_json', [])
+            if isinstance(items, str):
+                try:
+                    items = json.loads(items)
+                except:
+                    items = []
+            
+            formatted_items = []
+            if items and isinstance(items, list):
+                for item in items:
+                    if isinstance(item, dict):
+                        product_name = item.get('name', 'Unknown Product')
+                        product_id = item.get('product_id', '')
+                        
+                        cost_price = float(item.get('cost_price', 0))
+                        if cost_price == 0 and product_id:
+                            try:
+                                prod_resp = requests.get(
+                                    f"{Config.SUPABASE_URL}/rest/v1/products?id=eq.{product_id}&select=cost_price",
+                                    headers=Config.SUPABASE_HEADERS,
+                                    timeout=5
+                                )
+                                if prod_resp.status_code == 200:
+                                    products = prod_resp.json()
+                                    if products:
+                                        cost_price = float(products[0].get('cost_price', 0))
+                            except:
+                                pass
+                        
+                        formatted_items.append({
+                            'product_id': product_id,
+                            'name': product_name,
+                            'price': float(item.get('price', 0)),
+                            'quantity': int(item.get('quantity', 1)),
+                            'total': float(item.get('price', 0)) * int(item.get('quantity', 1)),
+                            'cost_price': cost_price
+                        })
+            else:
+                items_json = tx.get('items_json', [])
+                if isinstance(items_json, str):
+                    try:
+                        items_json = json.loads(items_json)
+                    except:
+                        items_json = []
+                
+                if items_json and len(items_json) > 0:
+                    for item in items_json:
+                        if isinstance(item, dict):
+                            formatted_items.append({
+                                'product_id': item.get('product_id', ''),
+                                'name': item.get('name', f'Credit - {customer_info.get("name", "Customer")}'),
+                                'price': float(item.get('price', 0)),
+                                'quantity': int(item.get('quantity', 1)),
+                                'total': float(item.get('price', 0)) * int(item.get('quantity', 1)),
+                                'cost_price': float(item.get('cost_price', 0))
+                            })
+                else:
+                    formatted_items.append({
+                        'product_id': '',
+                        'name': f'Credit Purchase - {customer_info.get("name", "Customer")}',
+                        'price': amount,
+                        'quantity': 1,
+                        'total': amount,
+                        'cost_price': amount * 0.65
+                    })
+            
+            order_data = {
+                'order_id': order_id,
+                'items': formatted_items,
+                'subtotal': amount,
+                'shipping': 0,
+                'total': amount,
+                'status': 'confirmed',
+                'source': 'credit',
+                'created_at': tx.get('created_at', datetime.utcnow().isoformat()),
+                'customer_name': customer_info.get('name', 'Credit Customer'),
+                'customer_email': f"credit_{customer_id}@example.com",
+                'customer_phone': customer_info.get('phone', ''),
+                'customer_address': 'Credit Purchase',
+                'customer': {
+                    'name': customer_info.get('name', 'Credit Customer'),
+                    'email': f"credit_{customer_id}@example.com",
+                    'phone': customer_info.get('phone', ''),
+                    'address': 'Credit Purchase'
+                },
+                'user_id': tx.get('staff_name', 'System'),
+                'user_name': tx.get('staff_name', 'System'),
+                'user_role': 'admin',
+                'staff_name': tx.get('staff_name', 'System')
+            }
+            
+            print(f"📤 Creating order for transaction: {transaction_id} with items: {[i['name'] for i in formatted_items]}")
+            
+            order_response = requests.post(
+                f"{Config.SUPABASE_URL}/rest/v1/orders",
+                headers=Config.SUPABASE_HEADERS,
+                json=order_data,
+                timeout=15
+            )
+            
+            if order_response.status_code in [200, 201]:
+                synced += 1
+                print(f"✅ Created order: {order_id}")
+            else:
+                failed += 1
+                print(f"❌ Failed to create order: {order_response.status_code} - {order_response.text[:100]}")
+        
+        # Clear caches
+        try:
+            import utils.data
+            utils.data.orders_cache = []
+            utils.data.products_cache = []
+        except:
+            pass
+        
+        return jsonify({
+            'success': True,
+            'synced': synced,
+            'failed': failed,
+            'skipped': skipped,
+            'total_purchases': len(purchases),
+            'message': f'✅ Synced {synced} credit orders, {failed} failed, {skipped} already existed'
+        })
+        
+    except Exception as e:
+        print(f"❌ Error syncing credit to orders: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# ============================================================
+# CUSTOMERS API
+# ============================================================
+
+@admin_bp.route('/admin/api/customers', methods=['GET'])
+@admin_required
+def api_customers_paginated():
+    """Get paginated customers for AJAX"""
+    try:
+        page = request.args.get('page', 1, type=int)
+        per_page = request.args.get('per_page', 10, type=int)
+        
+        all_orders = load_orders()
+        
+        customer_dict = {}
+        for order in all_orders:
+            if order.get('status') == 'cancelled':
+                continue
+                
+            name = order.get('customer_name')
+            if not name:
+                customer = order.get('customer', {})
+                if isinstance(customer, dict):
+                    name = customer.get('name')
+                elif isinstance(customer, str):
+                    try:
+                        name = json.loads(customer).get('name')
+                    except:
+                        pass
+            
+            if not name or name in ['Walk-in Customer', 'Web Customer', 'Customer', 'Unknown', '']:
+                continue
+            
+            if name not in customer_dict:
+                customer_dict[name] = {
+                    'name': name,
+                    'email': order.get('customer_email', 'N/A'),
+                    'phone': order.get('customer_phone', 'N/A'),
+                    'orders': 0,
+                    'total_spent': 0
+                }
+            customer_dict[name]['orders'] += 1
+            customer_dict[name]['total_spent'] += order.get('total', 0)
+        
+        customers = list(customer_dict.values())
+        customers.sort(key=lambda x: x['orders'], reverse=True)
+        
+        total = len(customers)
+        start = (page - 1) * per_page
+        end = start + per_page
+        paginated = customers[start:end]
+        
+        return jsonify({
+            'success': True,
+            'customers': paginated,
+            'total': total,
+            'page': page,
+            'per_page': per_page,
+            'total_pages': (total + per_page - 1) // per_page,
+            'start': start + 1 if paginated else 0,
+            'end': min(end, total)
+        })
+    except Exception as e:
+        print(f"❌ Customers API error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# ============================================================
+# PROFITABILITY API
+# ============================================================
+
+@admin_bp.route('/admin/api/profitability/summary', methods=['GET'])
+@admin_required
+def api_profitability_summary():
+    try:
+        from utils.profitability import get_profitability_summary, get_monthly_profitability
+        
+        summary = get_profitability_summary()
+        monthly = get_monthly_profitability()
+        
+        return jsonify({
+            'success': True,
+            'summary': summary,
+            'monthly': monthly
+        })
+        
+    except Exception as e:
+        print(f"❌ Profitability API error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# ============================================================
+# CLEAR CACHE
+# ============================================================
+
+@admin_bp.route('/admin/api/clear-cache', methods=['GET'])
+@admin_required
+def clear_cache():
+    try:
+        import utils.data
+        utils.data.orders_cache = []
+        utils.data.products_cache = []
+        return jsonify({'success': True, 'message': 'Cache cleared successfully'})
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# ============================================================
+# POS ROUTE
+# ============================================================
+
+@admin_bp.route('/admin/pos')
+def admin_pos():
+    if not session.get('admin_logged_in') and not session.get('user'):
+        flash('Please login first', 'danger')
+        return redirect(url_for('admin.user_login'))
+    
+    if session.get('user') and not session.get('admin_logged_in'):
+        session['admin_logged_in'] = True
+        print("✅ admin_logged_in set for POS user")
+
+    all_products = load_products()
+    for product in all_products:
+        if 'price' not in product or product['price'] is None:
+            product['price'] = 0
+        if 'stock' not in product or product['stock'] is None:
+            product['stock'] = 0
+        if 'image' not in product:
+            product['image'] = ''
+        if 'name' not in product:
+            product['name'] = 'Product'
+        if 'id' not in product:
+            product['id'] = str(uuid.uuid4())
+
+    customers = []
+    try:
+        response = requests.get(
+            f"{Config.SUPABASE_URL}/rest/v1/customers",
+            headers=Config.SUPABASE_HEADERS,
+            timeout=10,
+        )
+        if response.status_code == 200:
+            customers_from_db = response.json()
+            for c in customers_from_db:
+                customers.append({
+                    'name': c.get('name', ''),
+                    'email': c.get('email', ''),
+                    'phone': c.get('phone', ''),
+                    'orders': 0,
+                    'total_spent': 0
+                })
+    except Exception as e:
+        print(f"⚠️ Error loading customers: {e}")
+
+    customers.sort(key=lambda x: x['name'])
+
+    return render_template('pos.html',
+        products=all_products,
+        customers=customers,
+        DB_CONNECTED=True
+    )
+
+# ============================================================
+# POS ORDER ROUTE
+# ============================================================
+
+@admin_bp.route('/admin/pos/place-order', methods=['POST'])
+def admin_pos_place_order():
+    if not session.get('admin_logged_in') and not session.get('user'):
+        return jsonify({'success': False, 'message': 'Please login first'}), 401
+    
+    if session.get('user') and not session.get('admin_logged_in'):
+        session['admin_logged_in'] = True
+        print("✅ admin_logged_in set for POS order")
+
+    try:
+        data = request.get_json()
+        if not data or not data.get('items'):
+            return jsonify({'success': False, 'message': 'No items in order'}), 400
+
+        user = session.get('user', {})
+        user_id = user.get('id', 'unknown')
+        user_name = user.get('name', 'Unknown User')
+        user_role = user.get('role', 'user')
+
+        order_id = data.get('order_id', f'POS-{uuid.uuid4().hex[:8].upper()}')
+        items = data.get('items', [])
+        
+        print(f"📦 Received order: {order_id}")
+        print(f"📦 Items: {len(items)}")
+        print(f"👤 User: {user_name} ({user_role})")
+        
+        for item in items:
+            print(f"  - {item.get('name')} x{item.get('quantity')}")
+
+        print("📦 DEDUCTING STOCK...")
+        
+        stock_updated = []
+        stock_failed = []
+        
+        for item in items:
+            product_id = item.get('product_id')
+            quantity = int(item.get('quantity', 1))
+            
+            if not product_id:
+                print(f"⚠️ No product_id for item: {item.get('name')}")
+                stock_failed.append({'name': item.get('name'), 'reason': 'No product_id'})
+                continue
+            
+            try:
+                print(f"🔍 Fetching product: {product_id}")
+                response = requests.get(
+                    f"{Config.SUPABASE_URL}/rest/v1/products?id=eq.{product_id}",
+                    headers=Config.SUPABASE_HEADERS,
+                    timeout=10
+                )
+                
+                if response.status_code == 200:
+                    products = response.json()
+                    if products and len(products) > 0:
+                        product = products[0]
+                        item['cost_price'] = product.get('cost_price', 0)
+                        
+                        current_stock = product.get('stock', 0)
+                        new_stock = max(0, current_stock - quantity)
+                        
+                        print(f"📦 {product.get('name')}: Cost: {item['cost_price']}, Stock: {current_stock} → {new_stock}")
+                        
+                        update_response = requests.patch(
+                            f"{Config.SUPABASE_URL}/rest/v1/products?id=eq.{product_id}",
+                            headers=Config.SUPABASE_HEADERS,
+                            json={'stock': new_stock},
+                            timeout=10
+                        )
+                        
+                        if update_response.status_code in [200, 204]:
+                            print(f"✅ Stock updated: {product.get('name')}")
+                            stock_updated.append({
+                                'name': product.get('name'),
+                                'old_stock': current_stock,
+                                'new_stock': new_stock
+                            })
+                        else:
+                            print(f"❌ Failed to update stock: {update_response.status_code}")
+                            stock_failed.append({
+                                'name': product.get('name'),
+                                'reason': f'HTTP {update_response.status_code}'
+                            })
+                    else:
+                        print(f"⚠️ Product not found: {product_id}")
+                        stock_failed.append({
+                            'name': item.get('name'),
+                            'reason': 'Product not found'
+                        })
+                else:
+                    print(f"❌ Failed to fetch product: {response.status_code}")
+                    stock_failed.append({
+                        'name': item.get('name'),
+                        'reason': f'Fetch error: {response.status_code}'
+                    })
+                    
+            except Exception as e:
+                print(f"❌ Stock deduction error for {product_id}: {e}")
+                stock_failed.append({
+                    'name': item.get('name'),
+                    'reason': str(e)
+                })
+
+        print(f"📊 Stock updated: {len(stock_updated)} items")
+        for s in stock_updated:
+            print(f"  ✅ {s['name']}: {s['old_stock']} → {s['new_stock']}")
+        
+        if stock_failed:
+            print(f"❌ Stock failed: {len(stock_failed)} items")
+            for s in stock_failed:
+                print(f"  ❌ {s['name']}: {s['reason']}")
+
+        subtotal = float(data.get('subtotal', 0))
+        shipping = float(data.get('shipping', 0))
+        total = float(data.get('total', subtotal + shipping))
+
+        customer_name = data.get('customer_name', 'Walk-in Customer')
+        customer_email = data.get('customer_email', 'walkin@example.com')
+        customer_phone = data.get('customer_phone', 'N/A')
+        customer_address = data.get('customer_address', 'In-store purchase')
+
+        order_data = {
+            'order_id': order_id,
+            'items': items,
+            'subtotal': subtotal,
+            'shipping': shipping,
+            'total': total,
+            'status': 'confirmed',
+            'source': 'pos',
+            'created_at': datetime.utcnow().isoformat(),
+            'customer_name': customer_name,
+            'customer_email': customer_email,
+            'customer_phone': customer_phone,
+            'customer_address': customer_address,
+            'customer': {
+                'name': customer_name,
+                'email': customer_email,
+                'phone': customer_phone,
+                'address': customer_address,
+            },
+            'user_id': str(user_id),
+            'user_name': user_name,
+            'user_role': user_role,
+            'staff_name': user_name
+        }
+
+        print(f"💰 Total: KSh {total}")
+
+        try:
+            response = requests.post(
+                f"{Config.SUPABASE_URL}/rest/v1/orders",
+                headers=Config.SUPABASE_HEADERS,
+                json=order_data,
+                timeout=15
+            )
+
+            if response.status_code in [200, 201]:
+                print(f"✅ Order saved to Supabase: {order_id}")
+                
+                import utils.data
+                utils.data.orders_cache = []
+                utils.data.products_cache = []
+
+                return jsonify({
+                    'success': True,
+                    'order_id': order_id,
+                    'order': order_data,
+                    'synced': True,
+                    'stock_updated': stock_updated,
+                    'stock_failed': stock_failed,
+                    'message': f'✅ Order #{order_id} placed! Stock deducted: {len(stock_updated)} items.',
+                    'total': total
+                })
+            else:
+                print(f"❌ Failed to save order: {response.status_code}")
+                print(f"Response: {response.text[:200]}")
+                
+                return jsonify({
+                    'success': False,
+                    'message': f'Failed to save order: {response.status_code}',
+                    'supabase_error': response.text[:500]
+                }), 500
+                
+        except Exception as e:
+            print(f"❌ Order save error: {e}")
+            traceback.print_exc()
+            return jsonify({
+                'success': False,
+                'message': f'Error saving order: {str(e)}'
+            }), 500
+
+    except Exception as exc:
+        print(f'❌ POS Order error: {exc}')
+        traceback.print_exc()
+        return jsonify({
+            'success': False, 
+            'message': f'Error: {str(exc)[:100]}'
+        }), 500
+
+# ============================================================
+# SYNC QUEUED ORDERS
+# ============================================================
+
+@admin_bp.route('/admin/api/sync-queue', methods=['POST'])
+def api_sync_queue():
+    try:
+        data = request.get_json()
+        if not data or not data.get('orders'):
+            return jsonify({
+                'success': True,
+                'synced': 0,
+                'failed': 0,
+                'message': 'No orders provided to sync'
+            })
+
+        orders_to_sync = data.get('orders', [])
+        synced = 0
+        failed = 0
+
+        for order in orders_to_sync:
+            try:
+                order_id = order.get('order_id', f'OFF-{uuid.uuid4().hex[:8].upper()}')
+                
+                check_response = requests.get(
+                    f"{Config.SUPABASE_URL}/rest/v1/orders?order_id=eq.{order_id}",
+                    headers=Config.SUPABASE_HEADERS,
+                    timeout=10
+                )
+
+                if check_response.status_code == 200 and check_response.json():
+                    synced += 1
+                    continue
+
+                order_data = {
+                    'order_id': order_id,
+                    'items': order.get('items', []),
+                    'subtotal': float(order.get('subtotal', 0)),
+                    'shipping': float(order.get('shipping', 0)),
+                    'total': float(order.get('total', 0)),
+                    'status': order.get('status', 'confirmed'),
+                    'source': order.get('source', 'pos'),
+                    'created_at': order.get('created_at', datetime.utcnow().isoformat()),
+                    'customer_name': order.get('customer_name', 'Walk-in Customer'),
+                    'customer_email': order.get('customer_email', 'walkin@example.com'),
+                    'customer_phone': order.get('customer_phone', 'N/A'),
+                    'customer_address': order.get('customer_address', 'In-store purchase'),
+                    'customer': order.get('customer', {
+                        'name': order.get('customer_name', 'Walk-in Customer'),
+                        'email': order.get('customer_email', 'walkin@example.com'),
+                        'phone': order.get('customer_phone', 'N/A'),
+                        'address': order.get('customer_address', 'In-store purchase')
+                    }),
+                    'user_id': order.get('user_id', 'unknown'),
+                    'user_name': order.get('user_name', 'Unknown User'),
+                    'user_role': order.get('user_role', 'user'),
+                    'staff_name': order.get('staff_name', order.get('user_name', 'Unknown User'))
+                }
+
+                if not isinstance(order_data['items'], list):
+                    order_data['items'] = []
+
+                for item in order_data['items']:
+                    if not isinstance(item, dict):
+                        continue
+                    if 'product_id' not in item:
+                        item['product_id'] = str(uuid.uuid4())
+                    if 'quantity' not in item:
+                        item['quantity'] = 1
+                    if 'price' not in item:
+                        item['price'] = 0
+                    if 'name' not in item:
+                        item['name'] = 'Unknown Product'
+                    if 'total' not in item:
+                        item['total'] = float(item.get('price', 0)) * float(item.get('quantity', 1))
+
+                response = requests.post(
+                    f"{Config.SUPABASE_URL}/rest/v1/orders",
+                    headers=Config.SUPABASE_HEADERS,
+                    json=order_data,
+                    timeout=15
+                )
+
+                if response.status_code in [200, 201]:
+                    synced += 1
+                else:
+                    failed += 1
+
+            except Exception as e:
+                failed += 1
+                print(f"❌ Sync error for {order.get('order_id', 'unknown')}: {e}")
+
+        if synced > 0:
+            import utils.data
+            utils.data.orders_cache = []
+
+        return jsonify({
+            'success': True,
+            'synced': synced,
+            'failed': failed,
+            'message': f"Synced {synced} items, {failed} failed"
+        })
+
+    except Exception as e:
+        print(f"❌ Sync queue error: {e}")
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
+
+# ============================================================
+# PROCESS RETURN
+# ============================================================
+
+@admin_bp.route('/admin/api/process-return', methods=['POST'])
+def api_process_return():
+    if not session.get('admin_logged_in'):
+        return jsonify({'success': False, 'message': 'Unauthorized'}), 401
+
+    try:
+        data = request.get_json()
+
+        if not data:
+            return jsonify({'success': False, 'message': 'No data provided'}), 400
+
+        items_to_return = data.get('items', [])
+        refund_total = data.get('refund_total', 0)
+        customer_name = data.get('customer_name', 'Customer')
+        reason = data.get('reason', 'Customer return')
+
+        if not items_to_return:
+            return jsonify({'success': False, 'message': 'No items to return'}), 400
+
+        return_items = []
+        for item in items_to_return:
+            item_price = float(item.get('price', 0))
+            item_qty = int(item.get('quantity', 1))
+            return_items.append({
+                'product_id': str(item.get('id', '')),
+                'name': item.get('name', 'Product'),
+                'price': item_price,
+                'quantity': item_qty,
+                'total': item_price * item_qty,
+                'type': 'return'
+            })
+
+        return_order_id = data.get('return_order_id', f'RET-{uuid.uuid4().hex[:8].upper()}')
+
+        return_order_data = {
+            'order_id': return_order_id,
+            'items': return_items,
+            'subtotal': refund_total,
+            'shipping': 0,
+            'total': -refund_total,
+            'status': 'returned',
+            'source': 'pos',
+            'created_at': datetime.utcnow().isoformat(),
+            'customer': {
+                'name': customer_name,
+                'email': 'return@example.com',
+                'phone': 'N/A',
+                'address': 'Return'
+            },
+            'customer_name': customer_name,
+            'customer_email': 'return@example.com',
+            'customer_phone': 'N/A',
+            'customer_address': 'Return',
+            'return_reason': reason,
+            'return_amount': refund_total,
+            'is_return': True
+        }
+
+        # Restock products
+        for item in items_to_return:
+            product_id = str(item.get('id', ''))
+            quantity = int(item.get('quantity', 1))
+            if product_id:
+                try:
+                    products = load_products()
+                    for p in products:
+                        if str(p.get('id')) == product_id:
+                            current_stock = int(p.get('stock', 0))
+                            new_stock = current_stock + quantity
+                            requests.patch(
+                                f"{Config.SUPABASE_URL}/rest/v1/products?id=eq.{product_id}",
+                                headers=Config.SUPABASE_HEADERS,
+                                json={'stock': new_stock},
+                                timeout=10
+                            )
+                            break
+                except Exception as e:
+                    print(f"⚠️ Error restocking product {product_id}: {e}")
+
+        response = requests.post(
+            f"{Config.SUPABASE_URL}/rest/v1/orders",
+            headers=Config.SUPABASE_HEADERS,
+            json=return_order_data,
+            timeout=10,
+        )
+
+        if response.status_code in [200, 201]:
+            import utils.data
+            utils.data.orders_cache = []
+            utils.data.products_cache = []
+
+            return jsonify({
+                'success': True,
+                'order_id': return_order_id,
+                'message': f'Return processed! Refund: KSh {refund_total:,.2f}',
+                'refund_total': refund_total,
+                'revenue_deducted': refund_total
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': f'Failed to process return: {response.status_code}'
+            }), 500
+
+    except Exception as e:
+        print(f'❌ Return error: {e}')
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': str(e)}), 500
 
 print("✅ Admin module loaded successfully with all features working!")
