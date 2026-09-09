@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=yes" />
-    <title>ACACIAMART · Point of Sale</title>
+    <title>THEPENTAGON · Point of Sale</title>
 
     <!-- ===== PWA META TAGS ===== -->
    <link rel="manifest" href="/static/manifest.json" crossorigin="use-credentials">
@@ -1636,7 +1636,7 @@
     <header class="header">
         <div class="header-brand">
             <div class="logo">💰</div>
-            <span>ACACIA<span class="highlight">MART</span> POS</span>
+            <span>THEPENTA<span class="highlight">GON</span> POS</span>
             <span class="badge" id="onlineBadge">● LIVE</span>
             {% if session.user %}
             <span class="user-tag" style="font-size:0.55rem;color:var(--gray-400);margin-left:4px;border-left:1px solid rgba(255,255,255,0.08);padding-left:8px;">
@@ -2532,104 +2532,468 @@
     }
 
     // 4. LOAD CREDIT CUSTOMERS (FIXED - Works offline)
-    function loadCreditCustomers() {
-        const select = document.getElementById('creditCustomerSelect');
-        if (!select) return;
+    
+    // ============================================================
+// COMPLETE CREDIT CUSTOMER SYSTEM FOR POS
+// ============================================================
 
-        if (select.options.length > 1 && select.options[1].value !== '') {
+// ============================================================
+// 1. LOAD CREDIT CUSTOMERS INTO DROPDOWN
+// ============================================================
+
+// ============================================================
+// FIXED: LOAD CREDIT CUSTOMERS - NO DUPLICATES
+// ============================================================
+
+function loadCreditCustomers() {
+    console.log('🔄 Loading credit customers...');
+    
+    const select = document.getElementById('creditCustomerSelect');
+    if (!select) {
+        console.log('❌ creditCustomerSelect not found');
+        return;
+    }
+
+    // Clear ALL options properly
+    select.innerHTML = '<option value="">-- Select Credit Customer --</option>';
+
+    // Check if online
+    if (!navigator.onLine) {
+        console.log('📡 Offline - using cached data');
+        loadCreditCustomersFromCache();
+        return;
+    }
+
+    // Fetch from API
+    fetch('/admin/api/credit/customers?t=' + Date.now())
+        .then(response => {
+            console.log('📡 Response status:', response.status);
+            if (!response.ok) throw new Error('HTTP ' + response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('📊 Customer data:', data);
+            
+            if (data.success && data.customers) {
+                // ============================================
+                // DEDUPLICATION PROCESS
+                // ============================================
+                
+                // Step 1: Deduplicate by customer_id (keep highest balance)
+                const uniqueById = new Map();
+                data.customers.forEach(c => {
+                    const id = c.customer_id;
+                    if (!uniqueById.has(id)) {
+                        uniqueById.set(id, c);
+                    } else {
+                        const existing = uniqueById.get(id);
+                        if (c.current_balance > existing.current_balance) {
+                            uniqueById.set(id, c);
+                        }
+                    }
+                });
+                
+                // Step 2: Deduplicate by full_name (case insensitive)
+                const uniqueByName = new Map();
+                uniqueById.forEach((c) => {
+                    const name = (c.full_name || '').trim().toUpperCase();
+                    if (!name) {
+                        const key = 'id_' + c.customer_id;
+                        uniqueByName.set(key, c);
+                    } else if (!uniqueByName.has(name)) {
+                        uniqueByName.set(name, c);
+                    } else {
+                        const existing = uniqueByName.get(name);
+                        if (c.current_balance > existing.current_balance) {
+                            uniqueByName.set(name, c);
+                        }
+                    }
+                });
+                
+                const uniqueCustomers = Array.from(uniqueByName.values());
+                console.log('✅ Unique customers after dedupe:', uniqueCustomers.length);
+                
+                // Cache for offline use
+                const cache = {};
+                uniqueCustomers.forEach(c => {
+                    cache[c.customer_id] = {
+                        name: c.full_name,
+                        balance: c.current_balance || 0,
+                        limit: c.credit_limit || 0,
+                        status: c.account_status || 'active',
+                        phone: c.phone || '',
+                        email: c.email || '',
+                        last_updated: new Date().toISOString()
+                    };
+                });
+                localStorage.setItem('credit_cache', JSON.stringify(cache));
+                localStorage.setItem('credit_cache_timestamp', Date.now().toString());
+
+                // Populate dropdown with unique customers
+                populateCustomerSelect(uniqueCustomers, select);
+                console.log('✅ Loaded', uniqueCustomers.length, 'unique credit customers');
+            } else {
+                console.log('⚠️ No customers or error:', data);
+                loadCreditCustomersFromCache();
+            }
+        })
+        .catch(err => {
+            console.error('❌ Error loading credit customers:', err);
+            loadCreditCustomersFromCache();
+        });
+}
+
+function populateCustomerSelect(customers, select) {
+    if (!select) return;
+    
+    // Clear and reset
+    select.innerHTML = '<option value="">-- Select Credit Customer --</option>';
+    
+    const activeCustomers = customers.filter(c => c.account_status === 'active');
+    console.log('📋 Adding', activeCustomers.length, 'active customers to dropdown');
+    
+    // Track added names to prevent duplicates
+    const addedNames = new Set();
+    
+    activeCustomers.forEach(c => {
+        const name = c.full_name;
+        
+        // Skip duplicates by name
+        if (addedNames.has(name)) {
+            console.log('⚠️ Skipping duplicate name:', name);
+            return;
+        }
+        addedNames.add(name);
+        
+        const opt = document.createElement('option');
+        opt.value = c.customer_id;
+        const balance = c.current_balance || 0;
+        const balanceText = balance > 0 ? ' (KSh ' + balance.toLocaleString() + ')' : '';
+        opt.textContent = c.full_name + balanceText;
+        opt.dataset.balance = balance;
+        opt.dataset.limit = c.credit_limit || 0;
+        opt.dataset.phone = c.phone || '';
+        opt.dataset.email = c.email || '';
+        opt.dataset.name = c.full_name || '';
+        opt.dataset.status = c.account_status || 'active';
+        opt.dataset.customer_id = c.customer_id;
+        opt.dataset.total_purchases = c.total_purchases || 0;
+        opt.dataset.total_payments = c.total_payments || 0;
+        select.appendChild(opt);
+    });
+    
+    console.log('✅ Dropdown now has', select.options.length - 1, 'unique customers');
+}
+
+function loadCreditCustomersFromCache() {
+    const select = document.getElementById('creditCustomerSelect');
+    if (!select) return;
+
+    select.innerHTML = '<option value="">-- Select Credit Customer --</option>';
+
+    try {
+        const cache = JSON.parse(localStorage.getItem('credit_cache') || '{}');
+        const customers = Object.values(cache);
+
+        if (customers.length === 0) {
+            console.log('📡 No cached credit customers');
+            showToast('📡 Offline - No cached credit customers', 'warning');
             return;
         }
 
-        select.innerHTML = '<option value="">-- Select Credit Customer --</option>';
-
-        if (navigator.onLine) {
-            fetch('/admin/api/credit/customers')
-                .then(r => r.json())
-                .then(data => {
-                    if (data.success && data.customers) {
-                        const cache = {};
-                        data.customers.forEach(c => {
-                            cache[c.customer_id] = {
-                                name: c.full_name,
-                                balance: c.current_balance || 0,
-                                limit: c.credit_limit || 0,
-                                status: c.account_status || 'active',
-                                phone: c.phone || '',
-                                email: c.email || '',
-                                last_updated: new Date().toISOString()
-                            };
-                        });
-                        localStorage.setItem('credit_cache', JSON.stringify(cache));
-                        localStorage.setItem('credit_cache_timestamp', Date.now().toString());
-
-                        populateCustomerSelect(data.customers, select);
-                    }
-                })
-                .catch(() => {
-                    loadCreditCustomersFromCache(select);
-                });
-        } else {
-            loadCreditCustomersFromCache(select);
-        }
-    }
-
-    function populateCustomerSelect(customers, select) {
-        const activeCustomers = customers.filter(c => c.account_status === 'active');
+        // Track added names to prevent duplicates
+        const addedNames = new Set();
+        const activeCustomers = customers.filter(c => c.status === 'active');
+        
         activeCustomers.forEach(c => {
-            const opt = document.createElement('option');
-            opt.value = c.customer_id;
-            const balance = c.current_balance || 0;
-            const balanceText = balance > 0 ? ' (KSh ' + balance.toLocaleString() + ')' : '';
-            opt.textContent = c.full_name + balanceText;
-            opt.dataset.balance = balance;
-            opt.dataset.limit = c.credit_limit || 0;
-            opt.dataset.phone = c.phone || '';
-            opt.dataset.email = c.email || '';
-            opt.dataset.name = c.full_name || '';
-            opt.dataset.status = c.account_status || 'active';
-            opt.dataset.customer_id = c.customer_id;
-            opt.dataset.total_purchases = c.total_purchases || 0;
-            opt.dataset.total_payments = c.total_payments || 0;
-            select.appendChild(opt);
-        });
-    }
-
-    function loadCreditCustomersFromCache(select) {
-        try {
-            const cache = JSON.parse(localStorage.getItem('credit_cache') || '{}');
-            const customers = Object.values(cache);
-
-            if (customers.length === 0) {
-                showToast('📡 Offline - No cached credit customers. Please go online to sync.', 'warning');
+            const name = c.name;
+            
+            if (addedNames.has(name)) {
+                console.log('⚠️ Skipping duplicate name from cache:', name);
                 return;
             }
+            addedNames.add(name);
+            
+            const opt = document.createElement('option');
+            opt.value = c.customer_id;
+            const balance = c.balance || 0;
+            const balanceText = balance > 0 ? ' (KSh ' + balance.toLocaleString() + ')' : '';
+            opt.textContent = c.name + balanceText;
+            opt.dataset.balance = balance;
+            opt.dataset.limit = c.limit || 0;
+            opt.dataset.phone = c.phone || '';
+            opt.dataset.email = c.email || '';
+            opt.dataset.name = c.name || '';
+            opt.dataset.status = c.status || 'active';
+            opt.dataset.customer_id = c.customer_id;
+            select.appendChild(opt);
+        });
 
-            const activeCustomers = customers.filter(c => c.status === 'active');
-            activeCustomers.forEach(c => {
-                const opt = document.createElement('option');
-                opt.value = c.customer_id;
-                const balance = c.balance || 0;
-                const balanceText = balance > 0 ? ' (KSh ' + balance.toLocaleString() + ')' : '';
-                opt.textContent = c.name + balanceText;
-                opt.dataset.balance = balance;
-                opt.dataset.limit = c.limit || 0;
-                opt.dataset.phone = c.phone || '';
-                opt.dataset.email = c.email || '';
-                opt.dataset.name = c.name || '';
-                opt.dataset.status = c.status || 'active';
-                opt.dataset.customer_id = c.customer_id;
-                select.appendChild(opt);
-            });
-
-            const cacheTime = localStorage.getItem('credit_cache_timestamp');
-            const timeStr = cacheTime ? new Date(parseInt(cacheTime)).toLocaleString() : 'Unknown';
-            showToast(`📡 Offline mode - ${activeCustomers.length} cached customers (from ${timeStr})`, 'warning');
-
-        } catch(e) {
-            console.log('❌ Error loading credit cache:', e);
-            showToast('⚠️ No cached credit data available offline', 'error');
-        }
+        const cacheTime = localStorage.getItem('credit_cache_timestamp');
+        const timeStr = cacheTime ? new Date(parseInt(cacheTime)).toLocaleString() : 'Unknown';
+        showToast(`📡 Offline - ${activeCustomers.length} cached customers (from ${timeStr})`, 'warning');
+        console.log('✅ Loaded', activeCustomers.length, 'cached credit customers');
+    } catch(e) {
+        console.error('❌ Error loading cached customers:', e);
     }
+}
+// ============================================================
+// 2. SHOW CREDIT CUSTOMER INFO
+// ============================================================
+
+function showCreditCustomerInfo() {
+    const select = document.getElementById('creditCustomerSelect');
+    const infoDiv = document.getElementById('creditCustomerInfo');
+    const selected = select.options[select.selectedIndex];
+
+    if (!selected || !selected.value) {
+        infoDiv.style.display = 'none';
+        return;
+    }
+
+    const balance = parseFloat(selected.dataset.balance) || 0;
+    const limit = parseFloat(selected.dataset.limit) || 0;
+    const name = selected.dataset.name || '';
+    const available = limit - balance;
+
+    document.getElementById('creditBalanceDisplay').textContent = 'KSh ' + balance.toLocaleString();
+    document.getElementById('creditLimitDisplay').textContent = 'KSh ' + limit.toLocaleString();
+    document.getElementById('creditAvailableDisplay').textContent = 'KSh ' + available.toLocaleString();
+    document.getElementById('creditCustomerName').textContent = '👤 ' + name;
+
+    const balanceEl = document.getElementById('creditBalanceDisplay');
+    const availableEl = document.getElementById('creditAvailableDisplay');
+
+    if (balance > limit) {
+        balanceEl.style.color = '#dc2626';
+        availableEl.style.color = '#dc2626';
+    } else if (balance > limit * 0.8) {
+        balanceEl.style.color = '#d97706';
+        availableEl.style.color = '#d97706';
+    } else {
+        balanceEl.style.color = '#7c3aed';
+        availableEl.style.color = '#059669';
+    }
+
+    infoDiv.style.display = 'block';
+}
+
+// ============================================================
+// 3. QUICK CREDIT CUSTOMER MODAL (OPEN/ADD)
+// ============================================================
+
+function openQuickCreditModal() {
+    console.log('🟢 Opening Quick Credit Modal');
+    
+    // Check if modal already exists
+    let modal = document.getElementById('quickCreditModal');
+    if (modal) {
+        modal.classList.remove('hidden');
+        modal.style.display = 'flex';
+        // Reset form
+        const form = document.getElementById('quickCreditForm');
+        if (form) form.reset();
+        const limitInput = document.getElementById('quickCreditLimit');
+        if (limitInput) limitInput.value = 0;
+        return;
+    }
+    
+    // Create the modal dynamically
+    modal = document.createElement('div');
+    modal.className = 'modal-overlay';
+    modal.id = 'quickCreditModal';
+    modal.innerHTML = `
+        <div class="modal" style="max-width:450px;" onclick="event.stopPropagation()">
+            <button class="close" onclick="closeQuickCreditModal()">✕</button>
+            <div class="title">👤 Add Credit Customer</div>
+            <form id="quickCreditForm" onsubmit="saveQuickCreditCustomer(event)">
+                <div class="form-group">
+                    <label>Full Name <span class="required">*</span></label>
+                    <input type="text" id="quickCreditName" class="form-input" placeholder="e.g., Jane Mwangi" required>
+                </div>
+                <div class="form-group">
+                    <label>Phone Number <span class="required">*</span></label>
+                    <input type="tel" id="quickCreditPhone" class="form-input" placeholder="e.g., 0712345678" required>
+                </div>
+                <div class="form-group">
+                    <label>WhatsApp Number</label>
+                    <input type="tel" id="quickCreditWhatsapp" class="form-input" placeholder="e.g., 0712345678">
+                </div>
+                <div class="form-group">
+                    <label>Email Address</label>
+                    <input type="email" id="quickCreditEmail" class="form-input" placeholder="e.g., jane@example.com">
+                </div>
+                <div class="form-group">
+                    <label>Credit Limit</label>
+                    <input type="number" id="quickCreditLimit" class="form-input" placeholder="e.g., 50000" value="0">
+                </div>
+                <div class="form-group">
+                    <label>ID Number</label>
+                    <input type="text" id="quickCreditId" class="form-input" placeholder="e.g., 12345678">
+                </div>
+                <div class="form-group">
+                    <label>Payment Terms</label>
+                    <select id="quickPaymentTerms" class="form-input">
+                        <option value="7 days">7 days</option>
+                        <option value="14 days">14 days</option>
+                        <option value="30 days" selected>30 days</option>
+                        <option value="45 days">45 days</option>
+                        <option value="60 days">60 days</option>
+                    </select>
+                </div>
+                <div style="display:flex;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border-color);">
+                    <button type="submit" class="btn-primary" style="flex:1;background:linear-gradient(135deg,#7c3aed,#6d28d9);">💾 Add Customer</button>
+                    <button type="button" class="btn-outline" style="flex:1;" onclick="closeQuickCreditModal()">Cancel</button>
+                </div>
+            </form>
+        </div>
+    `;
+    document.body.appendChild(modal);
+    modal.classList.remove('hidden');
+    modal.style.display = 'flex';
+}
+
+function closeQuickCreditModal() {
+    const modal = document.getElementById('quickCreditModal');
+    if (modal) {
+        modal.classList.add('hidden');
+        modal.style.display = 'none';
+    }
+}
+
+function saveQuickCreditCustomer(event) {
+    event.preventDefault();
+    console.log('🟢 saveQuickCreditCustomer called');
+    
+    const fullName = document.getElementById('quickCreditName')?.value?.trim() || '';
+    const phone = document.getElementById('quickCreditPhone')?.value?.trim() || '';
+    const whatsapp = document.getElementById('quickCreditWhatsapp')?.value?.trim() || '';
+    const email = document.getElementById('quickCreditEmail')?.value?.trim() || '';
+    const creditLimit = parseFloat(document.getElementById('quickCreditLimit')?.value) || 0;
+    const idNumber = document.getElementById('quickCreditId')?.value?.trim() || '';
+    const paymentTerms = document.getElementById('quickPaymentTerms')?.value || '30 days';
+    
+    console.log('📦 Form Data:', { fullName, phone, whatsapp, email, creditLimit, idNumber, paymentTerms });
+    
+    if (!fullName || !phone) {
+        showToast('⚠️ Name and Phone are required', 'warning');
+        return;
+    }
+    
+    const data = {
+        full_name: fullName,
+        phone: phone,
+        credit_limit: creditLimit,
+        payment_terms: paymentTerms
+    };
+    if (whatsapp) data.whatsapp = whatsapp;
+    if (email) data.email = email;
+    if (idNumber) data.id_number = idNumber;
+    
+    const btn = document.querySelector('#quickCreditForm button[type="submit"]');
+    const originalText = btn ? btn.innerHTML : 'Save';
+    if (btn) {
+        btn.innerHTML = '⏳ Adding...';
+        btn.disabled = true;
+    }
+    
+    fetch('/admin/api/credit/customers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(data)
+    })
+    .then(response => {
+        console.log('📡 Status:', response.status);
+        return response.json();
+    })
+    .then(result => {
+        if (btn) {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+        if (result.success) {
+            showToast('✅ Customer added successfully!', 'success');
+            closeQuickCreditModal();
+            
+            // Reload the customer list
+            setTimeout(() => {
+                loadCreditCustomers();
+                // Try to select the new customer
+                const select = document.getElementById('creditCustomerSelect');
+                if (select) {
+                    for (let i = 0; i < select.options.length; i++) {
+                        if (select.options[i].text.includes(fullName)) {
+                            select.selectedIndex = i;
+                            showCreditCustomerInfo();
+                            break;
+                        }
+                    }
+                }
+            }, 500);
+        } else {
+            showToast('❌ Error: ' + (result.message || 'Unknown error'), 'error');
+        }
+    })
+    .catch(error => {
+        console.error('❌ Fetch error:', error);
+        if (btn) {
+            btn.innerHTML = originalText;
+            btn.disabled = false;
+        }
+        showToast('❌ Error: ' + error.message, 'error');
+    });
+}
+
+// ============================================================
+// 4. AUTO-LOAD CUSTOMERS ON PAGE LOAD & CREDIT SELECT
+// ============================================================
+
+// Load on page start
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 POS Credit System Initializing...');
+    setTimeout(function() {
+        loadCreditCustomers();
+    }, 500);
+});
+
+// Also load when coming back online
+window.addEventListener('online', function() {
+    console.log('🟢 Back online - reloading credit customers');
+    setTimeout(loadCreditCustomers, 1000);
+});
+
+// Override setPaymentMethod to auto-load when credit is selected
+const originalSetPaymentMethod = window.setPaymentMethod;
+if (typeof originalSetPaymentMethod === 'function') {
+    window.setPaymentMethod = function(method) {
+        // Call original function
+        originalSetPaymentMethod(method);
+        
+        // If credit is selected, load customers
+        if (method === 'credit') {
+            console.log('🔄 Credit selected - loading customers...');
+            setTimeout(function() {
+                loadCreditCustomers();
+            }, 300);
+        }
+    };
+}
+
+// ============================================================
+// 5. EXPOSE FUNCTIONS GLOBALLY
+// ============================================================
+
+window.loadCreditCustomers = loadCreditCustomers;
+window.showCreditCustomerInfo = showCreditCustomerInfo;
+window.openQuickCreditModal = openQuickCreditModal;
+window.closeQuickCreditModal = closeQuickCreditModal;
+window.saveQuickCreditCustomer = saveQuickCreditCustomer;
+
+console.log('✅ Credit Customer System loaded!');
+console.log('📋 Functions available:');
+console.log('  - loadCreditCustomers()');
+console.log('  - openQuickCreditModal()');
+console.log('  - showCreditCustomerInfo()');
 
     // 5. PERFORM AUTO SYNC (FIXED - Handles credit orders)
     async function performAutoSync() {
@@ -3361,7 +3725,7 @@
 
         let receiptText = '';
         receiptText += '╔══════════════════════════════════╗\n';
-        receiptText += '║       ACACIAMART POS             ║\n';
+        receiptText += '║       THEPENTAGON POS             ║\n';
         receiptText += '║      📍 RONGAI, Kenya           ║\n';
         receiptText += '║      📞 0717365706               ║\n';
         receiptText += '╠══════════════════════════════════╣\n';
@@ -3431,7 +3795,7 @@
             win.document.write(`
                 <html>
                 <head>
-                    <title>Credit Receipt - ACACIAMART</title>
+                    <title>Credit Receipt - THEPENTAGON</title>
                     <style>
                         * { margin: 0; padding: 0; box-sizing: border-box; }
                         body { font-family: 'Courier New', monospace; padding: 20px; background: white; color: black; max-width: 80mm; margin: 0 auto; }
@@ -3556,138 +3920,377 @@
         }).catch(() => {});
     }
 
-    function loadSalesStats() {
-        if (!navigator.onLine) return;
-        fetch('/admin/api/sales-stats').then(r => r.json()).then(d => {
-            if (d.success) {
-                document.getElementById('todaySales').textContent = 'KSh ' + (d.today_revenue || 0).toLocaleString();
-                document.getElementById('todayOrders').textContent = d.today_orders || 0;
-                document.getElementById('todayReturns').textContent = d.today_returns || 0;
-                document.getElementById('totalCustomers').textContent = d.total_customers || 0;
-                document.getElementById('totalProducts').textContent = d.total_products || 0;
+  // ============================================================
+// FIXED: LOAD SALES STATS - WORKS OFFLINE + ONLINE
+// ============================================================
+
+function loadSalesStats() {
+    console.log('📊 Loading sales stats...');
+    
+    // ============================================================
+    // 1. GET DATA FROM LOCALSTORAGE (ALWAYS WORKS)
+    // ============================================================
+    function getStatsFromLocalStorage() {
+        try {
+            const orders = JSON.parse(localStorage.getItem('pos_orders') || '[]');
+            const today = new Date().toISOString().split('T')[0];
+            
+            let revenue = 0;
+            let orderCount = 0;
+            let returnCount = 0;
+            const customers = new Set();
+            
+            orders.forEach(order => {
+                const orderDate = order.created_at ? order.created_at.split('T')[0] : '';
+                if (orderDate === today) {
+                    const total = parseFloat(order.total) || 0;
+                    if (order.status === 'returned') {
+                        returnCount++;
+                    } else if (order.status !== 'cancelled') {
+                        revenue += total;
+                        orderCount++;
+                    }
+                }
+                const customerName = order.customer_name || '';
+                if (customerName && customerName !== 'Walk-in Customer' && customerName !== '') {
+                    customers.add(customerName);
+                }
+            });
+            
+            return {
+                revenue: revenue,
+                orderCount: orderCount,
+                returnCount: returnCount,
+                customerCount: customers.size || orders.length,
+                productCount: typeof allProducts !== 'undefined' ? allProducts.length : 0
+            };
+        } catch(e) {
+            console.log('⚠️ Error reading localStorage:', e);
+            return { revenue: 0, orderCount: 0, returnCount: 0, customerCount: 0, productCount: 0 };
+        }
+    }
+    
+    // ============================================================
+    // 2. UPDATE DOM WITH STATS
+    // ============================================================
+    function updateStatsDisplay(stats) {
+        const { revenue, orderCount, returnCount, customerCount, productCount } = stats;
+        
+        console.log('💰 Updating stats: Revenue=' + revenue + ', Orders=' + orderCount);
+        
+        // Update stat cards
+        const statCards = document.querySelectorAll('.stat-card');
+        statCards.forEach(card => {
+            const label = card.querySelector('.label');
+            const value = card.querySelector('.value');
+            if (label && value) {
+                const text = label.textContent || '';
+                if (text.includes("Today's Sales")) {
+                    value.textContent = 'KSh ' + revenue.toLocaleString();
+                } else if (text.includes("Today's Orders")) {
+                    value.textContent = orderCount;
+                } else if (text.includes('Returns Today')) {
+                    value.textContent = returnCount;
+                } else if (text.includes('Customers')) {
+                    value.textContent = customerCount;
+                } else if (text.includes('Products')) {
+                    value.textContent = productCount;
+                } else if (text.includes('Cart Items')) {
+                    value.textContent = posCart ? posCart.length : 0;
+                }
             }
-        }).catch(() => {});
-    }
-
-    // ============================================================
-    // CART
-    // ============================================================
-    function addToPOSCart(el) {
-        const card = el.closest ? el.closest('.product-card') : el;
-        if (!card) { showToast('❌ Product not found'); return; }
-        let pid = String(card.dataset.id || '').trim();
-        const name = String(card.dataset.name || 'Product').trim();
-        const price = parseFloat(card.dataset.price) || 0;
-        const stock = parseInt(card.dataset.stock) || 0;
-        const image = String(card.dataset.image || '').trim();
-        const barcode = String(card.dataset.barcode || '').trim();
-        if (!pid || pid === 'product_id_here' || pid === '') {
-            const found = allProducts.find(p => p.name === name);
-            if (found) pid = String(found.id);
-        }
-        if (!pid || price <= 0) { showToast('❌ Invalid product'); return; }
-        if (stock <= 0) { showToast('⚠️ Out of stock!'); return; }
-        const existing = posCart.find(item => item.id === pid);
-        if (existing) {
-            if (existing.quantity < stock) existing.quantity++;
-            else { showToast('⚠️ Not enough stock!'); return; }
-        } else {
-            posCart.push({ id: pid, name, price, image, stock, barcode, quantity: 1 });
-        }
-        updatePOSUI();
-        showToast('✅ Added ' + name + ' (' + stock + ' left)');
-    }
-
-    function updatePOSQuantity(idx, delta) {
-        if (!posCart[idx]) return;
-        const n = posCart[idx].quantity + delta;
-        if (n <= 0) posCart.splice(idx, 1);
-        else if (n <= posCart[idx].stock) posCart[idx].quantity = n;
-        else { showToast('⚠️ Not enough stock!'); return; }
-        updatePOSUI();
-    }
-
-    function removePOSItem(idx) {
-        posCart.splice(idx, 1);
-        updatePOSUI();
-        showToast('🗑️ Removed');
-    }
-
-    function voidLastItem() {
-        if (!posCart.length) { showToast('⚠️ Cart is empty', 'warning'); return; }
-        const removed = posCart.pop();
-        updatePOSUI();
-        showToast('↩️ Voided: ' + removed.name, 'info');
-    }
-
-    function clearCart() {
-        if (posCart.length && !confirm('Clear all items?')) return;
-        posCart = [];
-        discountValue = 0;
-        tipAmount = 0;
-        document.getElementById('discountDisplay').textContent = '0%';
-        document.getElementById('tipDisplay').textContent = 'KSh 0';
-        updatePOSUI();
-        showToast('🔄 Cart cleared');
-    }
-
-    // ============================================================
-    // UPDATE POS UI
-    // ============================================================
-    function updatePOSUI() {
-        const list = document.getElementById('posCartItemsList');
-        const empty = document.getElementById('emptyCartMessage');
-        const subtotalEl = document.getElementById('posSubtotal');
-        const totalEl = document.getElementById('posTotal');
-        const discountEl = document.getElementById('posDiscount');
-        const itemCountEl = document.getElementById('itemCount');
-        const cartStatsEl = document.getElementById('cartStats');
-        const placeBtn = document.getElementById('posPlaceOrderBtn');
-
-        let subtotal = posCart.reduce((s, i) => s + (Number(i.price) || 0) * (Number(i.quantity) || 0), 0);
-        const discountAmt = discountType === 'percentage' ? (subtotal * discountValue / 100) : discountValue;
-        let total = Math.max(0, subtotal - discountAmt + tipAmount);
-
-        if (subtotalEl) subtotalEl.textContent = 'KSh ' + subtotal.toLocaleString();
-        if (discountEl) discountEl.textContent = '-KSh ' + discountAmt.toLocaleString();
-        if (totalEl) totalEl.textContent = 'KSh ' + total.toLocaleString();
-
-        const qty = posCart.reduce((s, i) => s + (Number(i.quantity) || 0), 0);
-        if (itemCountEl) itemCountEl.textContent = qty + ' items';
-        if (cartStatsEl) cartStatsEl.textContent = qty;
-        if (placeBtn) { placeBtn.disabled = !posCart.length; placeBtn.style.opacity = posCart.length ? '1' : '0.5'; }
-        if (empty) empty.style.display = posCart.length ? 'none' : 'block';
-        if (!list) return;
-        if (!posCart.length) { list.innerHTML = ''; return; }
-
-        let html = '';
-        posCart.forEach((item, i) => {
-            const price = Number(item.price) || 0;
-            const q = Number(item.quantity) || 1;
-            const barcode = item.barcode ? '<div class="barcode">' + item.barcode + '</div>' : '';
-            const imgSrc = item.image || '';
-            const imgHtml = imgSrc ? '<img src="' + imgSrc + '" onerror="this.textContent=\'📱\'">' : '📱';
-            html += '<div class="cart-item">' +
-                '<div class="item-img">' + imgHtml + '</div>' +
-                '<div class="item-info">' +
-                '<div class="name">' + (item.name || 'Product') + '</div>' +
-                '<div class="price">KSh ' + price.toLocaleString() + '</div>' +
-                barcode +
-                '<div style="font-size:0.5rem;color:var(--gray-400);">Stock: ' + item.stock + '</div>' +
-                '</div>' +
-                '<div class="controls">' +
-                '<button onclick="updatePOSQuantity(' + i + ', -1)">−</button>' +
-                '<span class="qty">' + q + '</span>' +
-                '<button onclick="updatePOSQuantity(' + i + ', 1)">+</button>' +
-                '<button class="remove" onclick="removePOSItem(' + i + ')">✕</button>' +
-                '</div>' +
-                '</div>';
         });
-        list.innerHTML = html;
+        
+        // Update by ID
+        const idMap = {
+            'todaySales': 'KSh ' + revenue.toLocaleString(),
+            'todayOrders': orderCount,
+            'todayReturns': returnCount,
+            'totalCustomers': customerCount,
+            'totalProducts': productCount,
+            'userTodaySales': 'KSh ' + revenue.toLocaleString(),
+            'userTodayOrders': orderCount,
+            'cartStats': posCart ? posCart.length : 0,
+            'liveRevenue': 'KSh ' + revenue.toLocaleString(),
+            'liveOrders': orderCount,
+            'liveCustomers': customerCount
+        };
+        
+        Object.keys(idMap).forEach(id => {
+            const el = document.getElementById(id);
+            if (el) {
+                el.textContent = idMap[id];
+            }
+        });
+        
+        // Update stat-info elements
+        const statInfos = document.querySelectorAll('.stat-info');
+        statInfos.forEach(info => {
+            const label = info.querySelector('.label');
+            const value = info.querySelector('.value');
+            if (label && value) {
+                const text = label.textContent || '';
+                if (text.includes("Today's Sales")) {
+                    value.textContent = 'KSh ' + revenue.toLocaleString();
+                } else if (text.includes("Today's Orders")) {
+                    value.textContent = orderCount;
+                } else if (text.includes('Returns Today')) {
+                    value.textContent = returnCount;
+                } else if (text.includes('Customers')) {
+                    value.textContent = customerCount;
+                }
+            }
+        });
+        
+        console.log('✅ Stats updated! Today: KSh', revenue.toLocaleString(), 'Orders:', orderCount);
     }
+    
+    // ============================================================
+    // 3. GET STATS AND UPDATE (ALWAYS FROM LOCALSTORAGE FIRST)
+    // ============================================================
+    const localStats = getStatsFromLocalStorage();
+    updateStatsDisplay(localStats);
+    
+    // ============================================================
+    // 4. IF ONLINE, UPDATE FROM API (FOR SYNCED DATA)
+    // ============================================================
+    if (navigator.onLine) {
+        fetch('/admin/api/sales-stats?t=' + Date.now())
+            .then(r => r.json())
+            .then(d => {
+                if (d.success) {
+                    // Use the higher value between API and localStorage
+                    const apiRevenue = d.today_revenue || 0;
+                    const localRevenue = localStats.revenue;
+                    const finalRevenue = Math.max(apiRevenue, localRevenue);
+                    const finalOrders = Math.max(d.today_orders || 0, localStats.orderCount);
+                    
+                    updateStatsDisplay({
+                        revenue: finalRevenue,
+                        orderCount: finalOrders,
+                        returnCount: d.today_returns || localStats.returnCount,
+                        customerCount: d.total_customers || localStats.customerCount,
+                        productCount: d.total_products || localStats.productCount
+                    });
+                    console.log('✅ Stats updated from API');
+                }
+            })
+            .catch(err => {
+                console.log('⚠️ API error, using localStorage data');
+            });
+    } else {
+        console.log('📡 Offline - using localStorage data');
+    }
+}
+   // ============================================================
+// CART - UPDATED WITH FIXES
+// ============================================================
 
+function addToPOSCart(el) {
+    const card = el.closest ? el.closest('.product-card') : el;
+    if (!card) { showToast('❌ Product not found'); return; }
+    
+    let pid = String(card.dataset.id || '').trim();
+    const name = String(card.dataset.name || 'Product').trim();
+    const price = parseFloat(card.dataset.price) || 0;
+    const stock = parseInt(card.dataset.stock) || 0;
+    const image = String(card.dataset.image || '').trim();
+    const barcode = String(card.dataset.barcode || '').trim();
+    
+    // Try to find product by name if ID is missing
+    if (!pid || pid === 'product_id_here' || pid === '') {
+        const found = allProducts.find(p => p.name === name);
+        if (found) pid = String(found.id);
+    }
+    
+    // Validate product
+    if (!pid || price <= 0) { 
+        showToast('❌ Invalid product', 'error'); 
+        return; 
+    }
+    
+    if (stock <= 0) { 
+        showToast('⚠️ Out of stock!', 'warning'); 
+        return; 
+    }
+    
+    // Check if product already in cart
+    const existing = posCart.find(item => item.id === pid);
+    if (existing) {
+        if (existing.quantity < stock) {
+            existing.quantity++;
+            showToast('✅ Added another ' + name + ' (' + existing.quantity + ' total)', 'success');
+        } else {
+            showToast('⚠️ Not enough stock! Only ' + stock + ' left', 'warning');
+            return;
+        }
+    } else {
+        posCart.push({ 
+            id: pid, 
+            name, 
+            price, 
+            image, 
+            stock, 
+            barcode, 
+            quantity: 1 
+        });
+        showToast('✅ Added ' + name + ' (' + stock + ' left)', 'success');
+    }
+    
+    updatePOSUI();
+    updateCartStats();
+}
 
+function updatePOSQuantity(idx, delta) {
+    if (!posCart[idx]) return;
+    
+    const n = posCart[idx].quantity + delta;
+    if (n <= 0) {
+        posCart.splice(idx, 1);
+        showToast('🗑️ Removed item', 'info');
+    } else if (n <= posCart[idx].stock) {
+        posCart[idx].quantity = n;
+    } else {
+        showToast('⚠️ Not enough stock! Only ' + posCart[idx].stock + ' left', 'warning');
+        return;
+    }
+    
+    updatePOSUI();
+    updateCartStats();
+}
 
+function removePOSItem(idx) {
+    if (!posCart[idx]) return;
+    const itemName = posCart[idx].name;
+    posCart.splice(idx, 1);
+    updatePOSUI();
+    updateCartStats();
+    showToast('🗑️ Removed ' + itemName, 'info');
+}
+
+function voidLastItem() {
+    if (!posCart.length) { 
+        showToast('⚠️ Cart is empty', 'warning'); 
+        return; 
+    }
+    const removed = posCart.pop();
+    updatePOSUI();
+    updateCartStats();
+    showToast('↩️ Voided: ' + removed.name, 'info');
+}
+
+function clearCart() {
+    if (posCart.length && !confirm('⚠️ Clear all items from cart?')) return;
+    
+    posCart = [];
+    discountValue = 0;
+    tipAmount = 0;
+    
+    const discountDisplay = document.getElementById('discountDisplay');
+    const tipDisplay = document.getElementById('tipDisplay');
+    if (discountDisplay) discountDisplay.textContent = '0%';
+    if (tipDisplay) tipDisplay.textContent = 'KSh 0';
+    
+    updatePOSUI();
+    updateCartStats();
+    showToast('🔄 Cart cleared', 'info');
+}
+
+// ============================================================
+// CART STATS - UPDATE CART COUNT
+// ============================================================
+
+function updateCartStats() {
+    const cartStatsEl = document.getElementById('cartStats');
+    const itemCountEl = document.getElementById('itemCount');
+    
+    const totalItems = posCart.reduce((sum, item) => sum + (item.quantity || 0), 0);
+    
+    if (cartStatsEl) {
+        cartStatsEl.textContent = totalItems;
+    }
+    
+    if (itemCountEl) {
+        itemCountEl.textContent = totalItems + ' items';
+    }
+}
+
+// ============================================================
+// UPDATE POS UI - IMPROVED
+// ============================================================
+
+function updatePOSUI() {
+    const list = document.getElementById('posCartItemsList');
+    const empty = document.getElementById('emptyCartMessage');
+    const subtotalEl = document.getElementById('posSubtotal');
+    const totalEl = document.getElementById('posTotal');
+    const discountEl = document.getElementById('posDiscount');
+    const placeBtn = document.getElementById('posPlaceOrderBtn');
+    
+    // Calculate totals
+    let subtotal = posCart.reduce((s, i) => s + (Number(i.price) || 0) * (Number(i.quantity) || 0), 0);
+    const discountAmt = discountType === 'percentage' ? (subtotal * discountValue / 100) : discountValue;
+    let total = Math.max(0, subtotal - discountAmt + tipAmount);
+    
+    // Update summary
+    if (subtotalEl) subtotalEl.textContent = 'KSh ' + subtotal.toLocaleString();
+    if (discountEl) discountEl.textContent = '-KSh ' + discountAmt.toLocaleString();
+    if (totalEl) totalEl.textContent = 'KSh ' + total.toLocaleString();
+    
+    // Update cart stats
+    updateCartStats();
+    
+    // Update place order button
+    if (placeBtn) { 
+        placeBtn.disabled = !posCart.length; 
+        placeBtn.style.opacity = posCart.length ? '1' : '0.5'; 
+    }
+    
+    // Show/hide empty message
+    if (empty) empty.style.display = posCart.length ? 'none' : 'block';
+    
+    // Render cart items
+    if (!list) return;
+    if (!posCart.length) { 
+        list.innerHTML = ''; 
+        return; 
+    }
+    
+    let html = '';
+    posCart.forEach((item, i) => {
+        const price = Number(item.price) || 0;
+        const q = Number(item.quantity) || 1;
+        const barcode = item.barcode ? '<div class="barcode">' + item.barcode + '</div>' : '';
+        const imgSrc = item.image || '';
+        const imgHtml = imgSrc ? '<img src="' + imgSrc + '" onerror="this.textContent=\'📱\'">' : '📱';
+        const stock = item.stock || 0;
+        const isLowStock = stock < 10 && stock > 0;
+        const stockColor = isLowStock ? '#dc2626' : stock < 30 ? '#d97706' : '#059669';
+        
+        html += '<div class="cart-item">' +
+            '<div class="item-img">' + imgHtml + '</div>' +
+            '<div class="item-info">' +
+            '<div class="name">' + (item.name || 'Product') + '</div>' +
+            '<div class="price">KSh ' + price.toLocaleString() + '</div>' +
+            barcode +
+            '<div style="font-size:0.5rem;color:var(--gray-400);">Stock: <span style="color:' + stockColor + ';font-weight:600;">' + stock + '</span></div>' +
+            '</div>' +
+            '<div class="controls">' +
+            '<button onclick="updatePOSQuantity(' + i + ', -1)">−</button>' +
+            '<span class="qty">' + q + '</span>' +
+            '<button onclick="updatePOSQuantity(' + i + ', 1)">+</button>' +
+            '<button class="remove" onclick="removePOSItem(' + i + ')">✕</button>' +
+            '</div>' +
+            '</div>';
+    });
+    list.innerHTML = html;
+    
+    // Update whatsapp button visibility if it exists
+    const whatsappBtn = document.getElementById('whatsappCartBtn');
+    if (whatsappBtn) {
+        whatsappBtn.style.display = posCart.length > 0 ? 'flex' : 'none';
+    }
+}
 
 // ============================================================
 // CHANGE CALCULATOR - FIX
@@ -3969,7 +4572,7 @@ console.log('🔍 Type check:', typeof window.calculateChange);
 
         content.textContent =
             '╔══════════════════════════════════╗\n' +
-            '║          ACACIAMART POS          ║\n' +
+            '║          THEPENTAGON POS          ║\n' +
             '║         📍 RONGAI, Kenya        ║\n' +
             '╠══════════════════════════════════╣\n' +
             '║ 📅 ' + date + '                         ║\n' +
@@ -4640,32 +5243,47 @@ console.log('🔍 Type check:', typeof window.calculateChange);
     // INIT
     // ============================================================
     document.addEventListener('DOMContentLoaded', async function() {
-        console.log('✅ POS Pro v12.0 - Credit System Enabled with ' + allProducts.length + ' products');
+    console.log('✅ POS Pro v12.0 - Credit System Enabled with ' + allProducts.length + ' products');
 
-        filteredProducts = allProducts.slice(0, 50);
+    filteredProducts = allProducts.slice(0, 50);
 
-        document.getElementById('posProductGrid').innerHTML =
-            '<div class="search-hint">' +
-            '<span class="icon">🔍</span>' +
-            '<p>Search for products</p>' +
-            '<p style="font-size:0.7rem;color:var(--gray-400);">' + allProducts.length + ' products available</p>' +
-            '<div class="shortcuts">💡 Search by name, category, or barcode</div>' +
-            '</div>';
-        document.getElementById('resultCount').textContent = allProducts.length + ' products available';
+    document.getElementById('posProductGrid').innerHTML =
+        '<div class="search-hint">' +
+        '<span class="icon">🔍</span>' +
+        '<p>Search for products</p>' +
+        '<p style="font-size:0.7rem;color:var(--gray-400);">' + allProducts.length + ' products available</p>' +
+        '<div class="shortcuts">💡 Search by name, category, or barcode</div>' +
+        '</div>';
+    document.getElementById('resultCount').textContent = allProducts.length + ' products available';
 
-        renderProducts();
-        updatePOSUI();
+    renderProducts();
+    updatePOSUI();
+    
+    // ============================================
+    // LOAD STATS AND CREDIT CUSTOMERS
+    // ============================================
+    loadSalesStats();
+    loadUserStats();
+    updateQuickSalesCount();
+    loadOrdersForReturn();
+    
+    // Load credit customers with a delay
+    setTimeout(function() {
+        loadCreditCustomers();
+    }, 500);
+
+    if (navigator.onLine) {
+        await cacheCreditBalances();
+    }
+
+    setTimeout(checkUnsyncedOrdersOnLoad, 2000);
+    
+    // Auto-refresh stats every 30 seconds
+    setInterval(function() {
         loadSalesStats();
-        loadUserStats();
         updateQuickSalesCount();
-        loadOrdersForReturn();
-
-        if (navigator.onLine) {
-            await cacheCreditBalances();
-        }
-
-        setTimeout(checkUnsyncedOrdersOnLoad, 2000);
-    });
+    }, 30000);
+});
 </script>
 
 <!-- ============================================================
@@ -4794,7 +5412,7 @@ function printReceipt() {
     win.document.write(`
         <html>
         <head>
-            <title>Receipt - ACACIAMART</title>
+            <title>Receipt - THEPENTAGON</title>
             <style>
                 * { margin: 0; padding: 0; box-sizing: border-box; }
                 body { font-family: 'Courier New', monospace; padding: 20px; background: white; color: black; max-width: 80mm; margin: 0 auto; }
