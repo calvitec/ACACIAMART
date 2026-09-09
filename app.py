@@ -5,7 +5,7 @@ import traceback
 import sys
 
 print("=" * 60)
-print("🚀 ACACIAMART Starting...")
+print("🚀 THEPENTAGON Starting...")
 print("=" * 60)
 
 # ============================================================
@@ -582,7 +582,7 @@ def handler(request, context):
 
 if __name__ == '__main__':
     print('\n' + '=' * 60)
-    print('📱 PRICE POINT - Premium Electronics Shop')
+    print('🏢 THEPENTAGON - Premium Store')
     print('=' * 60)
     print(f"🌍 Environment: {'Vercel' if Config.IS_VERCEL else 'Local'}")
     print(f"\n📊 Products: {len(load_products())}")
