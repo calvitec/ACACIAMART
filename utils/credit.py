@@ -181,9 +181,110 @@ def update_credit_customer(customer_id, update_data):
         print(f"❌ Error updating credit customer: {e}")
         return {'success': False, 'message': str(e)}
 
+# ============================================================
+# 🔴 UPDATED: DELETE CREDIT CUSTOMER - HARD DELETE
+# ============================================================
+
 def delete_credit_customer(customer_id):
-    """Soft delete a credit customer"""
-    return update_credit_customer(customer_id, {'account_status': 'inactive'})
+    """
+    Delete a credit customer permanently from the database.
+    This will also delete all associated transactions.
+    """
+    try:
+        import traceback
+        
+        customer_id = str(customer_id).strip()
+        print(f"🗑️ delete_credit_customer called for: '{customer_id}'")
+        
+        # First, check if customer exists
+        customer = get_credit_customer_by_id(customer_id)
+        if not customer:
+            return {
+                'success': False,
+                'message': f'Customer not found with ID: {customer_id}'
+            }
+        
+        print(f"👤 Found customer: {customer.get('full_name')}")
+        
+        # Check if customer has balance
+        balance = float(customer.get('current_balance', 0))
+        if balance > 0:
+            return {
+                'success': False,
+                'message': f'Cannot delete customer with balance of KSh {balance:,.2f}. Please clear balance first.'
+            }
+        
+        # ============================================================
+        # STEP 1: Delete all transactions for this customer
+        # ============================================================
+        print(f"📤 Deleting transactions for customer: {customer_id}")
+        
+        # First, get all transaction IDs
+        tx_response = requests.get(
+            f"{Config.SUPABASE_URL}/rest/v1/credit_transactions?customer_id=eq.{customer_id}&select=transaction_id",
+            headers=Config.SUPABASE_HEADERS,
+            timeout=30
+        )
+        
+        if tx_response.status_code == 200:
+            transactions = tx_response.json()
+            print(f"📋 Found {len(transactions)} transactions to delete")
+            
+            # Delete each transaction
+            for tx in transactions:
+                tx_id = tx.get('transaction_id')
+                if tx_id:
+                    delete_tx = requests.delete(
+                        f"{Config.SUPABASE_URL}/rest/v1/credit_transactions?transaction_id=eq.{tx_id}",
+                        headers=Config.SUPABASE_HEADERS,
+                        timeout=30
+                    )
+                    if delete_tx.status_code in [200, 204]:
+                        print(f"✅ Deleted transaction: {tx_id}")
+                    else:
+                        print(f"⚠️ Failed to delete transaction: {tx_id}")
+        else:
+            print(f"⚠️ Could not fetch transactions: {tx_response.status_code}")
+        
+        # ============================================================
+        # STEP 2: Delete the customer
+        # ============================================================
+        print(f"🗑️ Deleting customer: {customer_id}")
+        
+        response = requests.delete(
+            f"{Config.SUPABASE_URL}/rest/v1/credit_customers?customer_id=eq.{customer_id}",
+            headers=Config.SUPABASE_HEADERS,
+            timeout=30
+        )
+        
+        if response.status_code in [200, 204]:
+            print(f"✅ Customer deleted successfully: {customer_id}")
+            
+            # Clear cache
+            try:
+                import utils.data
+                utils.data.orders_cache = []
+                utils.data.products_cache = []
+            except:
+                pass
+            
+            return {
+                'success': True,
+                'message': f'Customer "{customer.get("full_name")}" deleted successfully'
+            }
+        else:
+            print(f"❌ Failed to delete customer: {response.status_code} - {response.text}")
+            return {
+                'success': False,
+                'message': f'Failed to delete customer: {response.status_code}',
+                'error': response.text
+            }
+            
+    except Exception as e:
+        print(f"❌ Error deleting credit customer: {e}")
+        import traceback
+        traceback.print_exc()
+        return {'success': False, 'error': str(e)}
 
 # ============================================================
 # ✅ COMPLETE: CREDIT PURCHASE WITH ORDER CREATION
