@@ -1198,48 +1198,52 @@
     </div>
 
     <!-- Collection Rate Bar -->
-    <div class="glass-card" style="margin-bottom:16px;">
-        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
-            <div>
-                <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Collection Rate</div>
-                <div style="font-size:1.5rem;font-weight:700;" id="creditCollectionRate">
-                    {% if credit_summary.total_purchases|default(0) > 0 %}
-                        {{ ((credit_summary.total_payments|default(0) / credit_summary.total_purchases|default(1)) * 100)|round(1) }}%
-                    {% else %}
-                        0%
-                    {% endif %}
-                </div>
-            </div>
-            <div style="text-align:right;">
-                <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Total Credit Sales</div>
-                <div style="font-weight:700;">KSh {{ credit_summary.total_purchases|default(0)|int }}</div>
-            </div>
-            <div style="text-align:right;">
-                <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Total Payments</div>
-                <div style="font-weight:700;color:var(--success);">KSh {{ credit_summary.total_payments|default(0)|int }}</div>
-            </div>
-            <div style="text-align:right;">
-                <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Profit Margin</div>
-                <div style="font-weight:700;color:var(--primary-light);" id="creditProfitMargin">
-                    {% if credit_summary.total_purchases|default(0) > 0 %}
-                        {{ ((credit_summary.total_profit|default(0) / credit_summary.total_purchases|default(1)) * 100)|round(1) }}%
-                    {% else %}
-                        0%
-                    {% endif %}
-                </div>
+<div class="glass-card" style="margin-bottom:16px;">
+    <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:10px;">
+        <div>
+            <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Collection Rate</div>
+            <div style="font-size:1.5rem;font-weight:700;" id="creditCollectionRate">
+                {% if credit_summary.total_purchases|default(0) > 0 %}
+                    {{ ((credit_summary.total_payments|default(0) / credit_summary.total_purchases) * 100)|round(1) }}%
+                {% else %}
+                    0%
+                {% endif %}
             </div>
         </div>
-        <div style="margin-top:8px;background:var(--bg-input);border-radius:9999px;height:8px;overflow:hidden;">
-            <div style="height:8px;border-radius:9999px;background:var(--primary-gradient);width:{% if credit_summary.total_purchases|default(0) > 0 %}{{ ((credit_summary.total_payments|default(0) / credit_summary.total_purchases|default(1)) * 100)|round(1) }}{% else %}0{% endif %}%;transition:width 0.5s ease;"></div>
+        <div style="text-align:right;">
+            <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Total Credit Sales</div>
+            <div style="font-weight:700;">KSh {{ credit_summary.total_purchases|default(0)|int }}</div>
         </div>
-        <div style="display:flex;justify-content:space-between;font-size:0.5rem;color:var(--text-muted);margin-top:4px;">
-            <span>0%</span>
-            <span style="font-weight:600;color:{% if credit_summary.total_purchases|default(0) > 0 and ((credit_summary.total_payments|default(0) / credit_summary.total_purchases|default(1)) * 100) >= 80 %}var(--success){% elif credit_summary.total_purchases|default(0) > 0 and ((credit_summary.total_payments|default(0) / credit_summary.total_purchases|default(1)) * 100) >= 50 %}var(--warning){% else %}var(--danger){% endif %};">
-                {{ ((credit_summary.total_payments|default(0) / credit_summary.total_purchases|default(1)) * 100)|round(1) }}%
-            </span>
-            <span>100%</span>
+        <div style="text-align:right;">
+            <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Total Payments</div>
+            <div style="font-weight:700;color:var(--success);">KSh {{ credit_summary.total_payments|default(0)|int }}</div>
+        </div>
+        <div style="text-align:right;">
+            <div style="font-size:0.6rem;color:var(--text-muted);text-transform:uppercase;letter-spacing:0.5px;">Profit Margin</div>
+            <div style="font-weight:700;color:var(--primary-light);" id="creditProfitMargin">
+                {% if credit_summary.total_purchases|default(0) > 0 %}
+                    {{ ((credit_summary.total_profit|default(0) / credit_summary.total_purchases) * 100)|round(1) }}%
+                {% else %}
+                    0%
+                {% endif %}
+            </div>
         </div>
     </div>
+    <div style="margin-top:8px;background:var(--bg-input);border-radius:9999px;height:8px;overflow:hidden;">
+        <div style="height:8px;border-radius:9999px;background:var(--primary-gradient);width:{% if credit_summary.total_purchases|default(0) > 0 %}{{ ((credit_summary.total_payments|default(0) / credit_summary.total_purchases) * 100)|round(1) }}{% else %}0{% endif %}%;transition:width 0.5s ease;"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;font-size:0.5rem;color:var(--text-muted);margin-top:4px;">
+        <span>0%</span>
+        <span style="font-weight:600;color:{% if credit_summary.total_purchases|default(0) > 0 and ((credit_summary.total_payments|default(0) / credit_summary.total_purchases) * 100) >= 80 %}var(--success){% elif credit_summary.total_purchases|default(0) > 0 and ((credit_summary.total_payments|default(0) / credit_summary.total_purchases) * 100) >= 50 %}var(--warning){% else %}var(--danger){% endif %};">
+            {% if credit_summary.total_purchases|default(0) > 0 %}
+                {{ ((credit_summary.total_payments|default(0) / credit_summary.total_purchases) * 100)|round(1) }}%
+            {% else %}
+                0%
+            {% endif %}
+        </span>
+        <span>100%</span>
+    </div>
+</div>
 
     <!-- Credit Table -->
     <div class="glass-card" style="padding:0;overflow:hidden;margin-top:16px;">
