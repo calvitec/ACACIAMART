@@ -32,14 +32,23 @@ class Config:
     DATA_FILE = os.path.join(PROJECT_ROOT, 'offline_data.json')
 
     # ============================================================
-    # M-PESA PRODUCTION CONFIGURATION - ACACIA MINIMART
+    # M-PESA PRODUCTION CONFIGURATION - ACACIA MINIMART (TILL)
     # ============================================================
     # ✅ Business Details
     MPESA_BUSINESS_NAME = "Acacia Minimart"
+    
+    # ✅ TILL NUMBER - Used for STK Push (Buy Goods)
     MPESA_TILL_NUMBER = "8454832"
-    MPESA_SHORTCODE = "4671257"
+    MPESA_SHORTCODE = "8454832"              # ← Now same as Till
+    
+    # ✅ PAYBILL (Kept for reference/backup only)
+    MPESA_PAYBILL_BACKUP = "4671257"
+    
     MPESA_USERNAME = "VICHAMINYA"
     MPESA_BUSINESS_PHONE = "254728922614"
+    
+    # ✅ TRANSACTION TYPE - TILL uses Buy Goods
+    MPESA_TRANSACTION_TYPE = "CustomerBuyGoodsOnline"
     
     # ✅ LIVE CREDENTIALS (Production App)
     MPESA_CONSUMER_KEY = os.environ.get('MPESA_CONSUMER_KEY', 'drj3u3o4WAu9OLj5CxgeubDLT0ovutxLB1d7tpP0GfdaDXwU')
@@ -59,11 +68,13 @@ class Config:
     )
 
     print("=" * 60)
-    print("🏪 ACACIA MINIMART - M-PESA PRODUCTION")
+    print("🏪 ACACIA MINIMART - M-PESA PRODUCTION (TILL)")
     print("=" * 60)
     print(f"📱 Business: {MPESA_BUSINESS_NAME}")
+    print(f"📱 Till Number: {MPESA_TILL_NUMBER}")
     print(f"📱 Shortcode: {MPESA_SHORTCODE}")
-    print(f"📱 Till: {MPESA_TILL_NUMBER}")
+    print(f"📱 Transaction Type: {MPESA_TRANSACTION_TYPE}")
+    print(f"📱 Paybill (backup): {MPESA_PAYBILL_BACKUP}")
     print(f"📱 Callback: {MPESA_CALLBACK_URL}")
     print(f"📱 Base URL: {MPESA_BASE_URL}")
     print(f"🔑 Consumer Key: {MPESA_CONSUMER_KEY[:15]}...")
