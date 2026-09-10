@@ -1663,6 +1663,8 @@
             <span class="stat-value" id="userTodaySales">KSh 0</span>
             <span class="stat-label">Orders:</span>
             <span class="stat-value" id="userTodayOrders">0</span>
+            <span class="stat-label">Credit Sales:</span>
+            <span class="stat-value" id="userCreditSales">KSh 0</span>
             <a href="/admin" class="header-btn">📊 Dashboard</a>
             <a href="/logout" class="header-btn logout">🚪 Logout</a>
             <a href="/" target="_blank" class="header-btn">🏪 Store</a>
@@ -1804,6 +1806,16 @@
                     <div style="display:flex;gap:6px;">
                         <select id="creditCustomerSelect" style="flex:1;padding:6px 12px;border:1px solid var(--border-color);border-radius:8px;font-size:0.8rem;background:var(--bg-input);outline:none;color:var(--text-primary);" onchange="showCreditCustomerInfo()">
                             <option value="">-- Select Credit Customer --</option>
+                            {% for customer in credit_customers %}
+                                {% set customer_id = customer.customer_id or customer.id or customer.customerId or '' %}
+                                {% set full_name = customer.full_name or customer.name or customer.customer_name or 'Credit Customer' %}
+                                {% set balance = customer.current_balance if customer.current_balance is not none else customer.balance if customer.balance is not none else 0 %}
+                                {% set limit = customer.credit_limit if customer.credit_limit is not none else customer.limit if customer.limit is not none else 0 %}
+                                {% set status = customer.account_status or customer.status or 'active' %}
+                                {% if status != 'inactive' %}
+                                    <option value="{{ customer_id }}" data-name="{{ full_name }}" data-phone="{{ customer.phone or '' }}" data-email="{{ customer.email or '' }}" data-balance="{{ balance }}" data-limit="{{ limit }}" data-status="{{ status }}">{{ full_name }}{% if balance %} (KSh {{ balance|int|format_number }}){% endif %}</option>
+                                {% endif %}
+                            {% endfor %}
                         </select>
                     </div>
                     <div id="creditCustomerInfo" style="display:none;margin-top:6px;padding:8px 12px;background:var(--bg-card);border-radius:6px;font-size:0.7rem;border:1px solid var(--border-color);">
@@ -2068,6 +2080,7 @@
     // DATA
     // ============================================================
     const allProducts = {{ products | tojson | safe }};
+    const initialCreditCustomers = {{ credit_customers | tojson | safe }} || [];
     let filteredProducts = [];
     let currentCategory = 'all';
     let posCart = [];
@@ -2480,6 +2493,7 @@
                 const cache = {};
                 data.customers.forEach(c => {
                     cache[c.customer_id] = {
+                        customer_id: c.customer_id,
                         name: c.full_name,
                         balance: c.current_balance || 0,
                         limit: c.credit_limit || 0,
@@ -2491,6 +2505,9 @@
                 });
 
                 localStorage.setItem('credit_cache', JSON.stringify(cache));
+                localStorage.setItem('credit_cache_backup', JSON.stringify(cache));
+                localStorage.setItem('credit_customers_cache', JSON.stringify(Object.values(cache)));
+                localStorage.setItem('credit_customers_cache_backup', JSON.stringify(Object.values(cache)));
                 localStorage.setItem('credit_cache_timestamp', Date.now().toString());
                 console.log('✅ Credit balances cached for offline use:', Object.keys(cache).length, 'customers');
             }
@@ -2545,6 +2562,35 @@
 // FIXED: LOAD CREDIT CUSTOMERS - NO DUPLICATES
 // ============================================================
 
+function normalizeCreditCustomers(customers) {
+    if (!Array.isArray(customers)) return [];
+
+    return customers
+        .filter(c => c && typeof c === 'object')
+        .map((customer, index) => {
+            const status = String(customer.status || customer.account_status || 'active').trim().toLowerCase();
+            const customerId = customer.customer_id || customer.id || customer.customerId || `seed-${index}`;
+            const fullName = customer.full_name || customer.name || customer.customer_name || `Credit Customer ${index + 1}`;
+
+            return {
+                ...customer,
+                customer_id: customerId,
+                id: customerId,
+                full_name: fullName,
+                name: fullName,
+                customer_name: fullName,
+                account_status: status || 'active',
+                status: status || 'active',
+                current_balance: Number(customer.current_balance ?? customer.balance ?? 0),
+                balance: Number(customer.balance ?? customer.current_balance ?? 0),
+                credit_limit: Number(customer.credit_limit ?? customer.limit ?? 0),
+                limit: Number(customer.limit ?? customer.credit_limit ?? 0),
+                phone: customer.phone || customer.contact_phone || '',
+                email: customer.email || customer.customer_email || ''
+            };
+        });
+}
+
 function loadCreditCustomers() {
     console.log('🔄 Loading credit customers...');
     
@@ -2554,13 +2600,22 @@ function loadCreditCustomers() {
         return;
     }
 
-    // Clear ALL options properly
-    select.innerHTML = '<option value="">-- Select Credit Customer --</option>';
+    const seededCustomers = normalizeCreditCustomers(initialCreditCustomers);
 
-    // Check if online
+    // Always seed the dropdown first from the page data so it is visible immediately,
+    // even if the browser is offline or the API request fails.
+    if (seededCustomers.length) {
+        console.log('📡 Seeding dropdown from initial POS credit customers');
+        populateCustomerSelect(seededCustomers, select);
+    } else {
+        select.innerHTML = '<option value="">-- Select Credit Customer --</option>';
+    }
+
     if (!navigator.onLine) {
-        console.log('📡 Offline - using cached data');
-        loadCreditCustomersFromCache();
+        console.log('📡 Offline - using seeded data and cached fallback');
+        if (!seededCustomers.length) {
+            loadCreditCustomersFromCache();
+        }
         return;
     }
 
@@ -2617,6 +2672,7 @@ function loadCreditCustomers() {
                 const cache = {};
                 uniqueCustomers.forEach(c => {
                     cache[c.customer_id] = {
+                        customer_id: c.customer_id,
                         name: c.full_name,
                         balance: c.current_balance || 0,
                         limit: c.credit_limit || 0,
@@ -2627,6 +2683,9 @@ function loadCreditCustomers() {
                     };
                 });
                 localStorage.setItem('credit_cache', JSON.stringify(cache));
+                localStorage.setItem('credit_cache_backup', JSON.stringify(cache));
+                localStorage.setItem('credit_customers_cache', JSON.stringify(uniqueCustomers));
+                localStorage.setItem('credit_customers_cache_backup', JSON.stringify(uniqueCustomers));
                 localStorage.setItem('credit_cache_timestamp', Date.now().toString());
 
                 // Populate dropdown with unique customers
@@ -2648,8 +2707,9 @@ function populateCustomerSelect(customers, select) {
     
     // Clear and reset
     select.innerHTML = '<option value="">-- Select Credit Customer --</option>';
-    
-    const activeCustomers = customers.filter(c => c.account_status === 'active');
+
+    const normalizedCustomers = normalizeCreditCustomers(customers);
+    const activeCustomers = normalizedCustomers.filter(c => String(c.account_status || c.status || 'active').toLowerCase() !== 'inactive');
     console.log('📋 Adding', activeCustomers.length, 'active customers to dropdown');
     
     // Track added names to prevent duplicates
@@ -2685,6 +2745,61 @@ function populateCustomerSelect(customers, select) {
     console.log('✅ Dropdown now has', select.options.length - 1, 'unique customers');
 }
 
+function getCachedCreditCustomerEntries() {
+    const keys = [
+        'credit_customers_cache',
+        'credit_customers_cache_backup',
+        'credit_cache',
+        'credit_cache_backup'
+    ];
+
+    for (const key of keys) {
+        try {
+            const rawValue = localStorage.getItem(key);
+            if (!rawValue) continue;
+
+            const parsed = JSON.parse(rawValue);
+            if (Array.isArray(parsed) && parsed.length) {
+                return parsed;
+            }
+
+            if (parsed && typeof parsed === 'object') {
+                const values = Object.values(parsed);
+                if (values.length) {
+                    return values;
+                }
+            }
+        } catch(e) {
+            console.log('⚠️ Failed to parse cache key:', key, e.message);
+        }
+    }
+
+    try {
+        const localOrders = JSON.parse(localStorage.getItem('pos_orders') || '[]');
+        const creditOrders = localOrders.filter(o => o.is_credit === true && (o.customer_id || o.customer_name));
+
+        if (creditOrders.length) {
+            return creditOrders.map((order, index) => ({
+                customer_id: order.customer_id || `local-order-${index}`,
+                full_name: order.customer_name || `Credit Customer ${index + 1}`,
+                name: order.customer_name || `Credit Customer ${index + 1}`,
+                phone: order.customer_phone || '',
+                email: order.customer_email || '',
+                current_balance: order.balance_after || order.balance_before || 0,
+                credit_limit: order.credit_limit || 0,
+                account_status: 'active',
+                balance: order.balance_after || order.balance_before || 0,
+                limit: order.credit_limit || 0,
+                status: 'active'
+            }));
+        }
+    } catch(e) {
+        console.log('⚠️ Failed to build customer list from local orders:', e.message);
+    }
+
+    return [];
+}
+
 function loadCreditCustomersFromCache() {
     const select = document.getElementById('creditCustomerSelect');
     if (!select) return;
@@ -2692,38 +2807,62 @@ function loadCreditCustomersFromCache() {
     select.innerHTML = '<option value="">-- Select Credit Customer --</option>';
 
     try {
-        const cache = JSON.parse(localStorage.getItem('credit_cache') || '{}');
-        const customers = Object.values(cache);
+        const cacheEntries = getCachedCreditCustomerEntries();
+        const seededEntries = (Array.isArray(initialCreditCustomers) ? initialCreditCustomers : []);
+        const customerSources = cacheEntries.length ? cacheEntries : seededEntries;
 
-        if (customers.length === 0) {
-            console.log('📡 No cached credit customers');
-            showToast('📡 Offline - No cached credit customers', 'warning');
-            return;
+        if (customerSources.length && !localStorage.getItem('credit_customers_cache')) {
+            localStorage.setItem('credit_customers_cache', JSON.stringify(customerSources));
+            localStorage.setItem('credit_customers_cache_backup', JSON.stringify(customerSources));
+            localStorage.setItem('credit_cache', JSON.stringify(customerSources));
+            localStorage.setItem('credit_cache_backup', JSON.stringify(customerSources));
+            localStorage.setItem('credit_cache_timestamp', Date.now().toString());
         }
 
-        // Track added names to prevent duplicates
+        const customers = customerSources.map((customer, index) => {
+            const normalized = customer && typeof customer === 'object' ? customer : {};
+            const status = (normalized.status || normalized.account_status || 'active').toString().trim().toLowerCase();
+            const customer_id = normalized.customer_id || normalized.id || normalized.customerId || `cached-${index}`;
+            const name = normalized.name || normalized.full_name || normalized.customer_name || 'Credit Customer';
+
+            return {
+                ...normalized,
+                customer_id,
+                name,
+                status,
+                balance: Number(normalized.balance ?? normalized.current_balance ?? 0),
+                limit: Number(normalized.limit ?? normalized.credit_limit ?? 0),
+                phone: normalized.phone || '',
+                email: normalized.email || '',
+                account_status: status
+            };
+        });
+
         const addedNames = new Set();
-        const activeCustomers = customers.filter(c => c.status === 'active');
-        
+        const activeCustomers = customers.filter(c => {
+            const status = String(c.status || c.account_status || 'active').toLowerCase();
+            return status !== 'inactive';
+        });
+
         activeCustomers.forEach(c => {
-            const name = c.name;
-            
+            const name = c.name || 'Credit Customer';
+
             if (addedNames.has(name)) {
                 console.log('⚠️ Skipping duplicate name from cache:', name);
                 return;
             }
             addedNames.add(name);
-            
+
             const opt = document.createElement('option');
             opt.value = c.customer_id;
             const balance = c.balance || 0;
             const balanceText = balance > 0 ? ' (KSh ' + balance.toLocaleString() + ')' : '';
-            opt.textContent = c.name + balanceText;
+            opt.textContent = name + balanceText;
             opt.dataset.balance = balance;
             opt.dataset.limit = c.limit || 0;
             opt.dataset.phone = c.phone || '';
             opt.dataset.email = c.email || '';
-            opt.dataset.name = c.name || '';
+            opt.dataset.name = name;
             opt.dataset.status = c.status || 'active';
             opt.dataset.customer_id = c.customer_id;
             select.appendChild(opt);
@@ -2731,8 +2870,12 @@ function loadCreditCustomersFromCache() {
 
         const cacheTime = localStorage.getItem('credit_cache_timestamp');
         const timeStr = cacheTime ? new Date(parseInt(cacheTime)).toLocaleString() : 'Unknown';
-        showToast(`📡 Offline - ${activeCustomers.length} cached customers (from ${timeStr})`, 'warning');
-        console.log('✅ Loaded', activeCustomers.length, 'cached credit customers');
+        if (activeCustomers.length > 0) {
+            showToast(`📡 Offline - ${activeCustomers.length} cached customers (from ${timeStr})`, 'warning');
+            console.log('✅ Loaded', activeCustomers.length, 'cached credit customers');
+        } else {
+            console.log('📡 No cached credit customers found for offline mode');
+        }
     } catch(e) {
         console.error('❌ Error loading cached customers:', e);
     }
@@ -3047,16 +3190,28 @@ console.log('  - showCreditCustomerInfo()');
                         });
 
                         const result = await res.json();
+                        const isQueuedResult = result && (
+                            result.queued === true ||
+                            result.status === 'queued' ||
+                            result.sync_status === 'queued' ||
+                            (typeof result.message === 'string' && result.message.toLowerCase().includes('saved offline'))
+                        );
 
-                        if (result.success) {
+                        if (result.success && !isQueuedResult) {
                             order.synced = true;
                             order.synced_at = new Date().toISOString();
                             updateCachedBalance(order.customer_id, result.balance_after);
                             synced++;
                             console.log('✅ Synced credit order:', order.order_id);
                         } else {
-                            failed++;
-                            console.log('❌ Failed credit order:', order.order_id, result.message);
+                            order.synced = false;
+                            order.synced_at = null;
+                            if (result.success && isQueuedResult) {
+                                console.log('📡 Credit order remains queued for sync:', order.order_id);
+                            } else {
+                                failed++;
+                                console.log('❌ Failed credit order:', order.order_id, result.message);
+                            }
                         }
                     } else {
                         let url = '/admin/pos/place-order';
@@ -3117,6 +3272,15 @@ console.log('  - showCreditCustomerInfo()');
 
             const remaining = orders.filter(o => o.synced === false);
             updateUnsyncedCount(remaining.length);
+
+            if (synced > 0 || failed > 0) {
+                try {
+                    await cacheCreditBalances();
+                    loadCreditCustomers();
+                } catch(e) {
+                    console.log('⚠️ Could not refresh customer cache after sync:', e.message);
+                }
+            }
 
             console.log('================================');
             console.log('📊 SYNC COMPLETE:');
@@ -3560,6 +3724,70 @@ console.log('  - showCreditCustomerInfo()');
             btn.disabled = false;
 
             if (result.success) {
+                if (result.queued === true || (result.message || '').toLowerCase().includes('saved offline')) {
+                    console.log('📡 Credit order queued offline:', result.order_id || 'unknown');
+
+                    const cache = JSON.parse(localStorage.getItem('credit_cache') || '{}');
+                    const cachedCustomer = cache[data.customer_id] || {};
+                    const pendingBalance = (cachedCustomer.balance || 0) + total;
+                    const pendingCreditLimit = cachedCustomer.limit || 0;
+
+                    const queuedOrder = {
+                        order_id: result.order_id || 'CREDIT-OFFLINE-' + Date.now(),
+                        items: itemsWithIds,
+                        subtotal: total,
+                        shipping: 0,
+                        total: total,
+                        customer_name: customerName || 'Credit Customer',
+                        customer_email: 'credit@example.com',
+                        customer_phone: '',
+                        payment_method: 'credit',
+                        tip_amount: 0,
+                        notes: notes + ' (Offline credit order)',
+                        created_at: new Date().toISOString(),
+                        synced: false,
+                        synced_at: null,
+                        status: 'confirmed',
+                        is_credit: true,
+                        customer_id: data.customer_id,
+                        staff_name: data.staff_name,
+                        balance_before: cachedCustomer.balance || 0,
+                        balance_after: pendingBalance,
+                        credit_limit: pendingCreditLimit
+                    };
+
+                    try {
+                        const localOrders = JSON.parse(localStorage.getItem('pos_orders') || '[]');
+                        localOrders.push(queuedOrder);
+                        localStorage.setItem('pos_orders', JSON.stringify(localOrders));
+                    } catch(e) {}
+
+                    saveOrderToIndexedDB(queuedOrder).catch(() => {});
+                    updateUnsyncedCount();
+                    showToast('📡 Credit purchase saved offline. It will sync when online.', 'warning');
+                    showCreditReceipt(customerName, total, {
+                        order_id: queuedOrder.order_id,
+                        transaction_id: queuedOrder.order_id,
+                        balance_after: pendingBalance,
+                        credit_limit: pendingCreditLimit,
+                        queued: true
+                    });
+
+                    posCart = [];
+                    discountValue = 0;
+                    tipAmount = 0;
+                    document.getElementById('discountDisplay').textContent = '0%';
+                    document.getElementById('tipDisplay').textContent = 'KSh 0';
+                    if (document.getElementById('orderNotes')) document.getElementById('orderNotes').value = '';
+
+                    updatePOSUI();
+                    renderProducts();
+                    loadCreditCustomers();
+                    updateQuickSalesCount();
+                    loadSalesStats();
+                    return;
+                }
+
                 showToast('✅ Credit purchase recorded! New balance: KSh ' + (result.balance_after || 0).toLocaleString(), 'success');
                 showCreditReceipt(customerName, total, result);
 
@@ -3585,7 +3813,7 @@ console.log('  - showCreditCustomerInfo()');
                     }
                 });
                 renderProducts();
-                showToast('❌ Credit purchase failed: ' + (result.message || 'Unknown error'), 'error');
+                showToast('❌ Credit purchase failed: ' + (result.message || result.error || 'Unknown error'), 'error');
             }
         })
         .catch(err => {
@@ -3642,12 +3870,17 @@ console.log('  - showCreditCustomerInfo()');
                     console.log('✅ Credit order also saved to localStorage');
                 } catch(e) {}
 
-                updateCachedBalance(data.customer_id, newBalance);
-
                 console.log('✅ Credit order saved offline!');
                 console.log('💰 Balance before:', currentBalance, 'After:', newBalance);
 
-                showToast('📡 Credit order saved offline! Balance: KSh ' + newBalance.toLocaleString(), 'warning');
+                showToast('📡 Credit order saved offline! Will sync when online.', 'warning');
+                showCreditReceipt(customerName, total, {
+                    order_id: orderToSave.order_id,
+                    transaction_id: orderToSave.order_id,
+                    balance_after: newBalance,
+                    credit_limit: creditLimit,
+                    queued: true
+                });
                 updateUnsyncedCount();
 
                 posCart = [];
@@ -3673,10 +3906,15 @@ console.log('  - showCreditCustomerInfo()');
                     localOrders.push(orderToSave);
                     localStorage.setItem('pos_orders', JSON.stringify(localOrders));
 
-                    updateCachedBalance(data.customer_id, newBalance);
-
                     console.log('✅ Credit order saved to localStorage only!');
-                    showToast('📡 Credit order saved offline! Balance: KSh ' + newBalance.toLocaleString(), 'warning');
+                    showToast('📡 Credit order saved offline! Will sync when online.', 'warning');
+                    showCreditReceipt(customerName, total, {
+                        order_id: orderToSave.order_id,
+                        transaction_id: orderToSave.order_id,
+                        balance_after: newBalance,
+                        credit_limit: creditLimit,
+                        queued: true
+                    });
                     updateUnsyncedCount();
 
                     posCart = [];
@@ -3722,6 +3960,7 @@ console.log('  - showCreditCustomerInfo()');
 
         const date = new Date().toLocaleString();
         const orderId = result.transaction_id || result.order_id || 'CREDIT-' + Date.now();
+        const isQueued = result && (result.queued === true || result.status === 'queued' || result.sync_status === 'queued');
 
         let receiptText = '';
         receiptText += '╔══════════════════════════════════╗\n';
@@ -3732,6 +3971,9 @@ console.log('  - showCreditCustomerInfo()');
         receiptText += '║ 📅 ' + date.padEnd(32) + '║\n';
         receiptText += '║ 💳 CREDIT PURCHASE               ║\n';
         receiptText += '║ 📋 #' + orderId.padEnd(32) + '║\n';
+        if (isQueued) {
+            receiptText += '║ 📡 STATUS: QUEUED FOR SYNC      ║\n';
+        }
         receiptText += '║ 👤 ' + (customerName || 'Customer').padEnd(32) + '║\n';
         receiptText += '╠══════════════════════════════════╣\n';
         receiptText += '║ Total:      KSh ' + total.toLocaleString().padStart(12) + ' ║\n';
@@ -3938,17 +4180,24 @@ function loadSalesStats() {
             let revenue = 0;
             let orderCount = 0;
             let returnCount = 0;
+            let creditSales = 0;
             const customers = new Set();
             
             orders.forEach(order => {
                 const orderDate = order.created_at ? order.created_at.split('T')[0] : '';
                 if (orderDate === today) {
                     const total = parseFloat(order.total) || 0;
+                    const isCreditOrder = order.is_credit === true || order.source === 'credit';
+
                     if (order.status === 'returned') {
                         returnCount++;
                     } else if (order.status !== 'cancelled') {
                         revenue += total;
                         orderCount++;
+
+                        if (isCreditOrder) {
+                            creditSales += total;
+                        }
                     }
                 }
                 const customerName = order.customer_name || '';
@@ -3961,6 +4210,7 @@ function loadSalesStats() {
                 revenue: revenue,
                 orderCount: orderCount,
                 returnCount: returnCount,
+                creditSales: creditSales,
                 customerCount: customers.size || orders.length,
                 productCount: typeof allProducts !== 'undefined' ? allProducts.length : 0
             };
@@ -3974,7 +4224,7 @@ function loadSalesStats() {
     // 2. UPDATE DOM WITH STATS
     // ============================================================
     function updateStatsDisplay(stats) {
-        const { revenue, orderCount, returnCount, customerCount, productCount } = stats;
+        const { revenue, orderCount, returnCount, creditSales, customerCount, productCount } = stats;
         
         console.log('💰 Updating stats: Revenue=' + revenue + ', Orders=' + orderCount);
         
@@ -4010,6 +4260,7 @@ function loadSalesStats() {
             'totalProducts': productCount,
             'userTodaySales': 'KSh ' + revenue.toLocaleString(),
             'userTodayOrders': orderCount,
+            'userCreditSales': 'KSh ' + (creditSales || 0).toLocaleString(),
             'cartStats': posCart ? posCart.length : 0,
             'liveRevenue': 'KSh ' + revenue.toLocaleString(),
             'liveOrders': orderCount,
@@ -4046,40 +4297,38 @@ function loadSalesStats() {
     }
     
     // ============================================================
-    // 3. GET STATS AND UPDATE (ALWAYS FROM LOCALSTORAGE FIRST)
+    // 3. GET STATS AND UPDATE
     // ============================================================
     const localStats = getStatsFromLocalStorage();
-    updateStatsDisplay(localStats);
-    
+
     // ============================================================
-    // 4. IF ONLINE, UPDATE FROM API (FOR SYNCED DATA)
+    // 4. IF ONLINE, USE LIVE API DATA; IF OFFLINE, FALL BACK TO LOCAL STORAGE
     // ============================================================
     if (navigator.onLine) {
         fetch('/admin/api/sales-stats?t=' + Date.now())
             .then(r => r.json())
             .then(d => {
                 if (d.success) {
-                    // Use the higher value between API and localStorage
-                    const apiRevenue = d.today_revenue || 0;
-                    const localRevenue = localStats.revenue;
-                    const finalRevenue = Math.max(apiRevenue, localRevenue);
-                    const finalOrders = Math.max(d.today_orders || 0, localStats.orderCount);
-                    
                     updateStatsDisplay({
-                        revenue: finalRevenue,
-                        orderCount: finalOrders,
-                        returnCount: d.today_returns || localStats.returnCount,
-                        customerCount: d.total_customers || localStats.customerCount,
+                        revenue: d.today_revenue || 0,
+                        orderCount: d.today_orders || 0,
+                        returnCount: d.today_returns || 0,
+                        creditSales: d.credit_sales || 0,
+                        customerCount: d.total_customers || 0,
                         productCount: d.total_products || localStats.productCount
                     });
                     console.log('✅ Stats updated from API');
+                } else {
+                    updateStatsDisplay(localStats);
                 }
             })
             .catch(err => {
                 console.log('⚠️ API error, using localStorage data');
+                updateStatsDisplay(localStats);
             });
     } else {
         console.log('📡 Offline - using localStorage data');
+        updateStatsDisplay(localStats);
     }
 }
    // ============================================================
