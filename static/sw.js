@@ -3,12 +3,13 @@
 // SERVICE WORKER - PricePoint POS (Complete Offline Solution)
 // ============================================================
 
-const CACHE_NAME = 'pricepoint-v12';
+const CACHE_NAME = 'pricepoint-v14';
 const OFFLINE_URL = '/offline.html';
 
 // ===== PAGES TO CACHE =====
 const urlsToCache = [
     '/static/pwa-entry.html',
+    '/pos',
     '/offline.html',
     '/manifest.json',
     '/static/icons/icon-72.png',
@@ -103,16 +104,12 @@ self.addEventListener('fetch', event => {
         return;
     }
     
-    // ===== CRITICAL: Serve pwa-entry.html from cache FIRST =====
-    if (url.pathname === '/static/pwa-entry.html' || url.pathname === '/pwa-entry.html') {
+    // ===== CRITICAL: Keep the POS shell available for offline reloads =====
+    if (url.pathname === '/static/pwa-entry.html' || url.pathname === '/pwa-entry.html' || url.pathname === '/pos') {
         event.respondWith(
             caches.match(request)
-                .then(response => {
-                    if (response) {
-                        console.log('[SW] ✅ Serving cached pwa-entry.html');
-                        return response;
-                    }
-                    return fetch(request)
+                .then(cached => {
+                    const fetchPromise = fetch(request, { cache: 'reload' })
                         .then(networkResponse => {
                             if (networkResponse && networkResponse.status === 200) {
                                 const cloned = networkResponse.clone();
@@ -122,9 +119,16 @@ self.addEventListener('fetch', event => {
                             }
                             return networkResponse;
                         })
-                        .catch(() => {
+                        .catch(async () => {
+                            const fallback = await caches.match(request);
+                            if (fallback) {
+                                console.log('[SW] ✅ Serving cached POS shell:', url.pathname);
+                                return fallback;
+                            }
                             return caches.match(OFFLINE_URL);
                         });
+
+                    return cached || fetchPromise;
                 })
         );
         return;
@@ -135,7 +139,7 @@ self.addEventListener('fetch', event => {
     
     if (isHTML) {
         event.respondWith(
-            fetch(request)
+            fetch(request, { cache: 'reload' })
                 .then(response => {
                     if (response && response.status === 200) {
                         const cloned = response.clone();
