@@ -31,12 +31,10 @@ shop_bp = Blueprint('shop', __name__)
 def send_whatsapp_notification(order_data, customer_name, order_id, total):
     """Send order notification via WhatsApp"""
     try:
-        # Format the order items for WhatsApp
         items_text = ""
         for item in order_data.get('items', []):
             items_text += f"  • {item.get('name')} x{item.get('quantity')} = KSh {item.get('total', 0):,.2f}\n"
         
-        # Get revenue breakdown from order_data
         net_revenue = order_data.get('net_revenue', 0)
         shipping = order_data.get('shipping', 0)
         tax = order_data.get('tax', 0)
@@ -44,7 +42,6 @@ def send_whatsapp_notification(order_data, customer_name, order_id, total):
         subtotal = order_data.get('subtotal', 0)
         total_charged = order_data.get('total_charged', total)
         
-        # Create the WhatsApp message with clear breakdown
         message = f"""
 🛍️ *NEW ORDER ALERT!*
 
@@ -75,18 +72,14 @@ def send_whatsapp_notification(order_data, customer_name, order_id, total):
 ✅ *Thank you for your order!*
         """.strip()
         
-        # Encode the message for URL
         encoded_message = urllib.parse.quote(message)
         
-        # ============================================================
-        # WHATSAPP NUMBER (YOUR STORE NUMBER)
-        # ============================================================
-        WHATSAPP_PHONE = "254745793237"  # ← CHANGE THIS TO YOUR NUMBER
+        # ✅ WhatsApp number from config
+        WHATSAPP_PHONE = Config.MPESA_BUSINESS_PHONE
         
-        # Create WhatsApp API URL
         whatsapp_url = f"https://api.whatsapp.com/send?phone={WHATSAPP_PHONE}&text={encoded_message}"
         
-        print(f"📱 WhatsApp notification generated")
+        print(f"📱 WhatsApp notification generated for {WHATSAPP_PHONE}")
         
         return {
             'success': True,
@@ -107,48 +100,59 @@ def send_whatsapp_notification(order_data, customer_name, order_id, total):
 # ============================================================
 
 def calculate_revenue_breakdown(subtotal, shipping, discount=0, tax_rate=0.16):
-    """
-    Calculate correct revenue breakdown
-    Revenue = product sales ONLY (excluding shipping)
-    Returns: dict with revenue and shipping separated
-    """
-    net_revenue = subtotal - discount  # ✅ Revenue (products only)
-    tax = subtotal * tax_rate          # Tax on products
-    total_charged = net_revenue + tax + shipping  # What customer pays
+    """Calculate correct revenue breakdown"""
+    net_revenue = subtotal - discount
+    tax = subtotal * tax_rate
+    total_charged = net_revenue + tax + shipping
     
     return {
-        'net_revenue': net_revenue,      # ✅ For revenue reports
+        'net_revenue': net_revenue,
         'tax': tax,
-        'shipping_collected': shipping,  # 🚚 What customer paid
-        'total_charged': total_charged,  # Grand total
+        'shipping_collected': shipping,
+        'total_charged': total_charged,
         'revenue_breakdown': {
             'products': subtotal,
             'discounts': discount,
             'tax': tax,
-            'shipping': shipping  # 🚚 Separate from revenue
+            'shipping': shipping
         }
     }
 
 
 # ============================================================
-# M-PESA HELPER FUNCTIONS
+# M-PESA HELPER FUNCTIONS - PRODUCTION
 # ============================================================
 
 def get_mpesa_access_token():
-    """Get M-Pesa access token"""
+    """Get M-Pesa access token - PRODUCTION"""
     consumer_key = Config.MPESA_CONSUMER_KEY
     consumer_secret = Config.MPESA_CONSUMER_SECRET
     
-    url = "https://sandbox.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials"
+    # ✅ PRODUCTION URL
+    url = Config.MPESA_AUTH_URL
     
     try:
-        response = requests.get(url, auth=(consumer_key, consumer_secret), timeout=30)
+        print(f"🔑 Getting M-Pesa token from {url}")
+        
+        response = requests.get(
+            url,
+            auth=(consumer_key, consumer_secret),
+            timeout=30,
+            headers={'Accept': 'application/json'}
+        )
+        
         if response.status_code == 200:
-            return response.json().get('access_token')
-        return None
+            token = response.json().get('access_token')
+            print(f"✅ M-Pesa token obtained")
+            return token
+        else:
+            print(f"❌ Token failed: {response.status_code} - {response.text}")
+            return None
+            
     except Exception as e:
         print(f"❌ M-Pesa token error: {e}")
         return None
+
 
 def generate_mpesa_password():
     """Generate password for STK Push"""
@@ -157,11 +161,9 @@ def generate_mpesa_password():
     password = base64.b64encode(password_str.encode()).decode('utf-8')
     return password, timestamp
 
+
 def mpesa_stk_push(phone_number, amount, order_id):
-    """
-    Initiate M-Pesa STK Push
-    Returns: (success, checkout_request_id, message)
-    """
+    """Initiate M-Pesa STK Push - PRODUCTION"""
     # Format phone number
     phone_number = phone_number.strip()
     if phone_number.startswith('0'):
@@ -200,8 +202,11 @@ def mpesa_stk_push(phone_number, amount, order_id):
     }
     
     try:
+        print(f"📤 Sending STK Push to {phone_number} for KSh {amount}")
+        
+        # ✅ PRODUCTION URL
         response = requests.post(
-            'https://sandbox.safaricom.co.ke/mpesa/stkpush/v1/processrequest',
+            Config.MPESA_STK_PUSH_URL,
             headers=headers,
             json=payload,
             timeout=30
@@ -219,8 +224,9 @@ def mpesa_stk_push(phone_number, amount, order_id):
         print(f"❌ M-Pesa error: {e}")
         return False, None, str(e)
 
+
 def mpesa_query_status(checkout_request_id):
-    """Query STK Push status"""
+    """Query STK Push status - PRODUCTION"""
     access_token = get_mpesa_access_token()
     if not access_token:
         return None, "Failed to authenticate"
@@ -240,8 +246,9 @@ def mpesa_query_status(checkout_request_id):
     }
     
     try:
+        # ✅ PRODUCTION URL
         response = requests.post(
-            'https://sandbox.safaricom.co.ke/mpesa/stkpushquery/v1/query',
+            Config.MPESA_QUERY_URL,
             headers=headers,
             json=payload,
             timeout=30
@@ -255,7 +262,7 @@ def mpesa_query_status(checkout_request_id):
 
 
 # ============================================================
-# CATEGORY ICONS - FULL LIST FOR GENERAL STORE
+# CATEGORY ICONS
 # ============================================================
 CATEGORY_ICONS = {
     'All': 'fa-th-large',
@@ -329,13 +336,9 @@ CATEGORY_ICONS = {
 }
 
 def get_category_icon(category):
-    """Get Font Awesome icon for a category"""
     return CATEGORY_ICONS.get(category, 'fa-tag')
 
 
-# ============================================================
-# HELPER: CLEAN PRODUCTS - Fix None values for Vercel
-# ============================================================
 def clean_products(products):
     """Clean products to ensure no None values"""
     if not products:
@@ -372,9 +375,6 @@ def clean_products(products):
     return cleaned
 
 
-# ============================================================
-# BUILD CATEGORIES WITH COUNTS
-# ============================================================
 def build_categories(products_list):
     """Build categories dictionary with counts and icons"""
     categories = {}
@@ -668,9 +668,6 @@ def remove_from_cart(item_id):
         return jsonify({'success': False, 'message': str(exc)}), 500
 
 
-# ============================================================
-# CHECKOUT ROUTE - UPDATED WITH ORDER ID AND M-PESA
-# ============================================================
 @shop_bp.route('/checkout')
 def checkout_page():
     try:
@@ -723,13 +720,8 @@ def checkout_page():
                     total_items += quantity
                     break
 
-        # ✅ Generate order ID for tracking
         order_id = f'ORD-{datetime.now().strftime("%Y%m%d%H%M%S")}'
-        
-        # ✅ Calculate shipping (default 0 for now)
         shipping = 0
-        
-        # ✅ Total amount
         total = subtotal + shipping
 
         return render_template('checkout.html', 
@@ -738,7 +730,7 @@ def checkout_page():
             total=total,
             shipping=shipping,
             total_items=total_items,
-            order_id=order_id,  # ✅ Pass to template
+            order_id=order_id,
             mpesa_enabled=True
         )
     except Exception as exc:
@@ -748,12 +740,12 @@ def checkout_page():
 
 
 # ============================================================
-# M-PESA ROUTES
+# M-PESA ROUTES - PRODUCTION
 # ============================================================
 
 @shop_bp.route('/mpesa/initiate', methods=['POST'])
 def mpesa_initiate():
-    """Initiate M-Pesa payment"""
+    """Initiate M-Pesa payment - PRODUCTION"""
     try:
         data = request.get_json()
         phone = data.get('phone', '')
@@ -766,11 +758,9 @@ def mpesa_initiate():
         if amount <= 0:
             return jsonify({'success': False, 'message': 'Invalid amount'})
         
-        # Initiate STK Push
         success, checkout_id, message = mpesa_stk_push(phone, amount, order_id)
         
         if success:
-            # Store checkout ID in session for verification
             session['mpesa_checkout_id'] = checkout_id
             session['mpesa_order_id'] = order_id
             
@@ -790,7 +780,7 @@ def mpesa_initiate():
 
 @shop_bp.route('/mpesa/status', methods=['POST'])
 def mpesa_status():
-    """Check M-Pesa payment status"""
+    """Check M-Pesa payment status - PRODUCTION"""
     try:
         data = request.get_json()
         checkout_id = data.get('checkout_request_id')
@@ -808,7 +798,6 @@ def mpesa_status():
             result_desc = result.get('ResultDesc', 'Unknown')
             
             if result_code == '0':
-                # Payment successful
                 return jsonify({
                     'success': True,
                     'status': 'completed',
@@ -816,7 +805,6 @@ def mpesa_status():
                     'data': result
                 })
             elif result_code == '1037':
-                # Pending
                 return jsonify({
                     'success': True,
                     'status': 'pending',
@@ -838,7 +826,7 @@ def mpesa_status():
 
 @shop_bp.route('/mpesa/callback', methods=['POST'])
 def mpesa_callback():
-    """M-Pesa callback endpoint"""
+    """M-Pesa callback endpoint - PRODUCTION"""
     try:
         data = request.get_json()
         print(f"📱 M-Pesa Callback received: {data}")
@@ -852,7 +840,6 @@ def mpesa_callback():
         checkout_request_id = stk_callback.get('CheckoutRequestID', '')
         
         if result_code == '0':
-            # Payment successful
             metadata = stk_callback.get('CallbackMetadata', {})
             items = metadata.get('Item', [])
             
@@ -876,8 +863,6 @@ def mpesa_callback():
             print(f"   Receipt: {mpesa_receipt}")
             print(f"   Phone: {phone}")
             
-            # Update order status here if you have the order stored
-            
         else:
             print(f"❌ Payment failed: {result_desc}")
         
@@ -889,8 +874,9 @@ def mpesa_callback():
 
 
 # ============================================================
-# ✅ COMPLETE PLACE ORDER - Saves to DB AND sends WhatsApp
+# PLACE ORDER
 # ============================================================
+
 @shop_bp.route('/place-order', methods=['POST'])
 def place_order():
     try:
@@ -907,21 +893,18 @@ def place_order():
         print(f"📋 Data received: {data}")
         print("=" * 60)
 
-        # ===== GET CUSTOMER DATA =====
         customer_name = data.get('customer_name') or data.get('name') or 'Web Customer'
         customer_email = data.get('customer_email') or data.get('email') or 'web@example.com'
         customer_phone = data.get('customer_phone') or data.get('phone') or 'N/A'
         customer_address = data.get('customer_address') or data.get('address') or 'Online Order'
 
-        # Get values from frontend
         shipping = float(data.get('shipping', 0) or 0)
         subtotal = float(data.get('subtotal', 0) or 0)
         discount = float(data.get('discount', 0) or 0)
-        tax_rate = 0.16  # 16% VAT
+        tax_rate = 0.16
         payment_method = data.get('payment_method', 'cash')
         order_id = data.get('order_id', f'ORD-{datetime.now().strftime("%Y%m%d%H%M%S")}')
 
-        # If subtotal not sent, calculate from cart
         if subtotal == 0:
             products = load_products()
             products = clean_products(products)
@@ -937,9 +920,6 @@ def place_order():
                             subtotal += float(bundle.get('price', 0) or 0) * int(quantity)
                             break
 
-        # ============================================================
-        # ✅ CORRECT REVENUE CALCULATION
-        # ============================================================
         net_revenue = subtotal - discount
         tax = subtotal * tax_rate
         total_charged = net_revenue + tax + shipping
@@ -950,13 +930,12 @@ def place_order():
         print(f"📍 Address: {customer_address}")
         print(f"📦 Subtotal: {subtotal}")
         print(f"💰 Discount: {discount}")
-        print(f"📊 Net Revenue: {net_revenue} ✅")
-        print(f"🚚 Shipping: {shipping} (separate)")
+        print(f"📊 Net Revenue: {net_revenue}")
+        print(f"🚚 Shipping: {shipping}")
         print(f"💳 Total Charged: {total_charged}")
         print(f"💳 Payment: {payment_method}")
         print("=" * 60)
 
-        # ===== BUILD ORDER ITEMS =====
         products = load_products()
         products = clean_products(products)
         bundles = load_bundles()
@@ -1005,9 +984,6 @@ def place_order():
         if not order_items:
             return jsonify({'success': False, 'message': 'No valid items in cart'}), 400
 
-        # ============================================================
-        # Handle estimated_delivery properly
-        # ============================================================
         estimated_delivery = data.get('estimated_delivery', '')
         
         if estimated_delivery and isinstance(estimated_delivery, str):
@@ -1025,33 +1001,20 @@ def place_order():
             except:
                 estimated_delivery = (datetime.utcnow() + timedelta(days=3)).isoformat()
 
-        # ============================================================
-        # ✅ ORDER DATA WITH REVENUE SEPARATED FROM SHIPPING
-        # ============================================================
         order_data = {
             'order_id': str(order_id),
             'items': order_items,
-            
-            # 📊 REVENUE FIELDS (for your reports)
             'subtotal': float(subtotal),
             'discount': float(discount),
             'tax': float(tax),
             'net_revenue': float(net_revenue),
-            
-            # 🚚 SHIPPING (tracked separately - NOT revenue)
             'shipping': float(shipping),
             'shipping_cost': float(data.get('shipping_cost', 0) or 0),
-            
-            # 💰 WHAT CUSTOMER PAYS
             'total_charged': float(total_charged),
-            
-            # Status & metadata
             'status': str(data.get('status', 'pending')),
             'source': str(data.get('source', 'web')),
             'payment_method': str(payment_method),
             'created_at': datetime.utcnow().isoformat(),
-            
-            # Customer info
             'customer_name': str(customer_name),
             'customer_email': str(customer_email),
             'customer_phone': str(customer_phone),
@@ -1062,24 +1025,15 @@ def place_order():
                 'phone': str(customer_phone),
                 'address': str(customer_address),
             },
-            
-            # Delivery info
             'estimated_delivery': estimated_delivery,
             'delivery_notes': str(data.get('delivery_notes', '')),
         }
 
-        # Add location if provided
         if data.get('location'):
             order_data['location'] = data.get('location')
 
         print(f"🔥 SAVING ORDER: {order_id}")
-        print(f"📊 Net Revenue: {net_revenue} (products only) ✅")
-        print(f"🚚 Shipping: {shipping} (separate)")
-        print(f"💳 Total Charged: {total_charged}")
 
-        # ============================================================
-        # SAVE TO SUPABASE
-        # ============================================================
         try:
             response = requests.post(
                 f"{Config.SUPABASE_URL}/rest/v1/orders",
@@ -1093,28 +1047,20 @@ def place_order():
             )
 
             print(f"📥 Supabase response status: {response.status_code}")
-            print(f"📥 Supabase response body: {response.text[:500]}")
 
             if response.status_code in [200, 201, 204]:
                 print(f"✅ Order saved: {order_id}")
                 session['cart'] = {}
                 session.modified = True
 
-                # Clear cache
                 import utils.data
                 utils.data.orders_cache = []
 
-                # ============================================================
-                # ✅ SEND WHATSAPP NOTIFICATION WITH REVENUE BREAKDOWN
-                # ============================================================
                 whatsapp_result = send_whatsapp_notification(order_data, customer_name, order_id, total_charged)
                 
                 whatsapp_url = None
                 if whatsapp_result.get('success'):
                     whatsapp_url = whatsapp_result.get('whatsapp_url')
-                    print("✅ WhatsApp notification generated")
-                else:
-                    print(f"⚠️ WhatsApp notification error: {whatsapp_result.get('error')}")
 
                 return jsonify({
                     'success': True,
@@ -1127,21 +1073,17 @@ def place_order():
                     'whatsapp_url': whatsapp_url,
                 })
             else:
-                print(f"❌ Supabase error: {response.status_code}")
-                print(f"❌ Response: {response.text}")
                 return jsonify({
                     'success': False,
-                    'message': f'Database error: {response.status_code} - {response.text[:200]}'
+                    'message': f'Database error: {response.status_code}'
                 }), 500
 
         except requests.exceptions.Timeout:
-            print("❌ Request timeout")
             return jsonify({
                 'success': False,
                 'message': 'Request timeout. Please try again.'
             }), 500
         except requests.exceptions.RequestException as e:
-            print(f"❌ Request error: {e}")
             return jsonify({
                 'success': False,
                 'message': f'Network error: {str(e)}'
