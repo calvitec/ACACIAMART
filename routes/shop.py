@@ -91,7 +91,7 @@ def send_whatsapp_notification(order_data, customer_name, order_id, total):
 
 
 # ============================================================
-# M-PESA HELPER FUNCTIONS - PRODUCTION
+# M-PESA HELPER FUNCTIONS - PRODUCTION (TILL)
 # ============================================================
 
 def get_mpesa_access_token():
@@ -121,10 +121,17 @@ def get_mpesa_access_token():
         return None
 
 
+def get_mpesa_shortcode():
+    """Get the correct shortcode for Till (Buy Goods)"""
+    # ✅ Till number for STK Push
+    return getattr(Config, 'MPESA_TILL_NUMBER', Config.MPESA_SHORTCODE)
+
+
 def generate_mpesa_password():
-    """Generate password for STK Push"""
+    """Generate password for STK Push - uses TILL"""
+    shortcode = get_mpesa_shortcode()
     timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
-    password_str = Config.MPESA_SHORTCODE + Config.MPESA_PASSKEY + timestamp
+    password_str = shortcode + Config.MPESA_PASSKEY + timestamp
     password = base64.b64encode(password_str.encode()).decode('utf-8')
     return password, timestamp
 
@@ -153,7 +160,7 @@ def format_phone_number(phone):
 
 
 def mpesa_stk_push(phone_number, amount, order_id):
-    """Initiate M-Pesa STK Push - PRODUCTION"""
+    """Initiate M-Pesa STK Push - TILL (Buy Goods)"""
     
     formatted_phone = format_phone_number(phone_number)
     
@@ -170,6 +177,7 @@ def mpesa_stk_push(phone_number, amount, order_id):
         return False, None, "Failed to authenticate with M-Pesa. Check credentials."
     
     password, timestamp = generate_mpesa_password()
+    shortcode = get_mpesa_shortcode()
     
     headers = {
         'Authorization': f'Bearer {access_token}',
@@ -178,21 +186,24 @@ def mpesa_stk_push(phone_number, amount, order_id):
     
     amount_int = int(float(amount))
     
+    # ✅ TILL PAYLOAD - CustomerBuyGoodsOnline, NO AccountReference
     payload = {
-        'BusinessShortCode': Config.MPESA_SHORTCODE,
+        'BusinessShortCode': shortcode,
         'Password': password,
         'Timestamp': timestamp,
-        'TransactionType': 'CustomerPayBillOnline',
+        'TransactionType': 'CustomerBuyGoodsOnline',   # ✅ TILL
         'Amount': amount_int,
         'PartyA': formatted_phone,
-        'PartyB': Config.MPESA_SHORTCODE,
+        'PartyB': shortcode,                            # ✅ Till number
         'PhoneNumber': formatted_phone,
         'CallBackURL': Config.MPESA_CALLBACK_URL,
-        'AccountReference': str(order_id)[:12],
         'TransactionDesc': f'Payment for order {order_id}'[:50]
+        # ✅ NO AccountReference for Till
     }
     
-    print(f"📤 STK Push to {formatted_phone} for KSh {amount_int}")
+    print(f"📤 STK Push (TILL) to {formatted_phone} for KSh {amount_int}")
+    print(f"   BusinessShortCode: {shortcode}")
+    print(f"   TransactionType: CustomerBuyGoodsOnline")
     
     try:
         response = requests.post(
@@ -218,12 +229,13 @@ def mpesa_stk_push(phone_number, amount, order_id):
 
 
 def mpesa_query_status(checkout_request_id):
-    """Query STK Push status - PRODUCTION"""
+    """Query STK Push status - uses TILL"""
     access_token = get_mpesa_access_token()
     if not access_token:
         return None, "Failed to authenticate"
     
     password, timestamp = generate_mpesa_password()
+    shortcode = get_mpesa_shortcode()
     
     headers = {
         'Authorization': f'Bearer {access_token}',
@@ -231,7 +243,7 @@ def mpesa_query_status(checkout_request_id):
     }
     
     payload = {
-        'BusinessShortCode': Config.MPESA_SHORTCODE,
+        'BusinessShortCode': shortcode,
         'Password': password,
         'Timestamp': timestamp,
         'CheckoutRequestID': checkout_request_id
@@ -656,7 +668,7 @@ def checkout_page():
 
 @shop_bp.route('/mpesa/initiate', methods=['POST'])
 def mpesa_initiate():
-    """Initiate M-Pesa payment"""
+    """Initiate M-Pesa payment - TILL"""
     try:
         data = request.get_json()
         phone = data.get('phone', '')
@@ -664,7 +676,7 @@ def mpesa_initiate():
         order_id = data.get('order_id', f'ORD-{datetime.now().strftime("%Y%m%d%H%M%S")}')
         
         print(f"\n{'='*60}")
-        print(f"📱 M-PESA INITIATE | Phone: {phone} | Amount: {amount}")
+        print(f"📱 M-PESA INITIATE (TILL) | Phone: {phone} | Amount: {amount}")
         print(f"{'='*60}")
         
         if not phone:
@@ -816,7 +828,7 @@ def mpesa_callback():
 
 @shop_bp.route('/place-order', methods=['POST'])
 def place_order():
-    """Place M-Pesa or Cash order - saves to admin"""
+    """Place M-Pesa order - saves to admin"""
     try:
         cart = get_cart()
         if not cart:
@@ -827,7 +839,7 @@ def place_order():
             return jsonify({'success': False, 'message': 'No data received'}), 400
 
         print("=" * 60)
-        print("📦 PLACE ORDER")
+        print("📦 PLACE ORDER (M-PESA)")
         print("=" * 60)
 
         customer_name = data.get('customer_name') or data.get('name') or 'Web Customer'
@@ -839,7 +851,7 @@ def place_order():
         subtotal = float(data.get('subtotal', 0) or 0)
         discount = float(data.get('discount', 0) or 0)
         tax_rate = 0.16
-        payment_method = data.get('payment_method', 'cash')
+        payment_method = data.get('payment_method', 'mpesa')
         order_id = data.get('order_id', f'ORD-{datetime.now().strftime("%Y%m%d%H%M%S")}')
 
         if subtotal == 0:
@@ -1214,13 +1226,16 @@ def mpesa_test_auth():
     """Test M-Pesa authentication"""
     try:
         token = get_mpesa_access_token()
+        shortcode = get_mpesa_shortcode()
         if token:
             return jsonify({
                 'success': True,
                 'message': 'Authentication works!',
                 'token_preview': token[:30] + '...',
                 'auth_url': Config.MPESA_AUTH_URL,
-                'shortcode': Config.MPESA_SHORTCODE
+                'shortcode': shortcode,
+                'transaction_type': 'CustomerBuyGoodsOnline',
+                'till_number': Config.MPESA_TILL_NUMBER
             })
         else:
             return jsonify({
