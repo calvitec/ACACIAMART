@@ -73,8 +73,6 @@ def send_whatsapp_notification(order_data, customer_name, order_id, total):
         """.strip()
         
         encoded_message = urllib.parse.quote(message)
-        
-        # ✅ WhatsApp number from config
         WHATSAPP_PHONE = Config.MPESA_BUSINESS_PHONE
         
         whatsapp_url = f"https://api.whatsapp.com/send?phone={WHATSAPP_PHONE}&text={encoded_message}"
@@ -127,8 +125,6 @@ def get_mpesa_access_token():
     """Get M-Pesa access token - PRODUCTION"""
     consumer_key = Config.MPESA_CONSUMER_KEY
     consumer_secret = Config.MPESA_CONSUMER_SECRET
-    
-    # ✅ PRODUCTION URL
     url = Config.MPESA_AUTH_URL
     
     try:
@@ -164,7 +160,6 @@ def generate_mpesa_password():
 
 def mpesa_stk_push(phone_number, amount, order_id):
     """Initiate M-Pesa STK Push - PRODUCTION"""
-    # Format phone number
     phone_number = phone_number.strip()
     if phone_number.startswith('0'):
         phone_number = '254' + phone_number[1:]
@@ -204,7 +199,6 @@ def mpesa_stk_push(phone_number, amount, order_id):
     try:
         print(f"📤 Sending STK Push to {phone_number} for KSh {amount}")
         
-        # ✅ PRODUCTION URL
         response = requests.post(
             Config.MPESA_STK_PUSH_URL,
             headers=headers,
@@ -226,7 +220,7 @@ def mpesa_stk_push(phone_number, amount, order_id):
 
 
 def mpesa_query_status(checkout_request_id):
-    """Query STK Push status - PRODUCTION"""
+    """Query STK Push status - PRODUCTION with proper handling"""
     access_token = get_mpesa_access_token()
     if not access_token:
         return None, "Failed to authenticate"
@@ -246,7 +240,6 @@ def mpesa_query_status(checkout_request_id):
     }
     
     try:
-        # ✅ PRODUCTION URL
         response = requests.post(
             Config.MPESA_QUERY_URL,
             headers=headers,
@@ -255,9 +248,11 @@ def mpesa_query_status(checkout_request_id):
         )
         
         result = response.json()
+        print(f"📱 Query response: {result}")
         return result, None
         
     except Exception as e:
+        print(f"❌ Query error: {e}")
         return None, str(e)
 
 
@@ -349,28 +344,17 @@ def clean_products(products):
         if not p:
             continue
         clean = dict(p)
-        if clean.get('stock') is None:
-            clean['stock'] = 0
-        if clean.get('price') is None:
-            clean['price'] = 0
-        if clean.get('name') is None:
-            clean['name'] = 'Unnamed Product'
-        if clean.get('category') is None:
-            clean['category'] = 'Uncategorized'
-        if clean.get('image') is None:
-            clean['image'] = ''
-        if clean.get('description') is None:
-            clean['description'] = ''
-        if clean.get('badge') is None:
-            clean['badge'] = ''
-        if clean.get('cost_price') is None:
-            clean['cost_price'] = 0
-        if clean.get('rating') is None:
-            clean['rating'] = 4.0
-        if clean.get('reviews') is None:
-            clean['reviews'] = 0
-        if clean.get('barcode') is None:
-            clean['barcode'] = ''
+        if clean.get('stock') is None: clean['stock'] = 0
+        if clean.get('price') is None: clean['price'] = 0
+        if clean.get('name') is None: clean['name'] = 'Unnamed Product'
+        if clean.get('category') is None: clean['category'] = 'Uncategorized'
+        if clean.get('image') is None: clean['image'] = ''
+        if clean.get('description') is None: clean['description'] = ''
+        if clean.get('badge') is None: clean['badge'] = ''
+        if clean.get('cost_price') is None: clean['cost_price'] = 0
+        if clean.get('rating') is None: clean['rating'] = 4.0
+        if clean.get('reviews') is None: clean['reviews'] = 0
+        if clean.get('barcode') is None: clean['barcode'] = ''
         cleaned.append(clean)
     return cleaned
 
@@ -421,11 +405,7 @@ def index():
     categories = build_categories(products_list)
 
     all_categories = {
-        'All': {
-            'name': 'All',
-            'icon': 'fa-th-large',
-            'count': len(products_list)
-        }
+        'All': {'name': 'All', 'icon': 'fa-th-large', 'count': len(products_list)}
     }
     all_categories.update(categories)
 
@@ -454,11 +434,7 @@ def category_page(category_name):
     
     categories = build_categories(products)
     all_categories = {
-        'All': {
-            'name': 'All',
-            'icon': 'fa-th-large',
-            'count': len(products)
-        }
+        'All': {'name': 'All', 'icon': 'fa-th-large', 'count': len(products)}
     }
     all_categories.update(categories)
     
@@ -740,7 +716,7 @@ def checkout_page():
 
 
 # ============================================================
-# M-PESA ROUTES - PRODUCTION
+# M-PESA ROUTES - PRODUCTION (FIXED STATUS HANDLING)
 # ============================================================
 
 @shop_bp.route('/mpesa/initiate', methods=['POST'])
@@ -780,7 +756,7 @@ def mpesa_initiate():
 
 @shop_bp.route('/mpesa/status', methods=['POST'])
 def mpesa_status():
-    """Check M-Pesa payment status - PRODUCTION"""
+    """Check M-Pesa payment status - FIXED with proper result code handling"""
     try:
         data = request.get_json()
         checkout_id = data.get('checkout_request_id')
@@ -794,9 +770,12 @@ def mpesa_status():
             return jsonify({'success': False, 'message': error})
         
         if result:
-            result_code = result.get('ResultCode', '1')
+            result_code = str(result.get('ResultCode', ''))
             result_desc = result.get('ResultDesc', 'Unknown')
             
+            print(f"📱 Status: code={result_code}, desc={result_desc}")
+            
+            # ✅ SUCCESS
             if result_code == '0':
                 return jsonify({
                     'success': True,
@@ -804,17 +783,61 @@ def mpesa_status():
                     'message': 'Payment successful!',
                     'data': result
                 })
-            elif result_code == '1037':
+            
+            # ✅ PENDING - user hasn't entered PIN yet or processing
+            elif result_code in ['1037', '1032', '1001', '4999', '429', '500']:
                 return jsonify({
                     'success': True,
                     'status': 'pending',
-                    'message': 'Waiting for customer confirmation...'
+                    'message': 'Waiting for customer confirmation...',
+                    'data': result
                 })
-            else:
+            
+            # ✅ EXPLICIT FAILURES - user can retry
+            elif result_code == '1032':  # Cancelled by user
                 return jsonify({
                     'success': True,
                     'status': 'failed',
-                    'message': result_desc
+                    'message': 'Request cancelled by user',
+                    'data': result
+                })
+            elif result_code == '1':  # Insufficient funds
+                return jsonify({
+                    'success': True,
+                    'status': 'failed',
+                    'message': 'Insufficient M-Pesa balance',
+                    'data': result
+                })
+            elif result_code == '2001':  # Wrong PIN
+                return jsonify({
+                    'success': True,
+                    'status': 'failed',
+                    'message': 'Wrong M-Pesa PIN entered',
+                    'data': result
+                })
+            elif result_code == '17':  # System busy
+                return jsonify({
+                    'success': True,
+                    'status': 'pending',
+                    'message': 'System busy - please wait...',
+                    'data': result
+                })
+            elif result_code == '1019':  # Transaction expired
+                return jsonify({
+                    'success': True,
+                    'status': 'failed',
+                    'message': 'Transaction expired - please retry',
+                    'data': result
+                })
+            
+            # ✅ UNKNOWN CODE - treat as pending, NOT failed
+            else:
+                print(f"⚠️ Unknown M-Pesa code: {result_code} - {result_desc}")
+                return jsonify({
+                    'success': True,
+                    'status': 'pending',
+                    'message': f'Processing ({result_code})...',
+                    'data': result
                 })
         
         return jsonify({'success': False, 'message': 'No response from M-Pesa'})
@@ -850,12 +873,9 @@ def mpesa_callback():
             for item in items:
                 name = item.get('Name')
                 value = item.get('Value')
-                if name == 'Amount':
-                    amount = value
-                elif name == 'MpesaReceiptNumber':
-                    mpesa_receipt = value
-                elif name == 'PhoneNumber':
-                    phone = value
+                if name == 'Amount': amount = value
+                elif name == 'MpesaReceiptNumber': mpesa_receipt = value
+                elif name == 'PhoneNumber': phone = value
             
             print(f"✅ Payment confirmed:")
             print(f"   Checkout ID: {checkout_request_id}")
@@ -890,7 +910,6 @@ def place_order():
 
         print("=" * 60)
         print("📦 PLACE ORDER REQUEST")
-        print(f"📋 Data received: {data}")
         print("=" * 60)
 
         customer_name = data.get('customer_name') or data.get('name') or 'Web Customer'
@@ -923,18 +942,6 @@ def place_order():
         net_revenue = subtotal - discount
         tax = subtotal * tax_rate
         total_charged = net_revenue + tax + shipping
-
-        print(f"👤 Customer: {customer_name}")
-        print(f"📧 Email: {customer_email}")
-        print(f"📱 Phone: {customer_phone}")
-        print(f"📍 Address: {customer_address}")
-        print(f"📦 Subtotal: {subtotal}")
-        print(f"💰 Discount: {discount}")
-        print(f"📊 Net Revenue: {net_revenue}")
-        print(f"🚚 Shipping: {shipping}")
-        print(f"💳 Total Charged: {total_charged}")
-        print(f"💳 Payment: {payment_method}")
-        print("=" * 60)
 
         products = load_products()
         products = clean_products(products)
@@ -985,7 +992,6 @@ def place_order():
             return jsonify({'success': False, 'message': 'No valid items in cart'}), 400
 
         estimated_delivery = data.get('estimated_delivery', '')
-        
         if estimated_delivery and isinstance(estimated_delivery, str):
             try:
                 if '-' in estimated_delivery and not estimated_delivery.lower().startswith('4-5'):
@@ -1032,8 +1038,6 @@ def place_order():
         if data.get('location'):
             order_data['location'] = data.get('location')
 
-        print(f"🔥 SAVING ORDER: {order_id}")
-
         try:
             response = requests.post(
                 f"{Config.SUPABASE_URL}/rest/v1/orders",
@@ -1046,10 +1050,7 @@ def place_order():
                 timeout=15,
             )
 
-            print(f"📥 Supabase response status: {response.status_code}")
-
             if response.status_code in [200, 201, 204]:
-                print(f"✅ Order saved: {order_id}")
                 session['cart'] = {}
                 session.modified = True
 
@@ -1057,10 +1058,7 @@ def place_order():
                 utils.data.orders_cache = []
 
                 whatsapp_result = send_whatsapp_notification(order_data, customer_name, order_id, total_charged)
-                
-                whatsapp_url = None
-                if whatsapp_result.get('success'):
-                    whatsapp_url = whatsapp_result.get('whatsapp_url')
+                whatsapp_url = whatsapp_result.get('whatsapp_url') if whatsapp_result.get('success') else None
 
                 return jsonify({
                     'success': True,
@@ -1079,15 +1077,9 @@ def place_order():
                 }), 500
 
         except requests.exceptions.Timeout:
-            return jsonify({
-                'success': False,
-                'message': 'Request timeout. Please try again.'
-            }), 500
+            return jsonify({'success': False, 'message': 'Request timeout. Please try again.'}), 500
         except requests.exceptions.RequestException as e:
-            return jsonify({
-                'success': False,
-                'message': f'Network error: {str(e)}'
-            }), 500
+            return jsonify({'success': False, 'message': f'Network error: {str(e)}'}), 500
 
     except Exception as exc:
         print(f'Error placing order: {exc}')
@@ -1114,11 +1106,7 @@ def api_categories():
     categories = build_categories(products)
     
     all_categories = {
-        'All': {
-            'name': 'All',
-            'icon': 'fa-th-large',
-            'count': len(products)
-        }
+        'All': {'name': 'All', 'icon': 'fa-th-large', 'count': len(products)}
     }
     all_categories.update(categories)
     
