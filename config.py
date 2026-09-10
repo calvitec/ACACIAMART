@@ -19,12 +19,8 @@ class Config:
     MAX_CONTENT_LENGTH = 5 * 1024 * 1024
 
     # ===== SUPABASE CONFIGURATION =====
-    # ✅ OLD WORKING DATABASE
     SUPABASE_URL = os.environ.get('NEXT_PUBLIC_SUPABASE_URL', 'https://haqqknmerdnfvwmsnath.supabase.co')
     SUPABASE_KEY = os.environ.get('NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY', 'sb_publishable_fKWHaWSF-h5O8raSZzWMKA_udQTGyAA')
-    
-    print(f"🔑 Using Supabase URL: {SUPABASE_URL}")
-    print(f"🔑 Using Supabase key: {SUPABASE_KEY[:30]}...")
     
     SUPABASE_HEADERS = {
         'apikey': SUPABASE_KEY,
@@ -36,21 +32,39 @@ class Config:
     DATA_FILE = os.path.join(PROJECT_ROOT, 'offline_data.json')
 
     # ============================================================
-    # M-PESA CONFIGURATION (Sandbox)
+    # M-PESA PRODUCTION CONFIGURATION
     # ============================================================
-    # ✅ USE ENVIRONMENT VARIABLES FOR PRODUCTION!
-    MPESA_CONSUMER_KEY = os.environ.get('MPESA_CONSUMER_KEY', 'EwweXrZdaoB6Tgs8J9ROVe8lDL0OEIFml0rZDWzVTvG319D1')
-    MPESA_CONSUMER_SECRET = os.environ.get('MPESA_CONSUMER_SECRET', 'QjhDN1Kablkw9NolMZDmIQ8ybS5gEcBdFg1iLGRqYlUzMczkVGzIAN8jsX9R5iL7')
-    MPESA_PASSKEY = os.environ.get('MPESA_PASSKEY', 'bfb279f9aa9bdbcf158e97dd71a467cd2e0c893059b10f78e6b72ada1ed2c919')
-    MPESA_SHORTCODE = os.environ.get('MPESA_SHORTCODE', '174379')
+    # ✅ Your Business Details
+    MPESA_BUSINESS_NAME = "Acacia Minimart"
+    MPESA_TILL_NUMBER = "8454832"
+    MPESA_SHORTCODE = "4671257"
+    MPESA_USERNAME = "VICHAMINYA"
+    MPESA_BUSINESS_PHONE = "254728922614"
     
-    # ⚠️ IMPORTANT: Change this to your actual domain for production
-    # For local testing, use ngrok or your local IP
-    MPESA_CALLBACK_URL = os.environ.get('MPESA_CALLBACK_URL', 'https://your-domain.com/mpesa/callback')
+    # ✅ LIVE CREDENTIALS
+    # ⚠️ UPDATE THESE after completing Daraja Go Live
+    MPESA_CONSUMER_KEY = os.environ.get('MPESA_CONSUMER_KEY', 'YOUR_LIVE_CONSUMER_KEY')
+    MPESA_CONSUMER_SECRET = os.environ.get('MPESA_CONSUMER_SECRET', 'YOUR_LIVE_CONSUMER_SECRET')
+    MPESA_PASSKEY = os.environ.get('MPESA_PASSKEY', 'YOUR_LIVE_PASSKEY')
     
-    # For local testing with ngrok:
-    # MPESA_CALLBACK_URL = os.environ.get('MPESA_CALLBACK_URL', 'https://your-ngrok-url.ngrok.io/mpesa/callback')
+    # ✅ PRODUCTION ENDPOINTS
+    MPESA_BASE_URL = 'https://api.safaricom.co.ke'
+    MPESA_AUTH_URL = 'https://api.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials'
+    MPESA_STK_PUSH_URL = 'https://api.safaricom.co.ke/mpesa/stkpush/v1/processrequest'
+    MPESA_QUERY_URL = 'https://api.safaricom.co.ke/mpesa/stkpushquery/v1/query'
     
-    print(f"📱 M-Pesa configured:")
-    print(f"   Shortcode: {MPESA_SHORTCODE}")
-    print(f"   Callback URL: {MPESA_CALLBACK_URL}")
+    # ✅ CALLBACK URL - Must be HTTPS
+    MPESA_CALLBACK_URL = os.environ.get(
+        'MPESA_CALLBACK_URL', 
+        'https://acaciamart.shop/mpesa/callback'
+    )
+
+    print("=" * 60)
+    print("🏪 ACACIA MINIMART - M-PESA PRODUCTION")
+    print("=" * 60)
+    print(f"📱 Business: {MPESA_BUSINESS_NAME}")
+    print(f"📱 Shortcode: {MPESA_SHORTCODE}")
+    print(f"📱 Till: {MPESA_TILL_NUMBER}")
+    print(f"📱 Callback: {MPESA_CALLBACK_URL}")
+    print(f"📱 Base URL: {MPESA_BASE_URL}")
+    print("=" * 60)
