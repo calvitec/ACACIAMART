@@ -110,7 +110,7 @@ def get_mpesa_access_token():
         
         if response.status_code == 200:
             token = response.json().get('access_token')
-            print(f"✅ M-Pesa token obtained: {token[:20]}...")
+            print(f"✅ M-Pesa token obtained")
             return token
         else:
             print(f"❌ Token failed: {response.status_code} - {response.text}")
@@ -134,10 +134,8 @@ def format_phone_number(phone):
     if not phone:
         return None
     
-    # Remove all non-numeric characters
     cleaned = re.sub(r'\D', '', str(phone))
     
-    # Handle different formats
     if cleaned.startswith('254') and len(cleaned) == 12:
         return cleaned
     elif cleaned.startswith('0') and len(cleaned) == 10:
@@ -155,19 +153,17 @@ def format_phone_number(phone):
 
 
 def mpesa_stk_push(phone_number, amount, order_id):
-    """Initiate M-Pesa STK Push - PRODUCTION with proper validation"""
+    """Initiate M-Pesa STK Push - PRODUCTION"""
     
-    # ✅ VALIDATE PHONE FORMAT
     formatted_phone = format_phone_number(phone_number)
     
     if not formatted_phone:
         print(f"❌ Invalid phone: {phone_number}")
-        return False, None, f"Invalid phone number: {phone_number}. Use format 0712345678"
+        return False, None, f"Invalid phone number: {phone_number}. Use 0712345678"
     
     print(f"📱 Phone input: {phone_number} → Formatted: {formatted_phone}")
     
     if len(formatted_phone) != 12 or not formatted_phone.startswith('254'):
-        print(f"❌ Phone must be 12 digits starting with 254")
         return False, None, "Phone number must be 12 digits (e.g., 254712345678)"
     
     access_token = get_mpesa_access_token()
@@ -181,7 +177,6 @@ def mpesa_stk_push(phone_number, amount, order_id):
         'Content-Type': 'application/json'
     }
     
-    # ✅ Convert amount to integer (Safaricom requires whole numbers)
     amount_int = int(float(amount))
     
     payload = {
@@ -203,7 +198,6 @@ def mpesa_stk_push(phone_number, amount, order_id):
     print(f"   Amount: {payload['Amount']}")
     print(f"   PhoneNumber: {payload['PhoneNumber']}")
     print(f"   CallBackURL: {payload['CallBackURL']}")
-    print(f"   AccountReference: {payload['AccountReference']}")
     
     try:
         response = requests.post(
@@ -214,22 +208,17 @@ def mpesa_stk_push(phone_number, amount, order_id):
         )
         
         result = response.json()
-        print(f"📱 M-Pesa STK Response:")
-        print(json.dumps(result, indent=2))
+        print(f"📱 STK Response: {json.dumps(result, indent=2)}")
         
         if result.get('ResponseCode') == '0':
             checkout_id = result.get('CheckoutRequestID')
-            print(f"✅ STK Push sent successfully! CheckoutID: {checkout_id}")
+            print(f"✅ STK Push sent! ID: {checkout_id}")
             return True, checkout_id, "STK Push sent to your phone"
         else:
             error_msg = result.get('ResponseDescription', 'Payment initiation failed')
-            error_code = result.get('ResponseCode', 'N/A')
-            print(f"❌ STK Push failed: [{error_code}] {error_msg}")
-            return False, None, f"Payment failed: {error_msg}"
+            print(f"❌ STK Push failed: {error_msg}")
+            return False, None, error_msg
             
-    except requests.exceptions.Timeout:
-        print(f"❌ STK Push timeout")
-        return False, None, "Request timeout. Please try again."
     except Exception as e:
         print(f"❌ M-Pesa error: {e}")
         traceback.print_exc()
@@ -265,11 +254,9 @@ def mpesa_query_status(checkout_request_id):
         )
         
         result = response.json()
-        print(f"📱 Query Status Response: {result}")
         return result, None
         
     except Exception as e:
-        print(f"❌ Query error: {e}")
         return None, str(e)
 
 
@@ -746,10 +733,10 @@ def mpesa_initiate():
         order_id = data.get('order_id', f'ORD-{datetime.now().strftime("%Y%m%d%H%M%S")}')
         
         print(f"\n{'='*60}")
-        print(f"📱 M-PESA INITIATE REQUEST")
+        print(f"📱 M-PESA INITIATE")
         print(f"   Phone: {phone}")
         print(f"   Amount: {amount}")
-        print(f"   Order ID: {order_id}")
+        print(f"   Order: {order_id}")
         print(f"{'='*60}")
         
         if not phone:
@@ -763,6 +750,7 @@ def mpesa_initiate():
         if success:
             session['mpesa_checkout_id'] = checkout_id
             session['mpesa_order_id'] = order_id
+            session['mpesa_initiated_at'] = datetime.utcnow().isoformat()
             
             return jsonify({
                 'success': True,
@@ -781,10 +769,11 @@ def mpesa_initiate():
 
 @shop_bp.route('/mpesa/status', methods=['POST'])
 def mpesa_status():
-    """Check M-Pesa payment status - FIXED"""
+    """Check M-Pesa payment status - PRODUCTION with proper timing"""
     try:
         data = request.get_json()
         checkout_id = data.get('checkout_request_id')
+        elapsed = data.get('elapsed', 0)
         
         if not checkout_id:
             return jsonify({'success': False, 'message': 'Checkout ID required'})
@@ -798,7 +787,7 @@ def mpesa_status():
             result_code = str(result.get('ResultCode', ''))
             result_desc = result.get('ResultDesc', 'Unknown')
             
-            print(f"📱 Status check: code={result_code}, desc={result_desc}")
+            print(f"📱 Status check: code={result_code}, desc={result_desc}, elapsed={elapsed}s")
             
             # ✅ SUCCESS
             if result_code == '0':
@@ -809,8 +798,17 @@ def mpesa_status():
                     'data': result
                 })
             
-            # ✅ PENDING - still waiting for user
+            # ✅ PENDING - keep waiting
             elif result_code in ['1037', '1001', '4999', '429', '500']:
+                # After 90 seconds of 1037, treat as unreachable
+                if result_code == '1037' and elapsed > 90:
+                    return jsonify({
+                        'success': True,
+                        'status': 'unreachable',
+                        'message': 'We could not reach your phone. Ensure it is on and has signal, then retry.',
+                        'data': result
+                    })
+                
                 return jsonify({
                     'success': True,
                     'status': 'pending',
@@ -823,25 +821,7 @@ def mpesa_status():
                 return jsonify({
                     'success': True,
                     'status': 'cancelled',
-                    'message': 'Request cancelled by user',
-                    'data': result
-                })
-            
-            # ✅ INSUFFICIENT FUNDS
-            elif result_code == '1':
-                return jsonify({
-                    'success': True,
-                    'status': 'failed',
-                    'message': 'Insufficient M-Pesa balance',
-                    'data': result
-                })
-            
-            # ✅ WRONG PIN
-            elif result_code == '2001':
-                return jsonify({
-                    'success': True,
-                    'status': 'failed',
-                    'message': 'Wrong M-Pesa PIN entered',
+                    'message': 'You cancelled the payment. Click Retry to try again.',
                     'data': result
                 })
             
@@ -850,7 +830,25 @@ def mpesa_status():
                 return jsonify({
                     'success': True,
                     'status': 'expired',
-                    'message': 'Transaction expired. Please try again.',
+                    'message': 'Transaction expired. Click Retry to try again.',
+                    'data': result
+                })
+            
+            # ✅ INSUFFICIENT FUNDS
+            elif result_code == '1':
+                return jsonify({
+                    'success': True,
+                    'status': 'insufficient',
+                    'message': 'Not enough M-Pesa balance. Top up and retry.',
+                    'data': result
+                })
+            
+            # ✅ WRONG PIN
+            elif result_code == '2001':
+                return jsonify({
+                    'success': True,
+                    'status': 'wrong_pin',
+                    'message': 'Wrong M-Pesa PIN. Click Retry to try again.',
                     'data': result
                 })
             
@@ -860,7 +858,7 @@ def mpesa_status():
                 return jsonify({
                     'success': True,
                     'status': 'pending',
-                    'message': f'Processing... ({result_code})',
+                    'message': f'Processing...',
                     'data': result
                 })
         
@@ -877,7 +875,7 @@ def mpesa_callback():
     try:
         data = request.get_json()
         print(f"\n{'='*60}")
-        print(f"📱 M-PESA CALLBACK RECEIVED")
+        print(f"📱 M-PESA CALLBACK")
         print(json.dumps(data, indent=2))
         print(f"{'='*60}\n")
         
@@ -905,11 +903,10 @@ def mpesa_callback():
                 elif name == 'PhoneNumber': phone = value
             
             print(f"✅ PAYMENT CONFIRMED:")
-            print(f"   Checkout ID: {checkout_request_id}")
+            print(f"   Checkout: {checkout_request_id}")
             print(f"   Amount: KSh {amount}")
             print(f"   Receipt: {mpesa_receipt}")
             print(f"   Phone: {phone}")
-            
         else:
             print(f"❌ PAYMENT FAILED: [{result_code}] {result_desc}")
         
@@ -932,16 +929,14 @@ def mpesa_test_auth():
                 'message': 'Authentication works!',
                 'token_preview': token[:30] + '...',
                 'auth_url': Config.MPESA_AUTH_URL,
-                'shortcode': Config.MPESA_SHORTCODE,
-                'consumer_key_preview': Config.MPESA_CONSUMER_KEY[:15] + '...'
+                'shortcode': Config.MPESA_SHORTCODE
             })
         else:
             return jsonify({
                 'success': False,
-                'message': 'Authentication failed. Check credentials.',
+                'message': 'Authentication failed.',
                 'auth_url': Config.MPESA_AUTH_URL,
-                'shortcode': Config.MPESA_SHORTCODE,
-                'consumer_key_preview': Config.MPESA_CONSUMER_KEY[:15] + '...'
+                'shortcode': Config.MPESA_SHORTCODE
             })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
@@ -963,7 +958,7 @@ def place_order():
             return jsonify({'success': False, 'message': 'No data received'}), 400
 
         print("=" * 60)
-        print("📦 PLACE ORDER REQUEST")
+        print("📦 PLACE ORDER")
         print("=" * 60)
 
         customer_name = data.get('customer_name') or data.get('name') or 'Web Customer'
