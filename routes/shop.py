@@ -130,7 +130,7 @@ def generate_mpesa_password():
 
 
 def format_phone_number(phone):
-    """Format phone to 254XXXXXXXXX - SAFARICOM REQUIRED FORMAT"""
+    """Format phone to 254XXXXXXXXX"""
     if not phone:
         return None
     
@@ -158,17 +158,16 @@ def mpesa_stk_push(phone_number, amount, order_id):
     formatted_phone = format_phone_number(phone_number)
     
     if not formatted_phone:
-        print(f"❌ Invalid phone: {phone_number}")
         return False, None, f"Invalid phone number: {phone_number}. Use 0712345678"
     
-    print(f"📱 Phone input: {phone_number} → Formatted: {formatted_phone}")
+    print(f"📱 Phone: {phone_number} → {formatted_phone}")
     
     if len(formatted_phone) != 12 or not formatted_phone.startswith('254'):
         return False, None, "Phone number must be 12 digits (e.g., 254712345678)"
     
     access_token = get_mpesa_access_token()
     if not access_token:
-        return False, None, "Failed to authenticate with M-Pesa. Check your credentials."
+        return False, None, "Failed to authenticate with M-Pesa. Check credentials."
     
     password, timestamp = generate_mpesa_password()
     
@@ -193,11 +192,7 @@ def mpesa_stk_push(phone_number, amount, order_id):
         'TransactionDesc': f'Payment for order {order_id}'[:50]
     }
     
-    print(f"📤 STK Push Payload:")
-    print(f"   BusinessShortCode: {payload['BusinessShortCode']}")
-    print(f"   Amount: {payload['Amount']}")
-    print(f"   PhoneNumber: {payload['PhoneNumber']}")
-    print(f"   CallBackURL: {payload['CallBackURL']}")
+    print(f"📤 STK Push to {formatted_phone} for KSh {amount_int}")
     
     try:
         response = requests.post(
@@ -208,20 +203,17 @@ def mpesa_stk_push(phone_number, amount, order_id):
         )
         
         result = response.json()
-        print(f"📱 STK Response: {json.dumps(result, indent=2)}")
+        print(f"📱 STK Response: {result}")
         
         if result.get('ResponseCode') == '0':
             checkout_id = result.get('CheckoutRequestID')
-            print(f"✅ STK Push sent! ID: {checkout_id}")
             return True, checkout_id, "STK Push sent to your phone"
         else:
             error_msg = result.get('ResponseDescription', 'Payment initiation failed')
-            print(f"❌ STK Push failed: {error_msg}")
             return False, None, error_msg
             
     except Exception as e:
         print(f"❌ M-Pesa error: {e}")
-        traceback.print_exc()
         return False, None, str(e)
 
 
@@ -264,74 +256,29 @@ def mpesa_query_status(checkout_request_id):
 # CATEGORY ICONS
 # ============================================================
 CATEGORY_ICONS = {
-    'All': 'fa-th-large',
-    'Beverages': 'fa-wine-bottle',
-    'Snacks': 'fa-utensils',
-    'Groceries': 'fa-apple-alt',
-    'Food': 'fa-apple-alt',
-    'Electronics': 'fa-laptop',
-    'Phones': 'fa-mobile-alt',
-    'Phone Accessories': 'fa-plug',
-    'Laptops': 'fa-laptop',
-    'Computers': 'fa-desktop',
-    'Audio': 'fa-headphones',
-    'Headphones': 'fa-headphones',
-    'Fashion': 'fa-tshirt',
-    'Clothing': 'fa-tshirt',
-    "Men's Fashion": 'fa-user-tie',
-    "Women's Fashion": 'fa-female',
-    'Shoes': 'fa-shoe-prints',
-    'Accessories': 'fa-plug',
-    'Bags': 'fa-bag-shopping',
-    'Watches': 'fa-clock',
-    'Jewelry': 'fa-ring',
-    'Sunglasses': 'fa-glasses',
-    'Home & Kitchen': 'fa-utensils',
-    'Furniture': 'fa-couch',
-    'Home Decor': 'fa-home',
-    'Kitchen': 'fa-kitchen-set',
-    'Bedding': 'fa-bed',
-    'Bath': 'fa-bath',
-    'Cleaning': 'fa-spray-can-sparkles',
-    'Laundry': 'fa-shirt',
-    'Beauty': 'fa-spa',
-    'Personal Care': 'fa-spa',
-    'Skincare': 'fa-spa',
-    'Makeup': 'fa-paint-brush',
-    'Fragrance': 'fa-perfume',
-    'Books': 'fa-book',
-    'Stationery': 'fa-pen',
-    'School Supplies': 'fa-book-open',
-    'Office Supplies': 'fa-briefcase',
-    'Toys': 'fa-gamepad',
-    'Games': 'fa-gamepad',
-    'Gaming': 'fa-gamepad',
-    'Sports': 'fa-dumbbell',
-    'Fitness': 'fa-dumbbell',
-    'Outdoor': 'fa-tree',
-    'Garden': 'fa-tree',
-    'Automotive': 'fa-car',
-    'Car Accessories': 'fa-car',
-    'Health': 'fa-heartbeat',
-    'Wellness': 'fa-heartbeat',
-    'Baby': 'fa-baby',
-    'Kids': 'fa-baby',
-    'Pet': 'fa-paw',
-    'Pet Supplies': 'fa-paw',
-    'Music': 'fa-music',
-    'Instruments': 'fa-guitar',
-    'Cameras': 'fa-camera',
-    'Photography': 'fa-camera',
-    'Printers': 'fa-print',
-    'Networking': 'fa-network-wired',
-    'Software': 'fa-code',
-    'Gifts': 'fa-gift',
-    'Flowers': 'fa-seedling',
-    'Crafts': 'fa-paintbrush',
-    'Hobbies': 'fa-puzzle-piece',
-    'Party': 'fa-party-horn',
-    'Uncategorized': 'fa-tag',
-    'Other': 'fa-tag',
+    'All': 'fa-th-large', 'Beverages': 'fa-wine-bottle', 'Snacks': 'fa-utensils',
+    'Groceries': 'fa-apple-alt', 'Food': 'fa-apple-alt', 'Electronics': 'fa-laptop',
+    'Phones': 'fa-mobile-alt', 'Phone Accessories': 'fa-plug', 'Laptops': 'fa-laptop',
+    'Computers': 'fa-desktop', 'Audio': 'fa-headphones', 'Headphones': 'fa-headphones',
+    'Fashion': 'fa-tshirt', 'Clothing': 'fa-tshirt', "Men's Fashion": 'fa-user-tie',
+    "Women's Fashion": 'fa-female', 'Shoes': 'fa-shoe-prints', 'Accessories': 'fa-plug',
+    'Bags': 'fa-bag-shopping', 'Watches': 'fa-clock', 'Jewelry': 'fa-ring',
+    'Sunglasses': 'fa-glasses', 'Home & Kitchen': 'fa-utensils', 'Furniture': 'fa-couch',
+    'Home Decor': 'fa-home', 'Kitchen': 'fa-kitchen-set', 'Bedding': 'fa-bed',
+    'Bath': 'fa-bath', 'Cleaning': 'fa-spray-can-sparkles', 'Laundry': 'fa-shirt',
+    'Beauty': 'fa-spa', 'Personal Care': 'fa-spa', 'Skincare': 'fa-spa',
+    'Makeup': 'fa-paint-brush', 'Fragrance': 'fa-perfume', 'Books': 'fa-book',
+    'Stationery': 'fa-pen', 'School Supplies': 'fa-book-open', 'Office Supplies': 'fa-briefcase',
+    'Toys': 'fa-gamepad', 'Games': 'fa-gamepad', 'Gaming': 'fa-gamepad',
+    'Sports': 'fa-dumbbell', 'Fitness': 'fa-dumbbell', 'Outdoor': 'fa-tree',
+    'Garden': 'fa-tree', 'Automotive': 'fa-car', 'Car Accessories': 'fa-car',
+    'Health': 'fa-heartbeat', 'Wellness': 'fa-heartbeat', 'Baby': 'fa-baby',
+    'Kids': 'fa-baby', 'Pet': 'fa-paw', 'Pet Supplies': 'fa-paw',
+    'Music': 'fa-music', 'Instruments': 'fa-guitar', 'Cameras': 'fa-camera',
+    'Photography': 'fa-camera', 'Printers': 'fa-print', 'Networking': 'fa-network-wired',
+    'Software': 'fa-code', 'Gifts': 'fa-gift', 'Flowers': 'fa-seedling',
+    'Crafts': 'fa-paintbrush', 'Hobbies': 'fa-puzzle-piece', 'Party': 'fa-party-horn',
+    'Uncategorized': 'fa-tag', 'Other': 'fa-tag',
 }
 
 def get_category_icon(category):
@@ -493,13 +440,9 @@ def cart_page():
             if product:
                 item_total = product.get('price', 0) * quantity
                 cart_items.append({
-                    'id': item_id,
-                    'name': product.get('name', 'Product'),
-                    'price': product.get('price', 0),
-                    'image': product.get('image', ''),
-                    'type': 'product',
-                    'quantity': quantity,
-                    'item_total': item_total,
+                    'id': item_id, 'name': product.get('name', 'Product'),
+                    'price': product.get('price', 0), 'image': product.get('image', ''),
+                    'type': 'product', 'quantity': quantity, 'item_total': item_total,
                     'stock': product.get('stock', 0),
                     'description': product.get('description', ''),
                     'specs': product.get('specs', []),
@@ -512,13 +455,9 @@ def cart_page():
                 if str(bundle.get('id')) == str(item_id):
                     item_total = bundle.get('price', 0) * quantity
                     cart_items.append({
-                        'id': item_id,
-                        'name': bundle.get('name', 'Bundle'),
-                        'price': bundle.get('price', 0),
-                        'image': bundle.get('image', ''),
-                        'type': 'bundle',
-                        'quantity': quantity,
-                        'item_total': item_total,
+                        'id': item_id, 'name': bundle.get('name', 'Bundle'),
+                        'price': bundle.get('price', 0), 'image': bundle.get('image', ''),
+                        'type': 'bundle', 'quantity': quantity, 'item_total': item_total,
                         'products': bundle.get('products', []),
                     })
                     subtotal += item_total
@@ -670,13 +609,9 @@ def checkout_page():
             if product:
                 item_total = product.get('price', 0) * quantity
                 cart_items.append({
-                    'id': item_id,
-                    'name': product.get('name', 'Product'),
-                    'price': product.get('price', 0),
-                    'image': product.get('image', ''),
-                    'type': 'product',
-                    'quantity': quantity,
-                    'item_total': item_total,
+                    'id': item_id, 'name': product.get('name', 'Product'),
+                    'price': product.get('price', 0), 'image': product.get('image', ''),
+                    'type': 'product', 'quantity': quantity, 'item_total': item_total,
                     'description': product.get('description', ''),
                     'specs': product.get('specs', []),
                 })
@@ -688,13 +623,9 @@ def checkout_page():
                 if str(bundle.get('id')) == str(item_id):
                     item_total = bundle.get('price', 0) * quantity
                     cart_items.append({
-                        'id': item_id,
-                        'name': bundle.get('name', 'Bundle'),
-                        'price': bundle.get('price', 0),
-                        'image': bundle.get('image', ''),
-                        'type': 'bundle',
-                        'quantity': quantity,
-                        'item_total': item_total,
+                        'id': item_id, 'name': bundle.get('name', 'Bundle'),
+                        'price': bundle.get('price', 0), 'image': bundle.get('image', ''),
+                        'type': 'bundle', 'quantity': quantity, 'item_total': item_total,
                     })
                     subtotal += item_total
                     total_items += quantity
@@ -720,12 +651,12 @@ def checkout_page():
 
 
 # ============================================================
-# M-PESA ROUTES - PRODUCTION
+# M-PESA ROUTES
 # ============================================================
 
 @shop_bp.route('/mpesa/initiate', methods=['POST'])
 def mpesa_initiate():
-    """Initiate M-Pesa payment - PRODUCTION"""
+    """Initiate M-Pesa payment"""
     try:
         data = request.get_json()
         phone = data.get('phone', '')
@@ -733,10 +664,7 @@ def mpesa_initiate():
         order_id = data.get('order_id', f'ORD-{datetime.now().strftime("%Y%m%d%H%M%S")}')
         
         print(f"\n{'='*60}")
-        print(f"📱 M-PESA INITIATE")
-        print(f"   Phone: {phone}")
-        print(f"   Amount: {amount}")
-        print(f"   Order: {order_id}")
+        print(f"📱 M-PESA INITIATE | Phone: {phone} | Amount: {amount}")
         print(f"{'='*60}")
         
         if not phone:
@@ -750,7 +678,6 @@ def mpesa_initiate():
         if success:
             session['mpesa_checkout_id'] = checkout_id
             session['mpesa_order_id'] = order_id
-            session['mpesa_initiated_at'] = datetime.utcnow().isoformat()
             
             return jsonify({
                 'success': True,
@@ -769,7 +696,7 @@ def mpesa_initiate():
 
 @shop_bp.route('/mpesa/status', methods=['POST'])
 def mpesa_status():
-    """Check M-Pesa payment status - PRODUCTION with proper timing"""
+    """Check M-Pesa payment status"""
     try:
         data = request.get_json()
         checkout_id = data.get('checkout_request_id')
@@ -787,82 +714,58 @@ def mpesa_status():
             result_code = str(result.get('ResultCode', ''))
             result_desc = result.get('ResultDesc', 'Unknown')
             
-            print(f"📱 Status check: code={result_code}, desc={result_desc}, elapsed={elapsed}s")
+            print(f"📱 Status: code={result_code}, desc={result_desc}, elapsed={elapsed}s")
             
-            # ✅ SUCCESS
             if result_code == '0':
                 return jsonify({
-                    'success': True,
-                    'status': 'completed',
-                    'message': 'Payment successful!',
-                    'data': result
+                    'success': True, 'status': 'completed',
+                    'message': 'Payment successful!', 'data': result
                 })
             
-            # ✅ PENDING - keep waiting
             elif result_code in ['1037', '1001', '4999', '429', '500']:
-                # After 90 seconds of 1037, treat as unreachable
                 if result_code == '1037' and elapsed > 90:
                     return jsonify({
-                        'success': True,
-                        'status': 'unreachable',
-                        'message': 'We could not reach your phone. Ensure it is on and has signal, then retry.',
+                        'success': True, 'status': 'unreachable',
+                        'message': 'Could not reach your phone. Check signal and retry.',
                         'data': result
                     })
-                
                 return jsonify({
-                    'success': True,
-                    'status': 'pending',
-                    'message': 'Waiting for customer confirmation...',
-                    'data': result
+                    'success': True, 'status': 'pending',
+                    'message': 'Waiting for confirmation...', 'data': result
                 })
             
-            # ✅ USER CANCELLED
             elif result_code == '1032':
                 return jsonify({
-                    'success': True,
-                    'status': 'cancelled',
-                    'message': 'You cancelled the payment. Click Retry to try again.',
-                    'data': result
+                    'success': True, 'status': 'cancelled',
+                    'message': 'You cancelled. Click Retry.', 'data': result
                 })
             
-            # ✅ EXPIRED
             elif result_code == '1019':
                 return jsonify({
-                    'success': True,
-                    'status': 'expired',
-                    'message': 'Transaction expired. Click Retry to try again.',
-                    'data': result
+                    'success': True, 'status': 'expired',
+                    'message': 'Expired. Click Retry.', 'data': result
                 })
             
-            # ✅ INSUFFICIENT FUNDS
             elif result_code == '1':
                 return jsonify({
-                    'success': True,
-                    'status': 'insufficient',
-                    'message': 'Not enough M-Pesa balance. Top up and retry.',
-                    'data': result
+                    'success': True, 'status': 'insufficient',
+                    'message': 'Insufficient M-Pesa balance.', 'data': result
                 })
             
-            # ✅ WRONG PIN
             elif result_code == '2001':
                 return jsonify({
-                    'success': True,
-                    'status': 'wrong_pin',
-                    'message': 'Wrong M-Pesa PIN. Click Retry to try again.',
-                    'data': result
+                    'success': True, 'status': 'wrong_pin',
+                    'message': 'Wrong M-Pesa PIN. Retry.', 'data': result
                 })
             
-            # ✅ UNKNOWN - treat as pending
             else:
-                print(f"⚠️ Unknown code: {result_code} - {result_desc}")
+                print(f"⚠️ Unknown code: {result_code}")
                 return jsonify({
-                    'success': True,
-                    'status': 'pending',
-                    'message': f'Processing...',
-                    'data': result
+                    'success': True, 'status': 'pending',
+                    'message': f'Processing...', 'data': result
                 })
         
-        return jsonify({'success': False, 'message': 'No response from M-Pesa'})
+        return jsonify({'success': False, 'message': 'No response'})
         
     except Exception as e:
         print(f"❌ M-Pesa status error: {e}")
@@ -871,7 +774,7 @@ def mpesa_status():
 
 @shop_bp.route('/mpesa/callback', methods=['POST'])
 def mpesa_callback():
-    """M-Pesa callback endpoint - PRODUCTION"""
+    """M-Pesa callback endpoint"""
     try:
         data = request.get_json()
         print(f"\n{'='*60}")
@@ -884,17 +787,13 @@ def mpesa_callback():
         
         stk_callback = data.get('Body', {}).get('stkCallback', {})
         result_code = stk_callback.get('ResultCode', '1')
-        result_desc = stk_callback.get('ResultDesc', 'Unknown')
         checkout_request_id = stk_callback.get('CheckoutRequestID', '')
         
         if result_code == 0 or result_code == '0':
             metadata = stk_callback.get('CallbackMetadata', {})
             items = metadata.get('Item', [])
             
-            amount = None
-            mpesa_receipt = None
-            phone = None
-            
+            amount = mpesa_receipt = phone = None
             for item in items:
                 name = item.get('Name')
                 value = item.get('Value')
@@ -902,52 +801,22 @@ def mpesa_callback():
                 elif name == 'MpesaReceiptNumber': mpesa_receipt = value
                 elif name == 'PhoneNumber': phone = value
             
-            print(f"✅ PAYMENT CONFIRMED:")
-            print(f"   Checkout: {checkout_request_id}")
-            print(f"   Amount: KSh {amount}")
-            print(f"   Receipt: {mpesa_receipt}")
-            print(f"   Phone: {phone}")
-        else:
-            print(f"❌ PAYMENT FAILED: [{result_code}] {result_desc}")
+            print(f"✅ PAYMENT CONFIRMED: {checkout_request_id} | KSh {amount} | {mpesa_receipt}")
         
         return jsonify({'ResultCode': 0, 'ResultDesc': 'Success'})
         
     except Exception as e:
         print(f"❌ Callback error: {e}")
-        traceback.print_exc()
         return jsonify({'ResultCode': 1, 'ResultDesc': str(e)})
 
 
-@shop_bp.route('/mpesa/test-auth')
-def mpesa_test_auth():
-    """Test M-Pesa authentication"""
-    try:
-        token = get_mpesa_access_token()
-        if token:
-            return jsonify({
-                'success': True,
-                'message': 'Authentication works!',
-                'token_preview': token[:30] + '...',
-                'auth_url': Config.MPESA_AUTH_URL,
-                'shortcode': Config.MPESA_SHORTCODE
-            })
-        else:
-            return jsonify({
-                'success': False,
-                'message': 'Authentication failed.',
-                'auth_url': Config.MPESA_AUTH_URL,
-                'shortcode': Config.MPESA_SHORTCODE
-            })
-    except Exception as e:
-        return jsonify({'success': False, 'error': str(e)})
-
-
 # ============================================================
-# PLACE ORDER
+# PLACE MPESA ORDER
 # ============================================================
 
 @shop_bp.route('/place-order', methods=['POST'])
 def place_order():
+    """Place M-Pesa or Cash order - saves to admin"""
     try:
         cart = get_cart()
         if not cart:
@@ -1040,22 +909,6 @@ def place_order():
         if not order_items:
             return jsonify({'success': False, 'message': 'No valid items in cart'}), 400
 
-        estimated_delivery = data.get('estimated_delivery', '')
-        if estimated_delivery and isinstance(estimated_delivery, str):
-            try:
-                if '-' in estimated_delivery and not estimated_delivery.lower().startswith('4-5'):
-                    dt = datetime.strptime(estimated_delivery, '%Y-%m-%d')
-                    estimated_delivery = dt.isoformat()
-                else:
-                    days_match = re.search(r'(\d+)\s*-?\s*(\d+)?', estimated_delivery)
-                    if days_match:
-                        days = int(days_match.group(1)) if days_match.group(1) else 3
-                        estimated_delivery = (datetime.utcnow() + timedelta(days=days)).isoformat()
-                    else:
-                        estimated_delivery = (datetime.utcnow() + timedelta(days=3)).isoformat()
-            except:
-                estimated_delivery = (datetime.utcnow() + timedelta(days=3)).isoformat()
-
         order_data = {
             'order_id': str(order_id),
             'items': order_items,
@@ -1080,7 +933,6 @@ def place_order():
                 'phone': str(customer_phone),
                 'address': str(customer_address),
             },
-            'estimated_delivery': estimated_delivery,
             'delivery_notes': str(data.get('delivery_notes', '')),
         }
 
@@ -1126,12 +978,207 @@ def place_order():
                 }), 500
 
         except requests.exceptions.Timeout:
-            return jsonify({'success': False, 'message': 'Request timeout. Please try again.'}), 500
+            return jsonify({'success': False, 'message': 'Request timeout.'}), 500
         except requests.exceptions.RequestException as e:
             return jsonify({'success': False, 'message': f'Network error: {str(e)}'}), 500
 
     except Exception as exc:
         print(f'Error placing order: {exc}')
+        traceback.print_exc()
+        return jsonify({'success': False, 'message': f'Error: {str(exc)}'}), 500
+
+
+# ============================================================
+# PLACE WHATSAPP ORDER - Saves to admin AND opens WhatsApp
+# ============================================================
+
+@shop_bp.route('/place-order-whatsapp', methods=['POST'])
+def place_order_whatsapp():
+    """Save WhatsApp order to Supabase AND return WhatsApp URL"""
+    try:
+        cart = get_cart()
+        if not cart:
+            return jsonify({'success': False, 'message': 'Cart is empty'}), 400
+
+        data = request.get_json()
+        if not data:
+            return jsonify({'success': False, 'message': 'No data received'}), 400
+
+        print("=" * 60)
+        print("💬 PLACE WHATSAPP ORDER")
+        print("=" * 60)
+
+        customer_name = data.get('customer_name') or data.get('name') or 'WhatsApp Customer'
+        customer_email = data.get('customer_email') or data.get('email') or 'whatsapp@example.com'
+        customer_phone = data.get('customer_phone') or data.get('phone') or 'N/A'
+        customer_address = data.get('customer_address') or data.get('address') or 'WhatsApp Order'
+
+        shipping = float(data.get('shipping', 0) or 0)
+        subtotal = float(data.get('subtotal', 0) or 0)
+        discount = float(data.get('discount', 0) or 0)
+        tax_rate = 0.16
+        order_id = data.get('order_id', f'WA-{datetime.now().strftime("%Y%m%d%H%M%S")}')
+
+        if subtotal == 0:
+            products = load_products()
+            products = clean_products(products)
+            bundles = load_bundles()
+            for item_id, quantity in cart.items():
+                for product in products:
+                    if str(product.get('id')) == str(item_id):
+                        subtotal += float(product.get('price', 0) or 0) * int(quantity)
+                        break
+                else:
+                    for bundle in bundles:
+                        if str(bundle.get('id')) == str(item_id):
+                            subtotal += float(bundle.get('price', 0) or 0) * int(quantity)
+                            break
+
+        net_revenue = subtotal - discount
+        tax = subtotal * tax_rate
+        total_charged = net_revenue + tax + shipping
+
+        products = load_products()
+        products = clean_products(products)
+        bundles = load_bundles()
+        order_items = []
+
+        for item_id, quantity in cart.items():
+            if quantity <= 0:
+                continue
+            item_found = False
+            for product in products:
+                if str(product.get('id')) == str(item_id):
+                    current_stock = int(product.get('stock', 0) or 0)
+                    item_total = float(product.get('price', 0) or 0) * int(quantity)
+                    order_items.append({
+                        'product_id': str(item_id),
+                        'name': str(product.get('name', 'Product')),
+                        'price': float(product.get('price', 0) or 0),
+                        'quantity': int(quantity),
+                        'total': float(item_total),
+                        'type': 'product',
+                    })
+                    item_found = True
+                    new_stock = max(0, current_stock - int(quantity))
+                    update_product_stock(item_id, new_stock)
+                    break
+
+            if not item_found:
+                for bundle in bundles:
+                    if str(bundle.get('id')) == str(item_id):
+                        item_total = float(bundle.get('price', 0) or 0) * int(quantity)
+                        order_items.append({
+                            'product_id': str(item_id),
+                            'name': str(bundle.get('name', 'Bundle')),
+                            'price': float(bundle.get('price', 0) or 0),
+                            'quantity': int(quantity),
+                            'total': float(item_total),
+                            'type': 'bundle',
+                        })
+                        break
+
+        if not order_items:
+            return jsonify({'success': False, 'message': 'No valid items in cart'}), 400
+
+        order_data = {
+            'order_id': str(order_id),
+            'items': order_items,
+            'subtotal': float(subtotal),
+            'discount': float(discount),
+            'tax': float(tax),
+            'net_revenue': float(net_revenue),
+            'shipping': float(shipping),
+            'shipping_cost': float(data.get('shipping_cost', 0) or 0),
+            'total_charged': float(total_charged),
+            'status': 'pending',
+            'source': 'whatsapp',
+            'payment_method': 'whatsapp',
+            'created_at': datetime.utcnow().isoformat(),
+            'customer_name': str(customer_name),
+            'customer_email': str(customer_email),
+            'customer_phone': str(customer_phone),
+            'customer_address': str(customer_address),
+            'customer': {
+                'name': str(customer_name),
+                'email': str(customer_email),
+                'phone': str(customer_phone),
+                'address': str(customer_address),
+            },
+            'delivery_zone': str(data.get('delivery_zone', '')),
+            'delivery_notes': str(data.get('delivery_notes', '')),
+        }
+
+        try:
+            response = requests.post(
+                f"{Config.SUPABASE_URL}/rest/v1/orders",
+                headers={
+                    **Config.SUPABASE_HEADERS,
+                    'Content-Type': 'application/json',
+                    'Prefer': 'return=representation'
+                },
+                json=order_data,
+                timeout=15,
+            )
+
+            print(f"📥 Supabase: {response.status_code}")
+
+            if response.status_code in [200, 201, 204]:
+                print(f"✅ WhatsApp order saved: {order_id}")
+                
+                session['cart'] = {}
+                session.modified = True
+
+                import utils.data
+                utils.data.orders_cache = []
+
+                items_text = ""
+                for item in order_items:
+                    items_text += f"• {item['name']} x{item['quantity']} = KSh {item['total']:,.0f}\n"
+
+                wa_message = f"""🛒 *NEW ORDER — ACACIA MINIMART*
+
+📋 *Order ID:* {order_id}
+👤 *Customer:* {customer_name}
+📱 *Phone:* {customer_phone}
+📍 *Address:* {customer_address}
+🚚 *Zone:* {data.get('delivery_zone', 'N/A')}
+
+📦 *Items:*
+{items_text}
+
+💰 *Summary:*
+  • Subtotal: KSh {subtotal:,.0f}
+  • Delivery: KSh {shipping:,.0f}
+  • Total: KSh {total_charged:,.0f}
+
+📝 *Notes:* {data.get('delivery_notes', 'None')}
+
+✅ *Please confirm my order via WhatsApp.*"""
+
+                encoded_msg = urllib.parse.quote(wa_message)
+                whatsapp_url = f"https://wa.me/{Config.MPESA_BUSINESS_PHONE}?text={encoded_msg}"
+
+                return jsonify({
+                    'success': True,
+                    'order_id': order_id,
+                    'total': total_charged,
+                    'message': 'Order saved! Opening WhatsApp...',
+                    'whatsapp_url': whatsapp_url,
+                })
+            else:
+                return jsonify({
+                    'success': False,
+                    'message': f'Database error: {response.status_code}'
+                }), 500
+
+        except Exception as e:
+            print(f"❌ Save error: {e}")
+            traceback.print_exc()
+            return jsonify({'success': False, 'message': str(e)}), 500
+
+    except Exception as exc:
+        print(f'❌ WhatsApp order error: {exc}')
         traceback.print_exc()
         return jsonify({'success': False, 'message': f'Error: {str(exc)}'}), 500
 
@@ -1160,3 +1207,26 @@ def api_categories():
     all_categories.update(categories)
     
     return jsonify(all_categories)
+
+
+@shop_bp.route('/mpesa/test-auth')
+def mpesa_test_auth():
+    """Test M-Pesa authentication"""
+    try:
+        token = get_mpesa_access_token()
+        if token:
+            return jsonify({
+                'success': True,
+                'message': 'Authentication works!',
+                'token_preview': token[:30] + '...',
+                'auth_url': Config.MPESA_AUTH_URL,
+                'shortcode': Config.MPESA_SHORTCODE
+            })
+        else:
+            return jsonify({
+                'success': False,
+                'message': 'Authentication failed.',
+                'auth_url': Config.MPESA_AUTH_URL
+            })
+    except Exception as e:
+        return jsonify({'success': False, 'error': str(e)})
