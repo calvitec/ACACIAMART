@@ -15,6 +15,56 @@ print(f"🏦 Credit module running on: {'Vercel' if IS_VERCEL else 'Localhost'}"
 # CREDIT CUSTOMER FUNCTIONS
 # ============================================================
 
+
+def load_local_credit_customers():
+    """Load credit customers from the local offline JSON file."""
+    try:
+        from utils.storage import load_json_data
+
+        data = load_json_data() or {}
+        customers = data.get('credit_customers', []) or []
+        normalized = []
+
+        for customer in customers:
+            if not isinstance(customer, dict):
+                continue
+
+            normalized.append({
+                'customer_id': customer.get('customer_id') or customer.get('id') or customer.get('customerId') or '',
+                'full_name': customer.get('full_name') or customer.get('name') or customer.get('customer_name') or 'Credit Customer',
+                'name': customer.get('full_name') or customer.get('name') or customer.get('customer_name') or 'Credit Customer',
+                'phone': customer.get('phone') or customer.get('contact_phone') or '',
+                'email': customer.get('email') or customer.get('customer_email') or '',
+                'current_balance': customer.get('current_balance', customer.get('balance', 0)) or 0,
+                'balance': customer.get('balance', customer.get('current_balance', 0)) or 0,
+                'credit_limit': customer.get('credit_limit', customer.get('limit', 0)) or 0,
+                'limit': customer.get('limit', customer.get('credit_limit', 0)) or 0,
+                'account_status': customer.get('account_status') or customer.get('status') or 'active',
+                'status': customer.get('status') or customer.get('account_status') or 'active',
+                'created_at': customer.get('created_at'),
+                'updated_at': customer.get('updated_at')
+            })
+
+        return normalized
+    except Exception as e:
+        print(f"⚠️ Error loading local credit customers: {e}")
+        return []
+
+
+def save_local_credit_customers(customers):
+    """Persist credit customers to the local offline JSON file."""
+    try:
+        from utils.storage import load_json_data, save_json_data
+
+        data = load_json_data() or {}
+        data['credit_customers'] = customers or []
+        save_json_data(data)
+        return True
+    except Exception as e:
+        print(f"⚠️ Error saving local credit customers: {e}")
+        return False
+
+
 def generate_customer_id():
     """Generate a unique credit customer ID"""
     return f'CR-{uuid.uuid4().hex[:8].upper()}'
@@ -28,10 +78,10 @@ def add_credit_customer(customer_data):
     try:
         if not customer_data.get('customer_id'):
             customer_data['customer_id'] = generate_customer_id()
-        
+
         customer_data['created_at'] = datetime.utcnow().isoformat()
         customer_data['updated_at'] = datetime.utcnow().isoformat()
-        
+
         if not customer_data.get('account_status'):
             customer_data['account_status'] = 'active'
         if not customer_data.get('current_balance'):
@@ -46,16 +96,45 @@ def add_credit_customer(customer_data):
             customer_data['total_cost'] = 0
         if not customer_data.get('total_profit'):
             customer_data['total_profit'] = 0
-        
+
         clean_data = {k: v for k, v in customer_data.items() if v is not None}
-        
+
+        existing_local = load_local_credit_customers()
+        local_customer = {
+            'customer_id': clean_data.get('customer_id'),
+            'full_name': clean_data.get('full_name') or clean_data.get('name') or 'Credit Customer',
+            'name': clean_data.get('full_name') or clean_data.get('name') or 'Credit Customer',
+            'phone': clean_data.get('phone') or '',
+            'email': clean_data.get('email') or '',
+            'current_balance': clean_data.get('current_balance', 0) or 0,
+            'balance': clean_data.get('current_balance', 0) or 0,
+            'credit_limit': clean_data.get('credit_limit', 0) or 0,
+            'limit': clean_data.get('credit_limit', 0) or 0,
+            'account_status': clean_data.get('account_status') or 'active',
+            'status': clean_data.get('account_status') or 'active',
+            'created_at': clean_data.get('created_at'),
+            'updated_at': clean_data.get('updated_at')
+        }
+
+        merged_local = []
+        seen_ids = set()
+        for item in existing_local + [local_customer]:
+            customer_id = item.get('customer_id') or item.get('id') or item.get('customerId')
+            if not customer_id:
+                continue
+            if customer_id not in seen_ids:
+                merged_local.append(item)
+                seen_ids.add(customer_id)
+
+        save_local_credit_customers(merged_local)
+
         response = requests.post(
             f"{Config.SUPABASE_URL}/rest/v1/credit_customers",
             headers=Config.SUPABASE_HEADERS,
             json=clean_data,
             timeout=30
         )
-        
+
         if response.status_code in [200, 201]:
             return {
                 'success': True,
@@ -69,20 +148,20 @@ def add_credit_customer(customer_data):
                 'message': f'Failed to add customer: {response.status_code}',
                 'error': response.text
             }
-            
+
     except Exception as e:
         print(f"❌ Error adding credit customer: {e}")
         return {'success': False, 'message': str(e)}
 
 def get_all_credit_customers():
-    """Get all credit customers"""
+    """Get all credit customers, with local offline fallback."""
     try:
         response = requests.get(
             f"{Config.SUPABASE_URL}/rest/v1/credit_customers?select=*&order=created_at.desc",
             headers=Config.SUPABASE_HEADERS,
             timeout=30
         )
-        
+
         if response.status_code == 200:
             customers = response.json()
             for customer in customers:
@@ -91,14 +170,17 @@ def get_all_credit_customers():
                         customer['created_at'] = customer['created_at'][:10]
                     except:
                         pass
+            save_local_credit_customers(customers)
             return customers
         else:
             print(f"⚠️ Failed to get credit customers: {response.status_code}")
-            return []
-            
+            local_customers = load_local_credit_customers()
+            return local_customers
+
     except Exception as e:
         print(f"❌ Error getting credit customers: {e}")
-        return []
+        local_customers = load_local_credit_customers()
+        return local_customers
 
 def get_credit_customer_by_id(customer_id):
     """Get a specific credit customer by ID"""
