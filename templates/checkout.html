@@ -13,6 +13,8 @@
 
         @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+        @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.05); } }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
         .app-header {
             background: rgba(255,255,255,0.92);
@@ -169,6 +171,32 @@
             box-shadow: 0 0 0 4px rgba(11,43,30,0.06);
         }
 
+        .location-detection {
+            background: #f0fdf4;
+            border: 2px dashed #0b2b1e;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+        }
+        .location-detection .spinner {
+            width: 24px; height: 24px;
+            border: 3px solid #e2e8f0;
+            border-top-color: #0b2b1e;
+            border-radius: 50%;
+            animation: spin 0.8s linear infinite;
+            flex-shrink: 0;
+        }
+        .location-detection.success {
+            background: #f0fdf4;
+            border-color: #10b981;
+            border-style: solid;
+        }
+        .location-detection.error {
+            background: #fef3c7;
+            border-color: #f59e0b;
+            border-style: solid;
+        }
+
         .toast {
             position: fixed; bottom: 30px; right: 30px; z-index: 9999;
             background: white; padding: 18px 24px; border-radius: 16px;
@@ -275,6 +303,20 @@
                             </div>
                         </div>
 
+                        <!-- ✅ Location Detection -->
+                        <div class="location-detection" id="locationStatus">
+                            <div style="display:flex;align-items:center;gap:12px;">
+                                <div class="spinner" id="locationSpinner"></div>
+                                <div id="locationMessage" style="flex:1;">
+                                    <span style="font-weight:600;font-size:0.9rem;">📍 Detecting your location...</span>
+                                    <p style="font-size:0.75rem;color:#5a6d7a;">We'll calculate delivery cost from our store</p>
+                                </div>
+                                <button onclick="retryLocation()" style="font-size:0.75rem;background:#0b2b1e;color:white;padding:6px 14px;border-radius:9999px;font-weight:600;border:none;cursor:pointer;display:none;" id="locationRetryBtn">
+                                    <i class="fas fa-redo"></i> Retry
+                                </button>
+                            </div>
+                        </div>
+
                         <div class="space-y-4 mt-4">
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
@@ -310,7 +352,7 @@
                                 <label class="form-label"><i class="fas fa-map-marker-alt"></i> Delivery Address <span class="required">*</span></label>
                                 <div class="input-wrapper">
                                     <i class="fas fa-map-marker-alt input-icon"></i>
-                                    <input type="text" class="form-input" placeholder="123 Main Street" id="address" />
+                                    <input type="text" class="form-input" placeholder="123 Main Street" id="address" onchange="geocodeAddress()" />
                                 </div>
                             </div>
                             <div class="grid grid-cols-2 gap-4">
@@ -318,7 +360,7 @@
                                     <label class="form-label"><i class="fas fa-city"></i> City <span class="required">*</span></label>
                                     <div class="input-wrapper">
                                         <i class="fas fa-city input-icon"></i>
-                                        <input type="text" class="form-input" placeholder="Nairobi" id="city" />
+                                        <input type="text" class="form-input" placeholder="Nairobi" id="city" onchange="geocodeAddress()" />
                                     </div>
                                 </div>
                                 <div>
@@ -333,41 +375,52 @@
                                 <label class="form-label"><i class="fas fa-globe"></i> Country <span class="required">*</span></label>
                                 <div class="input-wrapper">
                                     <i class="fas fa-globe input-icon"></i>
-                                    <input type="text" class="form-input" placeholder="Kenya" id="country" value="Kenya" />
-                                </div>
-                            </div>
-
-                            <!-- Delivery Zone Selector -->
-                            <div>
-                                <label class="form-label"><i class="fas fa-truck"></i> Delivery Zone <span class="required">*</span></label>
-                                <div class="input-wrapper">
-                                    <i class="fas fa-map-marker-alt input-icon"></i>
-                                    <select class="delivery-zone-select" id="deliveryZone" onchange="updateDeliveryFee()">
-                                        <option value="">-- Select your delivery zone --</option>
-                                        <option value="zone_1" data-fee="50">Zone 1 (0-500m) - KSh 50</option>
-                                        <option value="zone_2" data-fee="100">Zone 2 (500m-1km) - KSh 100</option>
-                                        <option value="zone_3" data-fee="150">Zone 3 (1km-1.5km) - KSh 150</option>
-                                        <option value="zone_4" data-fee="200">Zone 4 (1.5km-3km) - KSh 200</option>
-                                        <option value="zone_5" data-fee="300">Zone 5 (3km+) - KSh 300</option>
-                                    </select>
-                                </div>
-                                <div style="font-size:0.7rem;color:#94a3b8;margin-top:4px;">
-                                    <i class="fas fa-info-circle"></i> Not sure? Call us at 0728922614
+                                    <input type="text" class="form-input" placeholder="Kenya" id="country" value="Kenya" onchange="geocodeAddress()" />
                                 </div>
                             </div>
 
                             <!-- Delivery Fee Display -->
                             <div id="deliveryFeeDisplay" style="display:none;">
-                                <div style="background:#f0fdf4;border:1px solid #d1fae5;border-radius:12px;padding:12px 16px;">
-                                    <div style="display:flex;justify-content:space-between;align-items:center;">
-                                        <span style="font-size:0.85rem;font-weight:600;color:#0b2b1e;">
+                                <div style="background:#f0fdf4;border:1px solid #d1fae5;border-radius:12px;padding:16px;">
+                                    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">
+                                        <span style="font-size:0.9rem;font-weight:700;color:#0b2b1e;">
                                             <i class="fas fa-truck"></i> Delivery Fee
                                         </span>
-                                        <span style="font-size:1rem;font-weight:700;color:#0b2b1e;" id="deliveryFeeAmount">KSh 0</span>
+                                        <span style="font-size:1.2rem;font-weight:800;color:#0b2b1e;" id="deliveryFeeAmount">KSh 0</span>
                                     </div>
-                                    <div id="freeDeliveryMessage" style="display:none;font-size:0.7rem;color:#10b981;margin-top:4px;">
+                                    <div style="font-size:0.75rem;color:#5a6d7a;border-top:1px solid #d1fae5;padding-top:8px;">
+                                        <div style="display:flex;justify-content:space-between;">
+                                            <span>📍 Distance from store</span>
+                                            <span style="font-weight:600;" id="distanceDisplay">- km</span>
+                                        </div>
+                                        <div style="display:flex;justify-content:space-between;margin-top:4px;">
+                                            <span>💰 Rate applied</span>
+                                            <span style="font-weight:600;" id="rateDisplay">-</span>
+                                        </div>
+                                    </div>
+                                    <div id="freeDeliveryMessage" style="display:none;font-size:0.75rem;color:#10b981;margin-top:8px;font-weight:600;">
                                         🎉 FREE DELIVERY applied!
                                     </div>
+                                </div>
+                            </div>
+
+                            <div id="shippingPending" style="background:#fef3c7;border:1px solid #f59e0b;border-radius:8px;padding:12px;font-size:0.85rem;color:#92400e;">
+                                <i class="fas fa-info-circle"></i> Enter your address to calculate delivery fee
+                            </div>
+
+                            <!-- Manual fallback for zone -->
+                            <div id="manualZoneFallback" style="display:none;">
+                                <label class="form-label"><i class="fas fa-truck"></i> Delivery Zone (Manual)</label>
+                                <div class="input-wrapper">
+                                    <i class="fas fa-map-marker-alt input-icon"></i>
+                                    <select class="delivery-zone-select" id="deliveryZone" onchange="updateDeliveryFee()">
+                                        <option value="">-- Select your delivery zone --</option>
+                                        <option value="zone_1" data-fee="50" data-min="0" data-max="0.5">Zone 1 (0-500m) - KSh 50</option>
+                                        <option value="zone_2" data-fee="100" data-min="0.5" data-max="1">Zone 2 (500m-1km) - KSh 100</option>
+                                        <option value="zone_3" data-fee="150" data-min="1" data-max="1.5">Zone 3 (1km-1.5km) - KSh 150</option>
+                                        <option value="zone_4" data-fee="200" data-min="1.5" data-max="3">Zone 4 (1.5km-3km) - KSh 200</option>
+                                        <option value="zone_5" data-fee="300" data-min="3" data-max="999">Zone 5 (3km+) - KSh 300</option>
+                                    </select>
                                 </div>
                             </div>
 
@@ -384,7 +437,7 @@
                         </button>
                     </div>
 
-                    <!-- Step 2: Payment - ONLY M-PESA AND WHATSAPP -->
+                    <!-- Step 2: Payment -->
                     <div class="checkout-step" id="step2">
                         <div class="flex items-center gap-3 mb-6">
                             <div class="w-10 h-10 rounded-full bg-[#0b2b1e] text-white flex items-center justify-center font-bold text-sm shadow-lg shadow-[#0b2b1e]/20">2</div>
@@ -402,7 +455,6 @@
                             </div>
                         </div>
 
-                        <!-- ONLY 2 OPTIONS: M-PESA + WHATSAPP -->
                         <div class="grid md:grid-cols-2 gap-4">
                             <!-- M-Pesa -->
                             <div class="payment-option" id="mpesaOption">
@@ -525,7 +577,7 @@
                         <div class="summary-item">
                             <span class="text-gray-500">Delivery Fee</span>
                             <span class="font-semibold text-[#0b2b1e]" id="shippingCostDisplay2">
-                                <span id="shippingPendingText">⏳ Select zone</span>
+                                <span id="shippingPendingText">⏳ Detecting...</span>
                             </span>
                         </div>
                         <div class="summary-total">
@@ -563,7 +615,26 @@
     </div>
 
     <script>
-    console.log('🚀 ACACIAMART Checkout Loaded');
+    console.log('🚀 ACACIAMART Checkout Loaded - Distance-Based Delivery');
+
+    // ============================================================
+    // CONFIG - STORE LOCATION & DELIVERY RATES
+    // ============================================================
+    const STORE_LAT = -1.286389;   // Acacia Minimart, Nairobi CBD
+    const STORE_LNG = 36.817223;
+    const FREE_DELIVERY_THRESHOLD = 5000;
+
+    // ✅ Delivery rates from Ichams:
+    // 0-500m = KSh 50
+    // 500m-1km = KSh 100
+    // 1km-1.5km = KSh 150
+    function getDeliveryFee(distanceKm) {
+        if (distanceKm <= 0.5) return { fee: 50,  rate: '0-500m' };
+        if (distanceKm <= 1.0) return { fee: 100, rate: '500m-1km' };
+        if (distanceKm <= 1.5) return { fee: 150, rate: '1km-1.5km' };
+        if (distanceKm <= 3.0) return { fee: 200, rate: '1.5km-3km' };
+        return { fee: 300, rate: '3km+' };
+    }
 
     // ============================================================
     // GLOBAL VARIABLES
@@ -579,35 +650,199 @@
     let mpesaStartTime = null;
     let isProcessingPayment = false;
     let selectedZone = null;
-
-    const FREE_DELIVERY_THRESHOLD = 5000;
+    let detectedDistance = 0;
+    let locationDetected = false;
 
     // ============================================================
-    // FORMAT & VALIDATE PHONE
+    // HAVERSINE DISTANCE FORMULA
     // ============================================================
-    function formatPhoneNumber(phone) {
-        let cleaned = phone.replace(/\D/g, '');
-        if (!cleaned) return '';
-        if (cleaned.startsWith('0')) cleaned = cleaned.substring(1);
-        if (cleaned.startsWith('254')) return cleaned;
-        if (cleaned.startsWith('7')) return '254' + cleaned;
-        if (cleaned.startsWith('1')) return '254' + cleaned;
-        return cleaned;
-    }
-
-    function validatePhoneNumber(phone) {
-        const formatted = formatPhoneNumber(phone);
-        if (formatted.length !== 12) {
-            return { valid: false, message: 'Please enter a valid phone number (e.g., 0712345678)', formatted };
-        }
-        if (!formatted.startsWith('254')) {
-            return { valid: false, message: 'Phone must start with 254 or 0', formatted };
-        }
-        return { valid: true, formatted };
+    function haversineDistance(lat1, lon1, lat2, lon2) {
+        const R = 6371;
+        const dLat = (lat2 - lat1) * Math.PI / 180;
+        const dLon = (lon2 - lon1) * Math.PI / 180;
+        const a = 
+            Math.sin(dLat/2) * Math.sin(dLat/2) +
+            Math.cos(lat1 * Math.PI / 180) * Math.cos(lat2 * Math.PI / 180) *
+            Math.sin(dLon/2) * Math.sin(dLon/2);
+        const c = 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1-a));
+        return R * c;
     }
 
     // ============================================================
-    // UPDATE DELIVERY FEE
+    // DETECT GPS LOCATION
+    // ============================================================
+    function detectLocation() {
+        console.log('📍 Detecting GPS location...');
+        const statusDiv = document.getElementById('locationStatus');
+        const spinner = document.getElementById('locationSpinner');
+        const messageEl = document.getElementById('locationMessage');
+        const retryBtn = document.getElementById('locationRetryBtn');
+
+        spinner.style.display = 'block';
+        messageEl.innerHTML = '<span style="font-weight:600;font-size:0.9rem;">📍 Detecting your location...</span><p style="font-size:0.75rem;color:#5a6d7a;">Please allow location access</p>';
+        retryBtn.style.display = 'none';
+        statusDiv.classList.remove('success', 'error');
+
+        if (!navigator.geolocation) {
+            handleLocationError('Geolocation not supported by your browser');
+            return;
+        }
+
+        navigator.geolocation.getCurrentPosition(
+            (position) => {
+                const userLat = position.coords.latitude;
+                const userLng = position.coords.longitude;
+                const distance = haversineDistance(STORE_LAT, STORE_LNG, userLat, userLng);
+
+                console.log(`📍 Location: (${userLat}, ${userLng}) | Distance: ${distance.toFixed(2)} km`);
+
+                detectedDistance = distance;
+                locationDetected = true;
+                spinner.style.display = 'none';
+                statusDiv.classList.add('success');
+                statusDiv.classList.remove('error');
+
+                messageEl.innerHTML = `
+                    <span style="font-weight:700;font-size:0.9rem;color:#059669;">
+                        <i class="fas fa-check-circle"></i> Location detected!
+                    </span>
+                    <p style="font-size:0.75rem;color:#5a6d7a;">
+                        Distance from store: <strong>${distance.toFixed(2)} km</strong>
+                    </p>
+                `;
+                retryBtn.style.display = 'inline-block';
+
+                applyDistanceDelivery(distance);
+                showToast('📍 Location detected!', 'success', `${distance.toFixed(2)} km from store`);
+            },
+            (error) => {
+                console.log('⚠️ GPS error:', error.message);
+                let msg = 'Could not detect location. Enter address manually or select zone.';
+                if (error.code === 1) msg = 'Location access denied. Enter address manually or select zone.';
+                else if (error.code === 2) msg = 'Location unavailable. Enter address manually or select zone.';
+                else if (error.code === 3) msg = 'Location timeout. Enter address manually or select zone.';
+                handleLocationError(msg);
+            },
+            { enableHighAccuracy: true, timeout: 10000, maximumAge: 0 }
+        );
+    }
+
+    function handleLocationError(msg) {
+        const statusDiv = document.getElementById('locationStatus');
+        const spinner = document.getElementById('locationSpinner');
+        const messageEl = document.getElementById('locationMessage');
+        const retryBtn = document.getElementById('locationRetryBtn');
+
+        spinner.style.display = 'none';
+        statusDiv.classList.add('error');
+        statusDiv.classList.remove('success');
+        messageEl.innerHTML = `
+            <span style="font-weight:600;font-size:0.85rem;color:#92400e;">
+                ⚠️ ${msg}
+            </span>
+            <p style="font-size:0.7rem;color:#78350f;margin-top:4px;">
+                You can enter your address or select a zone manually below.
+            </p>
+        `;
+        retryBtn.style.display = 'inline-block';
+        document.getElementById('manualZoneFallback').style.display = 'block';
+    }
+
+    function retryLocation() {
+        console.log('📍 Retrying location...');
+        detectLocation();
+    }
+
+    // ============================================================
+    // GEOCODE ADDRESS (if GPS fails)
+    // ============================================================
+    function geocodeAddress() {
+        const address = document.getElementById('address').value.trim();
+        const city = document.getElementById('city').value.trim();
+        const country = document.getElementById('country').value.trim() || 'Kenya';
+
+        if (!address || !city) return;
+
+        const fullAddress = `${address}, ${city}, ${country}`;
+        const url = `https://nominatim.openstreetmap.org/search?q=${encodeURIComponent(fullAddress)}&format=json&limit=1`;
+
+        console.log('📍 Geocoding:', fullAddress);
+
+        fetch(url)
+            .then(response => response.json())
+            .then(data => {
+                if (data && data.length > 0) {
+                    const lat = parseFloat(data[0].lat);
+                    const lon = parseFloat(data[0].lon);
+                    const distance = haversineDistance(STORE_LAT, STORE_LNG, lat, lon);
+
+                    console.log(`📍 Address geocoded. Distance: ${distance.toFixed(2)} km`);
+
+                    detectedDistance = distance;
+                    locationDetected = true;
+
+                    const statusDiv = document.getElementById('locationStatus');
+                    const spinner = document.getElementById('locationSpinner');
+                    const messageEl = document.getElementById('locationMessage');
+                    const retryBtn = document.getElementById('locationRetryBtn');
+
+                    spinner.style.display = 'none';
+                    statusDiv.classList.add('success');
+                    statusDiv.classList.remove('error');
+                    messageEl.innerHTML = `
+                        <span style="font-weight:700;font-size:0.9rem;color:#059669;">
+                            <i class="fas fa-check-circle"></i> Address found!
+                        </span>
+                        <p style="font-size:0.75rem;color:#5a6d7a;">
+                            Distance from store: <strong>${distance.toFixed(2)} km</strong>
+                        </p>
+                    `;
+                    retryBtn.style.display = 'inline-block';
+
+                    applyDistanceDelivery(distance);
+                    showToast('📍 Address located!', 'success', `${distance.toFixed(2)} km from store`);
+                } else {
+                    console.log('⚠️ Address not found');
+                }
+            })
+            .catch(error => {
+                console.error('❌ Geocoding error:', error);
+            });
+    }
+
+    // ============================================================
+    // APPLY DISTANCE-BASED DELIVERY FEE
+    // ============================================================
+    function applyDistanceDelivery(distanceKm) {
+        const { fee, rate } = getDeliveryFee(distanceKm);
+
+        // Free delivery for orders over KSh 5,000
+        if (subtotal >= FREE_DELIVERY_THRESHOLD) {
+            shippingCost = 0;
+            document.getElementById('freeDeliveryMessage').style.display = 'block';
+        } else {
+            shippingCost = fee;
+            document.getElementById('freeDeliveryMessage').style.display = 'none';
+        }
+
+        shippingCalculated = true;
+
+        // Show delivery display
+        document.getElementById('deliveryFeeDisplay').style.display = 'block';
+        document.getElementById('shippingPending').style.display = 'none';
+        document.getElementById('manualZoneFallback').style.display = 'none';
+
+        document.getElementById('deliveryFeeAmount').textContent = shippingCost === 0 
+            ? 'FREE 🎉' 
+            : 'KSh ' + shippingCost.toLocaleString();
+        document.getElementById('distanceDisplay').textContent = distanceKm.toFixed(2) + ' km';
+        document.getElementById('rateDisplay').textContent = rate;
+
+        updateTotalsDisplay();
+    }
+
+    // ============================================================
+    // MANUAL ZONE FALLBACK
     // ============================================================
     function updateDeliveryFee() {
         const select = document.getElementById('deliveryZone');
@@ -623,6 +858,10 @@
 
         selectedZone = selected.value;
         const baseFee = parseFloat(selected.dataset.fee) || 0;
+        const minDist = parseFloat(selected.dataset.min) || 0;
+        const maxDist = parseFloat(selected.dataset.max) || 0;
+
+        detectedDistance = (minDist + maxDist) / 2;
 
         if (subtotal >= FREE_DELIVERY_THRESHOLD) {
             shippingCost = 0;
@@ -634,9 +873,12 @@
 
         shippingCalculated = true;
         document.getElementById('deliveryFeeDisplay').style.display = 'block';
+        document.getElementById('shippingPending').style.display = 'none';
         document.getElementById('deliveryFeeAmount').textContent = shippingCost === 0 
             ? 'FREE 🎉' 
             : 'KSh ' + shippingCost.toLocaleString();
+        document.getElementById('distanceDisplay').textContent = detectedDistance.toFixed(2) + ' km (estimated)';
+        document.getElementById('rateDisplay').textContent = selected.textContent;
 
         updateTotalsDisplay();
     }
@@ -673,7 +915,7 @@
     // ============================================================
     function goToStep(step) {
         if (step === 2 && !shippingCalculated) {
-            showToast('⚠️ Please select your delivery zone', 'warning');
+            showToast('⚠️ Please wait for location detection or select a zone', 'warning');
             return;
         }
 
@@ -707,7 +949,8 @@
             country: document.getElementById('country').value.trim() || 'Kenya',
             delivery_notes: document.getElementById('deliveryNotes').value.trim(),
             shipping_cost: shippingCost,
-            delivery_zone: selectedZone
+            delivery_zone: selectedZone,
+            distance_km: detectedDistance
         };
     }
 
@@ -721,7 +964,7 @@
         }
 
         if (!shippingCalculated) {
-            showToast('⚠️ Please select your delivery zone', 'warning');
+            showToast('⚠️ Please wait for location or select a zone', 'warning');
             goToStep(1);
             return false;
         }
@@ -754,14 +997,17 @@
             return;
         }
 
-        const validation = validatePhoneNumber(phoneInput);
-        if (!validation.valid) {
-            showToast('⚠️ ' + validation.message, 'warning');
+        let cleaned = phoneInput.replace(/\D/g, '');
+        if (cleaned.startsWith('0')) cleaned = cleaned.substring(1);
+        if (!cleaned.startsWith('254')) cleaned = '254' + cleaned;
+        const formattedPhone = cleaned;
+
+        if (formattedPhone.length !== 12) {
+            showToast('⚠️ Please enter a valid phone number (e.g., 0712345678)', 'warning');
             document.getElementById('phone').focus();
             return;
         }
 
-        const formattedPhone = validation.formatted;
         isProcessingPayment = true;
 
         const mpesaBtn = document.getElementById('mpesaPayBtn');
@@ -779,7 +1025,6 @@
         loader.style.display = 'block';
 
         const orderId = 'ORD-' + Date.now().toString(36).toUpperCase();
-
         mpesaStartTime = Date.now();
 
         fetch('/mpesa/initiate', {
@@ -837,10 +1082,7 @@
             fetch('/mpesa/status', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ 
-                    checkout_request_id: checkoutId,
-                    elapsed: elapsed
-                })
+                body: JSON.stringify({ checkout_request_id: checkoutId, elapsed: elapsed })
             })
             .then(r => r.json())
             .then(data => {
@@ -921,11 +1163,7 @@
             if (nameEl && priceEl) {
                 const price = parseFloat(priceEl.textContent.replace('KSh ', '').replace(/,/g, ''));
                 const qty = qtyEl ? parseInt(qtyEl.textContent.replace('×', '')) : 1;
-                cartItems.push({
-                    name: nameEl.textContent.trim(),
-                    price: price,
-                    quantity: qty
-                });
+                cartItems.push({ name: nameEl.textContent.trim(), price: price, quantity: qty });
             }
         });
 
@@ -948,7 +1186,8 @@
             customer_phone: data.phone,
             customer_address: fullAddress,
             delivery_notes: data.delivery_notes,
-            delivery_zone: data.delivery_zone
+            delivery_zone: data.delivery_zone,
+            distance_km: detectedDistance
         };
 
         isProcessingPayment = true;
@@ -968,8 +1207,6 @@
         })
         .then(response => response.json())
         .then(result => {
-            console.log('📥 WhatsApp order result:', result);
-
             if (result.success) {
                 orderPlaced = true;
                 isProcessingPayment = false;
@@ -984,16 +1221,12 @@
                 notes.textContent = data.delivery_notes ? '📝 ' + data.delivery_notes : 'No special instructions';
 
                 if (result.whatsapp_url) {
-                    console.log('📱 Opening WhatsApp:', result.whatsapp_url);
-                    setTimeout(() => {
-                        window.open(result.whatsapp_url, '_blank');
-                    }, 500);
+                    setTimeout(() => { window.open(result.whatsapp_url, '_blank'); }, 500);
                 }
 
                 goToStep(3);
                 launchConfetti();
                 showToast('✅ Order saved! Confirm in WhatsApp', 'success', 'Your order is waiting for confirmation');
-
             } else {
                 showToast('❌ ' + (result.message || 'Failed to save order'), 'error');
                 isProcessingPayment = false;
@@ -1002,7 +1235,6 @@
             }
         })
         .catch(error => {
-            console.error('❌ WhatsApp order error:', error);
             showToast('❌ Something went wrong. Please try again.', 'error');
             isProcessingPayment = false;
             if (waBtn) { waBtn.innerHTML = '<i class="fab fa-whatsapp"></i> Order via WhatsApp'; waBtn.disabled = false; }
@@ -1056,6 +1288,7 @@
             customer_address: fullAddress,
             delivery_notes: data.delivery_notes,
             delivery_zone: data.delivery_zone,
+            distance_km: detectedDistance,
             customer: {
                 name: customerName,
                 email: data.email,
@@ -1149,7 +1382,7 @@
     }
 
     // ============================================================
-    // EVENT LISTENERS
+    // INIT - Auto-detect location on load
     // ============================================================
     document.addEventListener('DOMContentLoaded', function() {
         const mpesaBtn = document.getElementById('mpesaPayBtn');
@@ -1160,6 +1393,11 @@
 
         document.getElementById('summarySubtotal').textContent = 'KSh ' + subtotal.toLocaleString();
         updateTotalsDisplay();
+
+        // ✅ Auto-detect location on load
+        setTimeout(() => {
+            detectLocation();
+        }, 800);
     });
     </script>
 </body>
