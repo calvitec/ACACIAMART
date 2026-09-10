@@ -13,15 +13,12 @@
 
         @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.02); } }
 
         .app-header {
             background: rgba(255,255,255,0.92);
             backdrop-filter: blur(16px);
             border-bottom: 1px solid rgba(226, 232, 240, 0.5);
-            position: sticky;
-            top: 0;
-            z-index: 1000;
+            position: sticky; top: 0; z-index: 1000;
         }
         .brand-icon-wrap {
             width: 40px; height: 40px; border-radius: 12px;
@@ -57,14 +54,10 @@
         }
 
         .form-input {
-            border: 2px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 12px 16px 12px 44px;
-            width: 100%;
-            color: #0b1a2f;
-            transition: all 0.3s;
-            background: #f8fafc;
-            font-size: 0.95rem;
+            border: 2px solid #e2e8f0; border-radius: 12px;
+            padding: 12px 16px 12px 44px; width: 100%;
+            color: #0b1a2f; transition: all 0.3s;
+            background: #f8fafc; font-size: 0.95rem;
         }
         .form-input::placeholder { color: #94a3b8; }
         .form-input:focus {
@@ -391,7 +384,7 @@
                         </button>
                     </div>
 
-                    <!-- Step 2: Payment -->
+                    <!-- Step 2: Payment - ONLY M-PESA AND WHATSAPP -->
                     <div class="checkout-step" id="step2">
                         <div class="flex items-center gap-3 mb-6">
                             <div class="w-10 h-10 rounded-full bg-[#0b2b1e] text-white flex items-center justify-center font-bold text-sm shadow-lg shadow-[#0b2b1e]/20">2</div>
@@ -409,31 +402,19 @@
                             </div>
                         </div>
 
+                        <!-- ONLY 2 OPTIONS: M-PESA + WHATSAPP -->
                         <div class="grid md:grid-cols-2 gap-4">
                             <!-- M-Pesa -->
                             <div class="payment-option" id="mpesaOption">
                                 <span class="icon">📱</span>
                                 <div class="title">M-Pesa</div>
-                                <div class="subtitle">Pay via M-Pesa Paybill</div>
+                                <div class="subtitle">Pay via M-Pesa Paybill (4671257)</div>
                                 <div class="flex flex-wrap gap-2 mt-2">
                                     <span class="badge mpesa">💳 M-Pesa</span>
-                                    <span class="badge popular">✓ Fast</span>
+                                    <span class="badge popular">✓ Instant</span>
                                 </div>
                                 <button class="mt-3 w-full bg-[#0b2b1e] text-white py-2.5 px-4 rounded-full font-semibold text-sm hover:bg-[#061a12] transition-all shadow-lg shadow-[#0b2b1e]/20" id="mpesaPayBtn">
                                     <i class="fas fa-mobile-alt"></i> Pay KSh {{ "%.0f"|format(total) }}
-                                </button>
-                            </div>
-
-                            <!-- Cash -->
-                            <div class="payment-option" id="cashOption">
-                                <span class="icon">💵</span>
-                                <div class="title">Cash</div>
-                                <div class="subtitle">Pay with cash at the store or upon delivery</div>
-                                <div class="flex flex-wrap gap-2 mt-2">
-                                    <span class="badge popular">✓ Secure</span>
-                                </div>
-                                <button class="mt-3 w-full bg-[#0b2b1e] text-white py-2.5 px-4 rounded-full font-semibold text-sm hover:bg-[#061a12] transition-all shadow-lg shadow-[#0b2b1e]/20" id="cashPayBtn">
-                                    <i class="fas fa-money-bill-wave"></i> Place Order
                                 </button>
                             </div>
 
@@ -441,9 +422,10 @@
                             <div class="payment-option" id="whatsappOption" style="border-color:#25D366;">
                                 <span class="icon">💬</span>
                                 <div class="title">Order via WhatsApp</div>
-                                <div class="subtitle">Send your cart directly to us on WhatsApp</div>
+                                <div class="subtitle">Send your cart to us on WhatsApp</div>
                                 <div class="flex flex-wrap gap-2 mt-2">
                                     <span class="badge wa">💬 WhatsApp</span>
+                                    <span class="badge popular">✓ Confirm fast</span>
                                 </div>
                                 <button class="mt-3 w-full bg-gradient-to-r from-[#25D366] to-[#128C7E] text-white py-2.5 px-4 rounded-full font-semibold text-sm hover:opacity-90 transition-all shadow-lg shadow-[#25D366]/30" id="whatsappOrderBtn">
                                     <i class="fab fa-whatsapp"></i> Order via WhatsApp
@@ -783,11 +765,9 @@
         isProcessingPayment = true;
 
         const mpesaBtn = document.getElementById('mpesaPayBtn');
-        const cashBtn = document.getElementById('cashPayBtn');
         const waBtn = document.getElementById('whatsappOrderBtn');
 
         if (mpesaBtn) { mpesaBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...'; mpesaBtn.disabled = true; }
-        if (cashBtn) cashBtn.disabled = true;
         if (waBtn) waBtn.disabled = true;
 
         const statusDiv = document.getElementById('mpesaStatus');
@@ -838,8 +818,6 @@
         isProcessingPayment = false;
         const mpesaBtn = document.getElementById('mpesaPayBtn');
         if (mpesaBtn) { mpesaBtn.innerHTML = '<i class="fas fa-mobile-alt"></i> Pay KSh ' + totalAmount.toLocaleString(); mpesaBtn.disabled = false; }
-        const cashBtn = document.getElementById('cashPayBtn');
-        if (cashBtn) cashBtn.disabled = false;
         const waBtn = document.getElementById('whatsappOrderBtn');
         if (waBtn) waBtn.disabled = false;
     }
@@ -885,7 +863,7 @@
                         resetPaymentButtons();
                     } else if (data.status === 'unreachable') {
                         clearInterval(mpesaStatusInterval);
-                        document.getElementById('mpesaStatusMessage').innerHTML = '📵 We could not reach your phone. Check signal and <button onclick="retryMpesa()" style="margin-left:8px;text-decoration:underline;color:#0b2b1e;font-weight:700;">Retry</button>';
+                        document.getElementById('mpesaStatusMessage').innerHTML = '📵 Could not reach your phone. Check signal and <button onclick="retryMpesa()" style="margin-left:8px;text-decoration:underline;color:#0b2b1e;font-weight:700;">Retry</button>';
                         document.getElementById('mpesaStatusLoader').style.display = 'none';
                         resetPaymentButtons();
                     } else if (data.status === 'failed') {
@@ -895,7 +873,7 @@
                         resetPaymentButtons();
                     } else if (data.status === 'insufficient') {
                         clearInterval(mpesaStatusInterval);
-                        document.getElementById('mpesaStatusMessage').innerHTML = '❌ Insufficient M-Pesa balance. Top up and <button onclick="retryMpesa()" style="margin-left:8px;text-decoration:underline;color:#0b2b1e;font-weight:700;">Retry</button>';
+                        document.getElementById('mpesaStatusMessage').innerHTML = '❌ Insufficient M-Pesa balance. <button onclick="retryMpesa()" style="margin-left:8px;text-decoration:underline;color:#0b2b1e;font-weight:700;">Retry</button>';
                         document.getElementById('mpesaStatusLoader').style.display = 'none';
                         resetPaymentButtons();
                     } else if (data.status === 'wrong_pin') {
@@ -921,25 +899,6 @@
         document.getElementById('mpesaStatus').style.display = 'none';
         resetPaymentButtons();
         payWithMpesa();
-    }
-
-    // ============================================================
-    // PLACE CASH ORDER
-    // ============================================================
-    function placeCashOrder() {
-        if (isProcessingPayment) return;
-        if (orderPlaced) return;
-        if (!validateCustomerData()) return;
-
-        const cashBtn = document.getElementById('cashPayBtn');
-        const mpesaBtn = document.getElementById('mpesaPayBtn');
-        const waBtn = document.getElementById('whatsappOrderBtn');
-
-        if (cashBtn) { cashBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Processing...'; cashBtn.disabled = true; }
-        if (mpesaBtn) mpesaBtn.disabled = true;
-        if (waBtn) waBtn.disabled = true;
-
-        completeOrder('cash');
     }
 
     // ============================================================
@@ -996,11 +955,9 @@
 
         const waBtn = document.getElementById('whatsappOrderBtn');
         const mpesaBtn = document.getElementById('mpesaPayBtn');
-        const cashBtn = document.getElementById('cashPayBtn');
 
         if (waBtn) { waBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...'; waBtn.disabled = true; }
         if (mpesaBtn) mpesaBtn.disabled = true;
-        if (cashBtn) cashBtn.disabled = true;
 
         showToast('💬 Saving your order...', 'info');
 
@@ -1042,7 +999,6 @@
                 isProcessingPayment = false;
                 if (waBtn) { waBtn.innerHTML = '<i class="fab fa-whatsapp"></i> Order via WhatsApp'; waBtn.disabled = false; }
                 if (mpesaBtn) mpesaBtn.disabled = false;
-                if (cashBtn) cashBtn.disabled = false;
             }
         })
         .catch(error => {
@@ -1051,12 +1007,11 @@
             isProcessingPayment = false;
             if (waBtn) { waBtn.innerHTML = '<i class="fab fa-whatsapp"></i> Order via WhatsApp'; waBtn.disabled = false; }
             if (mpesaBtn) mpesaBtn.disabled = false;
-            if (cashBtn) cashBtn.disabled = false;
         });
     }
 
     // ============================================================
-    // COMPLETE ORDER (M-Pesa & Cash)
+    // COMPLETE M-PESA ORDER
     // ============================================================
     function completeOrder(method) {
         const data = getCustomerData();
@@ -1199,9 +1154,6 @@
     document.addEventListener('DOMContentLoaded', function() {
         const mpesaBtn = document.getElementById('mpesaPayBtn');
         if (mpesaBtn) mpesaBtn.addEventListener('click', (e) => { e.preventDefault(); payWithMpesa(); });
-
-        const cashBtn = document.getElementById('cashPayBtn');
-        if (cashBtn) cashBtn.addEventListener('click', (e) => { e.preventDefault(); placeCashOrder(); });
 
         const waBtn = document.getElementById('whatsappOrderBtn');
         if (waBtn) waBtn.addEventListener('click', (e) => { e.preventDefault(); orderViaWhatsApp(); });
