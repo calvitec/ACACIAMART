@@ -14,7 +14,6 @@
         @keyframes slideUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
         @keyframes pulse { 0%,100% { transform: scale(1); } 50% { transform: scale(1.02); } }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
 
         .app-header {
             background: rgba(255,255,255,0.92);
@@ -23,52 +22,29 @@
             position: sticky;
             top: 0;
             z-index: 1000;
-            transition: all 0.3s ease;
         }
-        .app-header.scrolled { box-shadow: 0 4px 30px rgba(0,0,0,0.05); }
-
         .brand-icon-wrap {
-            width: 40px;
-            height: 40px;
-            border-radius: 12px;
+            width: 40px; height: 40px; border-radius: 12px;
             background: linear-gradient(135deg, #0b2b1e, #1e4d34);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: #c7a86b;
-            font-size: 1.2rem;
+            display: flex; align-items: center; justify-content: center;
+            color: #c7a86b; font-size: 1.2rem;
             box-shadow: 0 6px 16px rgba(11,43,30,0.2);
             flex-shrink: 0;
         }
-        .brand-text {
-            font-weight: 800;
-            font-size: 1.35rem;
-            color: #0b1a2f;
-            letter-spacing: -0.5px;
-        }
+        .brand-text { font-weight: 800; font-size: 1.35rem; color: #0b1a2f; letter-spacing: -0.5px; }
         .brand-text span { 
             background: linear-gradient(135deg, #0b2b1e, #1e4d34);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
-            background-clip: text;
         }
 
         .back-link {
-            color: #5a6d7a;
-            text-decoration: none;
-            transition: all 0.3s;
-            font-weight: 500;
-            font-size: 0.9rem;
-            padding: 8px 16px;
-            border-radius: 40px;
-            background: rgba(0,0,0,0.02);
+            color: #5a6d7a; text-decoration: none; transition: all 0.3s;
+            font-weight: 500; font-size: 0.9rem; padding: 8px 16px;
+            border-radius: 40px; background: rgba(0,0,0,0.02);
             border: 1px solid transparent;
         }
-        .back-link:hover {
-            background: #f1f5f9;
-            color: #0b1a2f;
-            border-color: #e2e8f0;
-        }
+        .back-link:hover { background: #f1f5f9; color: #0b1a2f; border-color: #e2e8f0; }
         .back-link i { margin-right: 6px; }
 
         .glass-card {
@@ -77,10 +53,8 @@
             border: 1px solid rgba(226, 232, 240, 0.5);
             border-radius: 20px;
             padding: 28px;
-            transition: all 0.3s;
             box-shadow: 0 2px 15px rgba(0,0,0,0.02);
         }
-        .glass-card:hover { box-shadow: 0 8px 40px rgba(0,0,0,0.04); }
 
         .form-input {
             border: 2px solid #e2e8f0;
@@ -94,91 +68,64 @@
         }
         .form-input::placeholder { color: #94a3b8; }
         .form-input:focus {
-            outline: none;
-            border-color: #0b2b1e;
-            background: white;
+            outline: none; border-color: #0b2b1e; background: white;
             box-shadow: 0 0 0 4px rgba(11,43,30,0.06);
         }
         .form-label {
-            font-size: 0.75rem;
-            font-weight: 600;
-            color: #3d4f47;
-            display: block;
-            margin-bottom: 4px;
-            text-transform: uppercase;
-            letter-spacing: 0.05em;
+            font-size: 0.75rem; font-weight: 600; color: #3d4f47;
+            display: block; margin-bottom: 4px;
+            text-transform: uppercase; letter-spacing: 0.05em;
         }
         .form-label i { color: #0b2b1e; margin-right: 4px; }
         .form-label .required { color: #dc2626; margin-left: 2px; }
 
         .input-wrapper { position: relative; }
         .input-wrapper .input-icon {
-            position: absolute;
-            left: 14px;
-            top: 50%;
-            transform: translateY(-50%);
-            color: #94a3b8;
-            font-size: 1rem;
-            z-index: 2;
+            position: absolute; left: 14px; top: 50%;
+            transform: translateY(-50%); color: #94a3b8;
+            font-size: 1rem; z-index: 2;
         }
         .input-wrapper .form-input { padding-left: 44px; }
         .input-wrapper textarea.form-input { padding-top: 14px; }
 
         .btn-primary {
             background: linear-gradient(135deg, #0b2b1e, #1e4d34);
-            color: white;
-            padding: 16px 32px;
-            border-radius: 9999px;
-            font-weight: 700;
-            border: none;
-            cursor: pointer;
-            transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            width: 100%;
-            font-size: 1rem;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: 10px;
-            box-shadow: 0 6px 20px rgba(11,43,30,0.2);
+            color: white; padding: 16px 32px; border-radius: 9999px;
+            font-weight: 700; border: none; cursor: pointer;
+            transition: all 0.3s; width: 100%; font-size: 1rem;
+            display: flex; align-items: center; justify-content: center;
+            gap: 10px; box-shadow: 0 6px 20px rgba(11,43,30,0.2);
         }
         .btn-primary:hover { transform: translateY(-2px); box-shadow: 0 12px 30px rgba(11,43,30,0.3); }
         .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
         .btn-outline {
-            border: 2px solid #e2e8f0;
-            color: #3d4f47;
-            background: transparent;
-            padding: 12px 24px;
-            border-radius: 9999px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            width: 100%;
-            font-size: 0.95rem;
+            border: 2px solid #e2e8f0; color: #3d4f47;
+            background: transparent; padding: 12px 24px;
+            border-radius: 9999px; font-weight: 600;
+            cursor: pointer; transition: all 0.3s;
+            width: 100%; font-size: 0.95rem;
         }
         .btn-outline:hover { border-color: #0b2b1e; color: #0b2b1e; background: #f0fdf4; }
 
         .payment-option {
-            border: 2px solid #e2e8f0;
-            border-radius: 16px;
-            padding: 24px 20px;
-            transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            cursor: pointer;
-            background: white;
-            position: relative;
-            overflow: hidden;
+            border: 2px solid #e2e8f0; border-radius: 16px;
+            padding: 24px 20px; transition: all 0.4s;
+            cursor: pointer; background: white;
+            position: relative; overflow: hidden;
         }
-        .payment-option:hover { transform: translateY(-4px); box-shadow: 0 12px 40px rgba(0,0,0,0.06); border-color: #0b2b1e; }
+        .payment-option:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 12px 40px rgba(0,0,0,0.06);
+            border-color: #0b2b1e;
+        }
         .payment-option .icon { font-size: 2.2rem; margin-bottom: 8px; display: block; }
         .payment-option .title { font-weight: 700; color: #0b1a2f; font-size: 1.05rem; }
         .payment-option .subtitle { font-size: 0.8rem; color: #5a6d7a; margin-top: 2px; }
         .payment-option .badge {
-            display: inline-block;
-            font-size: 0.6rem;
-            padding: 3px 12px;
-            border-radius: 9999px;
-            font-weight: 600;
-            margin-top: 8px;
+            display: inline-block; font-size: 0.6rem;
+            padding: 3px 12px; border-radius: 9999px;
+            font-weight: 600; margin-top: 8px;
         }
         .payment-option .badge.popular { background: #dbeafe; color: #2563eb; }
         .payment-option .badge.mpesa { background: #d1fae5; color: #059669; }
@@ -186,62 +133,85 @@
 
         .step-indicator { display: flex; justify-content: center; align-items: center; gap: 12px; margin-bottom: 32px; }
         .step-item { display: flex; align-items: center; gap: 8px; }
-        .step-dot { width: 40px; height: 4px; border-radius: 2px; background: #e2e8f0; transition: all 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .step-dot { width: 40px; height: 4px; border-radius: 2px; background: #e2e8f0; transition: all 0.6s; }
         .step-dot.active { background: #0b2b1e; width: 60px; }
         .step-dot.completed { background: #10b981; }
-        .step-number { font-size: 0.7rem; font-weight: 600; color: #94a3b8; transition: all 0.3s; }
+        .step-number { font-size: 0.7rem; font-weight: 600; color: #94a3b8; }
         .step-number.active { color: #0b2b1e; }
         .step-number.completed { color: #10b981; }
 
-        .checkout-step { display: none; animation: slideUp 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275); }
+        .checkout-step { display: none; animation: slideUp 0.6s ease; }
         .checkout-step.active { display: block; }
 
         .summary-item { display: flex; justify-content: space-between; padding: 10px 0; border-bottom: 1px solid #f1f5f9; }
         .summary-item:last-child { border-bottom: none; }
-        .summary-total { display: flex; justify-content: space-between; padding: 14px 0; margin-top: 8px; border-top: 2px solid #0b2b1e; font-size: 1.2rem; font-weight: 700; }
+        .summary-total {
+            display: flex; justify-content: space-between; padding: 14px 0;
+            margin-top: 8px; border-top: 2px solid #0b2b1e;
+            font-size: 1.2rem; font-weight: 700;
+        }
         .summary-total .value { color: #0b2b1e; font-size: 1.5rem; }
 
-        .order-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #f1f5f9; animation: fadeIn 0.3s ease; }
+        .order-item { display: flex; align-items: center; gap: 12px; padding: 10px 0; border-bottom: 1px solid #f1f5f9; }
         .order-item:last-child { border-bottom: none; }
-        .order-item-image { width: 52px; height: 52px; border-radius: 12px; overflow: hidden; background: #f8fafc; flex-shrink: 0; border: 1px solid #f1f5f9; }
+        .order-item-image {
+            width: 52px; height: 52px; border-radius: 12px;
+            overflow: hidden; background: #f8fafc; flex-shrink: 0;
+            border: 1px solid #f1f5f9;
+        }
         .order-item-image img { width: 100%; height: 100%; object-fit: contain; padding: 6px; }
         .order-item-name { font-weight: 600; color: #0b1a2f; font-size: 0.9rem; }
         .order-item-price { font-weight: 700; color: #0b2b1e; font-size: 0.9rem; }
         .order-item-quantity { color: #94a3b8; font-size: 0.8rem; font-weight: 500; }
 
         .delivery-zone-select {
-            border: 2px solid #e2e8f0;
-            border-radius: 12px;
-            padding: 12px 16px 12px 44px;
-            width: 100%;
-            color: #0b1a2f;
-            transition: all 0.3s;
-            background: #f8fafc;
-            font-size: 0.95rem;
-            appearance: none;
-            cursor: pointer;
+            border: 2px solid #e2e8f0; border-radius: 12px;
+            padding: 12px 16px 12px 44px; width: 100%;
+            color: #0b1a2f; transition: all 0.3s;
+            background: #f8fafc; font-size: 0.95rem;
+            appearance: none; cursor: pointer;
         }
         .delivery-zone-select:focus {
-            outline: none;
-            border-color: #0b2b1e;
-            background: white;
+            outline: none; border-color: #0b2b1e; background: white;
             box-shadow: 0 0 0 4px rgba(11,43,30,0.06);
         }
 
-        .toast { position: fixed; bottom: 30px; right: 30px; z-index: 9999; background: white; padding: 18px 24px; border-radius: 16px; box-shadow: 0 20px 60px rgba(0,0,0,0.12); border: 1px solid rgba(226, 232, 240, 0.6); animation: slideUp 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275); max-width: 420px; backdrop-filter: blur(12px); }
+        .toast {
+            position: fixed; bottom: 30px; right: 30px; z-index: 9999;
+            background: white; padding: 18px 24px; border-radius: 16px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.12);
+            border: 1px solid rgba(226, 232, 240, 0.6);
+            animation: slideUp 0.4s ease; max-width: 420px;
+            backdrop-filter: blur(12px);
+        }
         .toast.hidden { display: none; }
 
-        .confetti-container { position: fixed; top: 0; left: 0; width: 100%; height: 100%; pointer-events: none; z-index: 9998; overflow: hidden; }
-        .confetti-piece { position: absolute; width: 10px; height: 10px; border-radius: 2px; animation: confettiFall linear forwards; }
-        @keyframes confettiFall { 0% { transform: translateY(-10px) rotate(0deg); opacity: 1; } 100% { transform: translateY(100vh) rotate(720deg); opacity: 0; } }
+        .confetti-container {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            pointer-events: none; z-index: 9998; overflow: hidden;
+        }
+        .confetti-piece {
+            position: absolute; width: 10px; height: 10px;
+            border-radius: 2px; animation: confettiFall linear forwards;
+        }
+        @keyframes confettiFall {
+            0% { transform: translateY(-10px) rotate(0deg); opacity: 1; }
+            100% { transform: translateY(100vh) rotate(720deg); opacity: 0; }
+        }
 
-        .tracking-number { font-family: 'Courier New', monospace; background: #0b2b1e; color: #c7a86b; padding: 4px 12px; border-radius: 8px; font-weight: 700; letter-spacing: 1px; }
+        .tracking-number {
+            font-family: 'Courier New', monospace;
+            background: #0b2b1e; color: #c7a86b;
+            padding: 4px 12px; border-radius: 8px;
+            font-weight: 700; letter-spacing: 1px;
+        }
 
         @media (max-width: 768px) {
             .glass-card { padding: 18px; }
-            .app-header .brand-text { font-size: 1.1rem; }
+            .brand-text { font-size: 1.1rem; }
             .back-link { font-size: 0.8rem; padding: 6px 12px; }
-            .step-dot { width: 30px; } .step-dot.active { width: 40px; }
+            .step-dot { width: 30px; }
+            .step-dot.active { width: 40px; }
             .payment-option { padding: 16px; }
             .toast { right: 16px; left: 16px; max-width: none; bottom: 16px; }
         }
@@ -260,12 +230,11 @@
         ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: #f1f5f9; border-radius: 3px; }
         ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 3px; }
-        ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
     </style>
 </head>
 <body>
 
-    <header class="app-header" id="mainHeader">
+    <header class="app-header">
         <div class="max-w-7xl mx-auto px-4 flex items-center justify-between h-16">
             <a href="/" class="flex items-center gap-3">
                 <span class="brand-icon-wrap"><i class="fas fa-shopping-basket"></i></span>
@@ -375,7 +344,7 @@
                                 </div>
                             </div>
 
-                            <!-- Simple Delivery Zone Selector -->
+                            <!-- Delivery Zone Selector -->
                             <div>
                                 <label class="form-label"><i class="fas fa-truck"></i> Delivery Zone <span class="required">*</span></label>
                                 <div class="input-wrapper">
@@ -389,7 +358,7 @@
                                         <option value="zone_5" data-fee="300">Zone 5 (3km+) - KSh 300</option>
                                     </select>
                                 </div>
-                                <div style="font-size:0.7rem;color:var(--text-muted);margin-top:4px;">
+                                <div style="font-size:0.7rem;color:#94a3b8;margin-top:4px;">
                                     <i class="fas fa-info-circle"></i> Not sure? Call us at 0728922614
                                 </div>
                             </div>
@@ -505,7 +474,7 @@
                                 <i class="fas fa-check text-5xl text-[#0b2b1e]"></i>
                             </div>
                             <h2 class="text-3xl font-extrabold text-[#0b1a2f]">Order Placed! 🎉</h2>
-                            <p class="text-gray-500 mt-2">Your order has been confirmed and is being processed</p>
+                            <p class="text-gray-500 mt-2" id="orderTypeMessage">Your order has been confirmed</p>
 
                             <div class="mt-6 p-6 bg-gradient-to-r from-gray-50 to-gray-100 rounded-xl border border-gray-200 text-left">
                                 <div class="flex items-center justify-between mb-4 flex-wrap gap-2">
@@ -571,7 +540,7 @@
                             <span class="text-gray-500">Subtotal</span>
                             <span class="text-[#0b1a2f] font-semibold" id="summarySubtotal">KSh {{ "%.0f"|format(subtotal) }}</span>
                         </div>
-                        <div class="summary-item" id="shippingSummary">
+                        <div class="summary-item">
                             <span class="text-gray-500">Delivery Fee</span>
                             <span class="font-semibold text-[#0b2b1e]" id="shippingCostDisplay2">
                                 <span id="shippingPendingText">⏳ Select zone</span>
@@ -585,7 +554,7 @@
 
                     <div class="mt-2 text-xs text-gray-400 flex items-center gap-1" id="freeShippingInfo">
                         <i class="fas fa-info-circle text-[#0b2b1e]"></i>
-                        <span>Free delivery on orders over KSh 50,000</span>
+                        <span>Free delivery on orders over KSh 5,000</span>
                     </div>
 
                     <div class="mt-4 pt-4 border-t border-gray-100 flex flex-wrap gap-3 text-xs text-gray-400">
@@ -620,22 +589,19 @@
     let currentStep = 1;
     let orderPlaced = false;
     let shippingCost = 0;
-    let shippingDistance = 0;
     let shippingCalculated = false;
     let subtotal = {{ subtotal }};
     let totalAmount = {{ total }};
     let mpesaCheckoutId = null;
     let mpesaStatusInterval = null;
+    let mpesaStartTime = null;
     let isProcessingPayment = false;
     let selectedZone = null;
 
-    // ============================================================
-    // SIMPLE DELIVERY CONFIG
-    // ============================================================
     const FREE_DELIVERY_THRESHOLD = 5000;
 
     // ============================================================
-    // FORMAT PHONE NUMBER
+    // FORMAT & VALIDATE PHONE
     // ============================================================
     function formatPhoneNumber(phone) {
         let cleaned = phone.replace(/\D/g, '');
@@ -691,7 +657,6 @@
             : 'KSh ' + shippingCost.toLocaleString();
 
         updateTotalsDisplay();
-        console.log('🚚 Delivery fee updated:', { zone: selectedZone, fee: shippingCost });
     }
 
     // ============================================================
@@ -835,6 +800,8 @@
 
         const orderId = 'ORD-' + Date.now().toString(36).toUpperCase();
 
+        mpesaStartTime = Date.now();
+
         fetch('/mpesa/initiate', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
@@ -856,21 +823,25 @@
                 statusMsg.innerHTML = '❌ ' + data.message;
                 loader.style.display = 'none';
                 showToast('❌ ' + data.message, 'error');
-                isProcessingPayment = false;
-                if (mpesaBtn) { mpesaBtn.innerHTML = '<i class="fas fa-mobile-alt"></i> Pay KSh ' + totalAmount.toLocaleString(); mpesaBtn.disabled = false; }
-                if (cashBtn) cashBtn.disabled = false;
-                if (waBtn) waBtn.disabled = false;
+                resetPaymentButtons();
             }
         })
         .catch(err => {
             statusMsg.innerHTML = '❌ Error: ' + err.message;
             loader.style.display = 'none';
             showToast('❌ Payment initiation failed', 'error');
-            isProcessingPayment = false;
-            if (mpesaBtn) { mpesaBtn.innerHTML = '<i class="fas fa-mobile-alt"></i> Pay KSh ' + totalAmount.toLocaleString(); mpesaBtn.disabled = false; }
-            if (cashBtn) cashBtn.disabled = false;
-            if (waBtn) waBtn.disabled = false;
+            resetPaymentButtons();
         });
+    }
+
+    function resetPaymentButtons() {
+        isProcessingPayment = false;
+        const mpesaBtn = document.getElementById('mpesaPayBtn');
+        if (mpesaBtn) { mpesaBtn.innerHTML = '<i class="fas fa-mobile-alt"></i> Pay KSh ' + totalAmount.toLocaleString(); mpesaBtn.disabled = false; }
+        const cashBtn = document.getElementById('cashPayBtn');
+        if (cashBtn) cashBtn.disabled = false;
+        const waBtn = document.getElementById('whatsappOrderBtn');
+        if (waBtn) waBtn.disabled = false;
     }
 
     // ============================================================
@@ -879,14 +850,19 @@
     function pollMpesaStatus(checkoutId) {
         if (mpesaStatusInterval) clearInterval(mpesaStatusInterval);
         let attempts = 0;
-        const maxAttempts = 30;
+        const maxAttempts = 40;
 
         mpesaStatusInterval = setInterval(() => {
             attempts++;
+            const elapsed = Math.round((Date.now() - mpesaStartTime) / 1000);
+
             fetch('/mpesa/status', {
                 method: 'POST',
                 headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ checkout_request_id: checkoutId })
+                body: JSON.stringify({ 
+                    checkout_request_id: checkoutId,
+                    elapsed: elapsed
+                })
             })
             .then(r => r.json())
             .then(data => {
@@ -897,18 +873,36 @@
                         document.getElementById('mpesaStatusLoader').style.display = 'none';
                         showToast('✅ Payment completed successfully!', 'success');
                         completeOrder('mpesa');
+                    } else if (data.status === 'cancelled') {
+                        clearInterval(mpesaStatusInterval);
+                        document.getElementById('mpesaStatusMessage').innerHTML = '❌ You cancelled the payment. <button onclick="retryMpesa()" style="margin-left:8px;text-decoration:underline;color:#0b2b1e;font-weight:700;">Retry</button>';
+                        document.getElementById('mpesaStatusLoader').style.display = 'none';
+                        resetPaymentButtons();
+                    } else if (data.status === 'expired') {
+                        clearInterval(mpesaStatusInterval);
+                        document.getElementById('mpesaStatusMessage').innerHTML = '❌ Transaction expired. <button onclick="retryMpesa()" style="margin-left:8px;text-decoration:underline;color:#0b2b1e;font-weight:700;">Retry</button>';
+                        document.getElementById('mpesaStatusLoader').style.display = 'none';
+                        resetPaymentButtons();
+                    } else if (data.status === 'unreachable') {
+                        clearInterval(mpesaStatusInterval);
+                        document.getElementById('mpesaStatusMessage').innerHTML = '📵 We could not reach your phone. Check signal and <button onclick="retryMpesa()" style="margin-left:8px;text-decoration:underline;color:#0b2b1e;font-weight:700;">Retry</button>';
+                        document.getElementById('mpesaStatusLoader').style.display = 'none';
+                        resetPaymentButtons();
                     } else if (data.status === 'failed') {
                         clearInterval(mpesaStatusInterval);
-                        document.getElementById('mpesaStatusMessage').innerHTML = '❌ ' + data.message;
+                        document.getElementById('mpesaStatusMessage').innerHTML = '❌ ' + data.message + ' <button onclick="retryMpesa()" style="margin-left:8px;text-decoration:underline;color:#0b2b1e;font-weight:700;">Retry</button>';
                         document.getElementById('mpesaStatusLoader').style.display = 'none';
-                        showToast('❌ Payment failed: ' + data.message, 'error');
-                        isProcessingPayment = false;
-                        const mpesaBtn = document.getElementById('mpesaPayBtn');
-                        if (mpesaBtn) { mpesaBtn.innerHTML = '<i class="fas fa-mobile-alt"></i> Pay KSh ' + totalAmount.toLocaleString(); mpesaBtn.disabled = false; }
-                        const cashBtn = document.getElementById('cashPayBtn');
-                        if (cashBtn) cashBtn.disabled = false;
-                        const waBtn = document.getElementById('whatsappOrderBtn');
-                        if (waBtn) waBtn.disabled = false;
+                        resetPaymentButtons();
+                    } else if (data.status === 'insufficient') {
+                        clearInterval(mpesaStatusInterval);
+                        document.getElementById('mpesaStatusMessage').innerHTML = '❌ Insufficient M-Pesa balance. Top up and <button onclick="retryMpesa()" style="margin-left:8px;text-decoration:underline;color:#0b2b1e;font-weight:700;">Retry</button>';
+                        document.getElementById('mpesaStatusLoader').style.display = 'none';
+                        resetPaymentButtons();
+                    } else if (data.status === 'wrong_pin') {
+                        clearInterval(mpesaStatusInterval);
+                        document.getElementById('mpesaStatusMessage').innerHTML = '❌ Wrong M-Pesa PIN. <button onclick="retryMpesa()" style="margin-left:8px;text-decoration:underline;color:#0b2b1e;font-weight:700;">Retry</button>';
+                        document.getElementById('mpesaStatusLoader').style.display = 'none';
+                        resetPaymentButtons();
                     }
                 }
 
@@ -916,18 +910,17 @@
                     clearInterval(mpesaStatusInterval);
                     document.getElementById('mpesaStatusMessage').innerHTML = '⏳ Payment still pending. We will confirm via SMS.';
                     document.getElementById('mpesaStatusLoader').style.display = 'none';
-                    showToast('⏳ Payment pending. We will confirm via SMS.', 'info');
-                    isProcessingPayment = false;
-                    const mpesaBtn = document.getElementById('mpesaPayBtn');
-                    if (mpesaBtn) { mpesaBtn.innerHTML = '<i class="fas fa-mobile-alt"></i> Pay KSh ' + totalAmount.toLocaleString(); mpesaBtn.disabled = false; }
-                    const cashBtn = document.getElementById('cashPayBtn');
-                    if (cashBtn) cashBtn.disabled = false;
-                    const waBtn = document.getElementById('whatsappOrderBtn');
-                    if (waBtn) waBtn.disabled = false;
+                    resetPaymentButtons();
                 }
             })
             .catch(() => {});
-        }, 5000);
+        }, 3000);
+    }
+
+    function retryMpesa() {
+        document.getElementById('mpesaStatus').style.display = 'none';
+        resetPaymentButtons();
+        payWithMpesa();
     }
 
     // ============================================================
@@ -953,6 +946,7 @@
     // ORDER VIA WHATSAPP
     // ============================================================
     function orderViaWhatsApp() {
+        if (isProcessingPayment) return;
         if (orderPlaced) return;
         if (!validateCustomerData()) return;
 
@@ -976,28 +970,93 @@
             }
         });
 
-        let message = '🛒 *NEW ORDER — ACACIA MINIMART*%0A%0A';
-        message += '📦 *Items:*%0A';
-        cartItems.forEach(item => {
-            message += `• ${item.name} x${item.quantity} = KSh ${(item.price * item.quantity).toLocaleString()}%0A`;
-        });
-        message += `%0A💰 *Subtotal:* KSh ${subtotal.toLocaleString()}%0A`;
-        message += `🚚 *Delivery:* KSh ${shippingCost.toLocaleString()} (${selectedZone || 'TBD'})%0A`;
-        message += `💳 *Total:* KSh ${totalAmount.toLocaleString()}%0A%0A`;
-        message += `👤 *Name:* ${customerName}%0A`;
-        message += `📱 *Phone:* ${data.phone}%0A`;
-        message += `📍 *Address:* ${fullAddress}%0A`;
-        if (data.delivery_notes) message += `📝 *Notes:* ${data.delivery_notes}%0A`;
-        message += `%0A✅ Please confirm my order.`;
+        const trackingNumber = generateTrackingNumber();
+        const orderId = 'WA-' + Date.now().toString(36).toUpperCase();
 
-        const phone = '254728922614';
-        const url = `https://wa.me/${phone}?text=${message}`;
-        window.open(url, '_blank');
-        showToast('💬 Opening WhatsApp...', 'info');
+        const orderData = {
+            order_id: orderId,
+            tracking_number: trackingNumber,
+            items: cartItems,
+            subtotal: subtotal,
+            shipping: shippingCost,
+            total: totalAmount,
+            payment_method: 'whatsapp',
+            status: 'pending',
+            source: 'whatsapp',
+            created_at: new Date().toISOString(),
+            customer_name: customerName,
+            customer_email: data.email,
+            customer_phone: data.phone,
+            customer_address: fullAddress,
+            delivery_notes: data.delivery_notes,
+            delivery_zone: data.delivery_zone
+        };
+
+        isProcessingPayment = true;
+
+        const waBtn = document.getElementById('whatsappOrderBtn');
+        const mpesaBtn = document.getElementById('mpesaPayBtn');
+        const cashBtn = document.getElementById('cashPayBtn');
+
+        if (waBtn) { waBtn.innerHTML = '<i class="fas fa-spinner fa-spin"></i> Saving...'; waBtn.disabled = true; }
+        if (mpesaBtn) mpesaBtn.disabled = true;
+        if (cashBtn) cashBtn.disabled = true;
+
+        showToast('💬 Saving your order...', 'info');
+
+        fetch('/place-order-whatsapp', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(orderData)
+        })
+        .then(response => response.json())
+        .then(result => {
+            console.log('📥 WhatsApp order result:', result);
+
+            if (result.success) {
+                orderPlaced = true;
+                isProcessingPayment = false;
+
+                document.getElementById('orderId').textContent = result.order_id || orderId;
+                document.getElementById('trackingNumber').textContent = trackingNumber;
+                document.getElementById('deliveryName').textContent = customerName;
+                document.getElementById('deliveryAddress').textContent = fullAddress;
+                document.getElementById('orderTypeMessage').innerHTML = '💬 Order saved! Confirm in WhatsApp to complete';
+
+                const notes = document.getElementById('deliveryNotesDisplay');
+                notes.textContent = data.delivery_notes ? '📝 ' + data.delivery_notes : 'No special instructions';
+
+                if (result.whatsapp_url) {
+                    console.log('📱 Opening WhatsApp:', result.whatsapp_url);
+                    setTimeout(() => {
+                        window.open(result.whatsapp_url, '_blank');
+                    }, 500);
+                }
+
+                goToStep(3);
+                launchConfetti();
+                showToast('✅ Order saved! Confirm in WhatsApp', 'success', 'Your order is waiting for confirmation');
+
+            } else {
+                showToast('❌ ' + (result.message || 'Failed to save order'), 'error');
+                isProcessingPayment = false;
+                if (waBtn) { waBtn.innerHTML = '<i class="fab fa-whatsapp"></i> Order via WhatsApp'; waBtn.disabled = false; }
+                if (mpesaBtn) mpesaBtn.disabled = false;
+                if (cashBtn) cashBtn.disabled = false;
+            }
+        })
+        .catch(error => {
+            console.error('❌ WhatsApp order error:', error);
+            showToast('❌ Something went wrong. Please try again.', 'error');
+            isProcessingPayment = false;
+            if (waBtn) { waBtn.innerHTML = '<i class="fab fa-whatsapp"></i> Order via WhatsApp'; waBtn.disabled = false; }
+            if (mpesaBtn) mpesaBtn.disabled = false;
+            if (cashBtn) cashBtn.disabled = false;
+        });
     }
 
     // ============================================================
-    // COMPLETE ORDER
+    // COMPLETE ORDER (M-Pesa & Cash)
     // ============================================================
     function completeOrder(method) {
         const data = getCustomerData();
@@ -1065,37 +1124,26 @@
                 document.getElementById('trackingNumber').textContent = trackingNumber;
                 document.getElementById('deliveryName').textContent = customerName;
                 document.getElementById('deliveryAddress').textContent = fullAddress;
+                document.getElementById('orderTypeMessage').textContent = 'Your order has been confirmed and is being processed';
 
                 const notes = document.getElementById('deliveryNotesDisplay');
                 notes.textContent = data.delivery_notes ? '📝 ' + data.delivery_notes : 'No special instructions';
 
                 goToStep(3);
                 launchConfetti();
-                showToast('🎉 Order placed successfully!', 'success', 'Your order #' + (result.order_id || orderId) + ' is being processed');
+                showToast('🎉 Order placed successfully!', 'success', 'Order #' + (result.order_id || orderId));
 
                 if (result.whatsapp_url) {
                     setTimeout(() => window.open(result.whatsapp_url, '_blank'), 1500);
                 }
             } else {
                 showToast('❌ ' + (result.message || 'Failed to place order'), 'error');
-                const mpesaBtn = document.getElementById('mpesaPayBtn');
-                if (mpesaBtn) { mpesaBtn.innerHTML = '<i class="fas fa-mobile-alt"></i> Pay KSh ' + totalAmount.toLocaleString(); mpesaBtn.disabled = false; }
-                const cashBtn = document.getElementById('cashPayBtn');
-                if (cashBtn) { cashBtn.innerHTML = '<i class="fas fa-money-bill-wave"></i> Place Order'; cashBtn.disabled = false; }
-                const waBtn = document.getElementById('whatsappOrderBtn');
-                if (waBtn) waBtn.disabled = false;
-                isProcessingPayment = false;
+                resetPaymentButtons();
             }
         })
         .catch(error => {
             showToast('❌ Something went wrong. Please try again.', 'error');
-            const mpesaBtn = document.getElementById('mpesaPayBtn');
-            if (mpesaBtn) { mpesaBtn.innerHTML = '<i class="fas fa-mobile-alt"></i> Pay KSh ' + totalAmount.toLocaleString(); mpesaBtn.disabled = false; }
-            const cashBtn = document.getElementById('cashPayBtn');
-            if (cashBtn) { cashBtn.innerHTML = '<i class="fas fa-money-bill-wave"></i> Place Order'; cashBtn.disabled = false; }
-            const waBtn = document.getElementById('whatsappOrderBtn');
-            if (waBtn) waBtn.disabled = false;
-            isProcessingPayment = false;
+            resetPaymentButtons();
         });
     }
 
@@ -1158,7 +1206,6 @@
         const waBtn = document.getElementById('whatsappOrderBtn');
         if (waBtn) waBtn.addEventListener('click', (e) => { e.preventDefault(); orderViaWhatsApp(); });
 
-        // Init totals
         document.getElementById('summarySubtotal').textContent = 'KSh ' + subtotal.toLocaleString();
         updateTotalsDisplay();
     });
