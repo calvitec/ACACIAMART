@@ -1,5 +1,6 @@
 from flask import Flask, jsonify, render_template, request, redirect, url_for, session, flash, send_from_directory
 from datetime import datetime
+import json
 import os
 import traceback
 import sys
@@ -196,6 +197,40 @@ def pos_page():
             customers = [
                 {'name': 'Walk-in Customer', 'email': 'walkin@example.com', 'phone': 'N/A'}
             ]
+
+        credit_customers = []
+        try:
+            from utils.credit import get_all_credit_customers
+            credit_customers = get_all_credit_customers() or []
+        except Exception as e:
+            print(f"⚠️ Error loading credit customers for POS seed: {e}")
+            credit_customers = []
+
+        if not credit_customers:
+            try:
+                pos_orders_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), 'pos_orders.json')
+                if os.path.exists(pos_orders_path):
+                    with open(pos_orders_path, 'r', encoding='utf-8') as f:
+                        orders = json.load(f)
+
+                    seen = {}
+                    for order in orders or []:
+                        customer_id = order.get('customer_id') or order.get('customer', {}).get('id')
+                        customer_name = order.get('customer_name') or order.get('customer', {}).get('name') or 'Credit Customer'
+                        if customer_id and customer_name and customer_id not in seen:
+                            seen[customer_id] = {
+                                'customer_id': customer_id,
+                                'full_name': customer_name,
+                                'phone': order.get('customer_phone') or order.get('customer', {}).get('phone') or '',
+                                'email': order.get('customer_email') or order.get('customer', {}).get('email') or '',
+                                'current_balance': order.get('balance_after', 0) or 0,
+                                'credit_limit': order.get('credit_limit', 0) or 0,
+                                'account_status': 'active'
+                            }
+                    credit_customers = list(seen.values())
+            except Exception as e:
+                print(f"⚠️ Error loading local order-based credit customer seed: {e}")
+                credit_customers = []
         
         if not products:
             products = []
@@ -207,6 +242,7 @@ def pos_page():
         return render_template('pos.html', 
                              products=products, 
                              customers=customers,
+                             credit_customers=credit_customers,
                              session=session)
     except Exception as e:
         print(f'❌ Error in /pos: {e}')
@@ -215,6 +251,7 @@ def pos_page():
         return render_template('pos.html', 
                              products=[], 
                              customers=[],
+                             credit_customers=[],
                              session=session)
 
 
@@ -582,7 +619,7 @@ def handler(request, context):
 
 if __name__ == '__main__':
     print('\n' + '=' * 60)
-    print('📱 ACACIAMART - Premium Store')
+    print('📱 PRICE POINT - Premium Electronics Shop')
     print('=' * 60)
     print(f"🌍 Environment: {'Vercel' if Config.IS_VERCEL else 'Local'}")
     print(f"\n📊 Products: {len(load_products())}")
