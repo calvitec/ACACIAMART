@@ -5,6 +5,7 @@ import requests
 import re
 import urllib.parse
 import base64
+import threading
 
 from flask import Blueprint, flash, jsonify, redirect, render_template, request, session, url_for
 from werkzeug.utils import secure_filename
@@ -22,6 +23,41 @@ from utils.data import (
 )
 
 shop_bp = Blueprint('shop', __name__)
+
+
+# ============================================================
+# IN-MEMORY CALLBACK STORE (no DB needed)
+# ============================================================
+_callback_store = {}
+_callback_lock = threading.Lock()
+CALLBACK_TTL_SECONDS = 600  # keep results for 10 minutes
+
+
+def save_callback_result(checkout_request_id, result_code, result_desc, amount=None, receipt=None, phone=None):
+    """Save callback result in memory"""
+    with _callback_lock:
+        _callback_store[checkout_request_id] = {
+            'result_code': str(result_code),
+            'result_desc': str(result_desc),
+            'amount': amount,
+            'mpesa_receipt': receipt,
+            'phone': str(phone) if phone else None,
+            'timestamp': datetime.utcnow().timestamp()
+        }
+    print(f"💾 Callback stored in memory for {checkout_request_id}")
+
+
+def get_callback_result(checkout_request_id):
+    """Read callback result from memory"""
+    with _callback_lock:
+        entry = _callback_store.get(checkout_request_id)
+        if not entry:
+            return None
+        # Clean up old entries
+        if datetime.utcnow().timestamp() - entry.get('timestamp', 0) > CALLBACK_TTL_SECONDS:
+            del _callback_store[checkout_request_id]
+            return None
+        return entry
 
 
 # ============================================================
@@ -123,7 +159,7 @@ def get_mpesa_access_token():
 
 def get_mpesa_shortcode():
     """Get the Paybill shortcode"""
-    return Config.MPESA_SHORTCODE  # = 4671257
+    return Config.MPESA_SHORTCODE
 
 
 def generate_mpesa_password():
@@ -212,9 +248,6 @@ def mpesa_stk_push(phone_number, amount, order_id):
             timeout=30
         )
 
-        # ============================================================
-        # ✅ FULL RAW LOGGING - Critical for diagnostics
-        # ============================================================
         print("=" * 70)
         print("📱 MPESA DARAJA STK RESPONSE")
         print("=" * 70)
@@ -230,7 +263,6 @@ def mpesa_stk_push(phone_number, amount, order_id):
 
         print("=" * 70)
 
-        # Handle response
         if result.get('ResponseCode') == '0':
             checkout_id = result.get('CheckoutRequestID')
             return True, checkout_id, "STK Push sent to your phone"
@@ -730,7 +762,7 @@ def mpesa_initiate():
 
 @shop_bp.route('/mpesa/status', methods=['POST'])
 def mpesa_status():
-    """Check M-Pesa payment status"""
+    """Check M-Pesa payment status - checks MEMORY callback result FIRST"""
     try:
         data = request.get_json()
         checkout_id = data.get('checkout_request_id')
@@ -739,6 +771,31 @@ def mpesa_status():
         if not checkout_id:
             return jsonify({'success': False, 'message': 'Checkout ID required'})
 
+        # ✅ STEP 1: Check callback result in memory (fastest, most reliable)
+        callback = get_callback_result(checkout_id)
+        if callback:
+            cb_code = str(callback.get('result_code', ''))
+            print(f"📱 CALLBACK found in memory: code={cb_code}")
+
+            if cb_code == '0':
+                return jsonify({
+                    'success': True,
+                    'status': 'completed',
+                    'message': 'Payment successful!',
+                    'receipt': callback.get('mpesa_receipt'),
+                    'amount': callback.get('amount'),
+                    'data': callback
+                })
+            elif cb_code == '1032':
+                return jsonify({'success': True, 'status': 'cancelled', 'message': 'You cancelled the payment.'})
+            elif cb_code == '1':
+                return jsonify({'success': True, 'status': 'insufficient', 'message': 'Insufficient M-Pesa balance.'})
+            elif cb_code == '2001':
+                return jsonify({'success': True, 'status': 'wrong_pin', 'message': 'Wrong M-Pesa PIN.'})
+            elif cb_code == '1019':
+                return jsonify({'success': True, 'status': 'expired', 'message': 'Transaction expired.'})
+
+        # ✅ STEP 2: Fallback - query Safaricom directly
         result, error = mpesa_query_status(checkout_id)
 
         if error:
@@ -748,56 +805,26 @@ def mpesa_status():
             result_code = str(result.get('ResultCode', ''))
             result_desc = result.get('ResultDesc', 'Unknown')
 
-            print(f"📱 Status: code={result_code}, desc={result_desc}, elapsed={elapsed}s")
+            print(f"📱 Status query: code={result_code}, desc={result_desc}, elapsed={elapsed}s")
 
             if result_code == '0':
-                return jsonify({
-                    'success': True, 'status': 'completed',
-                    'message': 'Payment successful!', 'data': result
-                })
+                return jsonify({'success': True, 'status': 'completed', 'message': 'Payment successful!', 'data': result})
 
             elif result_code in ['1037', '1001', '4999', '429', '500']:
                 if result_code == '1037' and elapsed > 90:
-                    return jsonify({
-                        'success': True, 'status': 'unreachable',
-                        'message': 'Could not reach your phone. Check signal and retry.',
-                        'data': result
-                    })
-                return jsonify({
-                    'success': True, 'status': 'pending',
-                    'message': 'Waiting for confirmation...', 'data': result
-                })
+                    return jsonify({'success': True, 'status': 'unreachable', 'message': 'Could not reach your phone. Check signal and retry.', 'data': result})
+                return jsonify({'success': True, 'status': 'pending', 'message': 'Waiting for confirmation...', 'data': result})
 
             elif result_code == '1032':
-                return jsonify({
-                    'success': True, 'status': 'cancelled',
-                    'message': 'You cancelled. Click Retry.', 'data': result
-                })
-
+                return jsonify({'success': True, 'status': 'cancelled', 'message': 'You cancelled. Click Retry.', 'data': result})
             elif result_code == '1019':
-                return jsonify({
-                    'success': True, 'status': 'expired',
-                    'message': 'Expired. Click Retry.', 'data': result
-                })
-
+                return jsonify({'success': True, 'status': 'expired', 'message': 'Expired. Click Retry.', 'data': result})
             elif result_code == '1':
-                return jsonify({
-                    'success': True, 'status': 'insufficient',
-                    'message': 'Insufficient M-Pesa balance.', 'data': result
-                })
-
+                return jsonify({'success': True, 'status': 'insufficient', 'message': 'Insufficient M-Pesa balance.', 'data': result})
             elif result_code == '2001':
-                return jsonify({
-                    'success': True, 'status': 'wrong_pin',
-                    'message': 'Wrong M-Pesa PIN. Retry.', 'data': result
-                })
-
+                return jsonify({'success': True, 'status': 'wrong_pin', 'message': 'Wrong M-Pesa PIN. Retry.', 'data': result})
             else:
-                print(f"⚠️ Unknown code: {result_code}")
-                return jsonify({
-                    'success': True, 'status': 'pending',
-                    'message': f'Processing...', 'data': result
-                })
+                return jsonify({'success': True, 'status': 'pending', 'message': f'Processing...', 'data': result})
 
         return jsonify({'success': False, 'message': 'No response'})
 
@@ -808,7 +835,7 @@ def mpesa_status():
 
 @shop_bp.route('/mpesa/callback', methods=['POST'])
 def mpesa_callback():
-    """M-Pesa callback endpoint - SAVES payment record on success"""
+    """M-Pesa callback - SAVES result in memory so /mpesa/status can read it"""
     try:
         data = request.get_json()
         print(f"\n{'='*60}")
@@ -837,34 +864,26 @@ def mpesa_callback():
                 elif name == 'PhoneNumber': phone = value
 
             print(f"✅ PAYMENT CONFIRMED:")
-            print(f"   Checkout ID: {checkout_request_id}")
+            print(f"   Checkout: {checkout_request_id}")
             print(f"   Amount: KSh {amount}")
             print(f"   Receipt: {mpesa_receipt}")
             print(f"   Phone: {phone}")
 
-            # Save payment record to Supabase
-            try:
-                payment_record = {
-                    'checkout_request_id': checkout_request_id,
-                    'mpesa_receipt': mpesa_receipt,
-                    'amount': amount,
-                    'phone': str(phone),
-                    'status': 'paid',
-                    'paid_at': datetime.utcnow().isoformat()
-                }
-                print(f"💰 Payment record ready: {payment_record}")
-                # Uncomment to save:
-                # requests.post(
-                #     f"{Config.SUPABASE_URL}/rest/v1/mpesa_payments",
-                #     headers=Config.SUPABASE_HEADERS,
-                #     json=payment_record,
-                #     timeout=10
-                # )
-            except Exception as e:
-                print(f"⚠️ Could not save payment record: {e}")
-
+            save_callback_result(
+                checkout_request_id=checkout_request_id,
+                result_code='0',
+                result_desc=result_desc,
+                amount=amount,
+                receipt=mpesa_receipt,
+                phone=phone
+            )
         else:
             print(f"❌ PAYMENT FAILED: [{result_code}] {result_desc}")
+            save_callback_result(
+                checkout_request_id=checkout_request_id,
+                result_code=str(result_code),
+                result_desc=result_desc
+            )
 
         return jsonify({'ResultCode': 0, 'ResultDesc': 'Success'})
 
