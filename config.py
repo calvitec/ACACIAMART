@@ -32,20 +32,19 @@ class Config:
     DATA_FILE = os.path.join(PROJECT_ROOT, 'offline_data.json')
 
     # ============================================================
-    # M-PESA PRODUCTION CONFIGURATION
+    # M-PESA PRODUCTION CONFIGURATION - ACACIA MINIMART
     # ============================================================
-    # ✅ Your Business Details
+    # ✅ Business Details
     MPESA_BUSINESS_NAME = "Acacia Minimart"
     MPESA_TILL_NUMBER = "8454832"
     MPESA_SHORTCODE = "4671257"
     MPESA_USERNAME = "VICHAMINYA"
     MPESA_BUSINESS_PHONE = "254728922614"
     
-    # ✅ LIVE CREDENTIALS
-    # ⚠️ UPDATE THESE after completing Daraja Go Live
-    MPESA_CONSUMER_KEY = os.environ.get('MPESA_CONSUMER_KEY', 'YOUR_LIVE_CONSUMER_KEY')
-    MPESA_CONSUMER_SECRET = os.environ.get('MPESA_CONSUMER_SECRET', 'YOUR_LIVE_CONSUMER_SECRET')
-    MPESA_PASSKEY = os.environ.get('MPESA_PASSKEY', 'YOUR_LIVE_PASSKEY')
+    # ✅ LIVE CREDENTIALS (Production App)
+    MPESA_CONSUMER_KEY = os.environ.get('MPESA_CONSUMER_KEY', 'drj3u3o4WAu9OLj5CxgeubDLT0ovutxLB1d7tpP0GfdaDXwU')
+    MPESA_CONSUMER_SECRET = os.environ.get('MPESA_CONSUMER_SECRET', 'qupk3DKgDPhPegrnGhwzA7vGyZvvFhnk6ktCs4GZKUAuQo8teCdearePphcWkzpA')
+    MPESA_PASSKEY = os.environ.get('MPESA_PASSKEY', '217e9329cf5855e1f89757bbc467cdb9d4e6b42986d4857b96b7fa34eb48a376')
     
     # ✅ PRODUCTION ENDPOINTS
     MPESA_BASE_URL = 'https://api.safaricom.co.ke'
@@ -67,4 +66,6 @@ class Config:
     print(f"📱 Till: {MPESA_TILL_NUMBER}")
     print(f"📱 Callback: {MPESA_CALLBACK_URL}")
     print(f"📱 Base URL: {MPESA_BASE_URL}")
+    print(f"🔑 Consumer Key: {MPESA_CONSUMER_KEY[:15]}...")
+    print(f"🔑 Passkey: {MPESA_PASSKEY[:15]}...")
     print("=" * 60)
