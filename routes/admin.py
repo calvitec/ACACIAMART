@@ -1820,7 +1820,36 @@ def api_record_credit_purchase():
         print(f"❌ API error: {e}")
         import traceback
         traceback.print_exc()
-        return jsonify({'success': False, 'error': str(e)}), 500
+
+        try:
+            from utils.credit import save_credit_order_offline
+
+            safe_data = locals().get('data') or {}
+            order_data = {
+                'order_id': f'CREDIT-OFFLINE-{uuid.uuid4().hex[:8].upper()}',
+                'customer_id': safe_data.get('customer_id'),
+                'items': safe_data.get('items', []),
+                'total_amount': float(safe_data.get('total_amount', 0) or 0),
+                'staff_name': safe_data.get('staff_name', 'System'),
+                'notes': safe_data.get('notes', 'Offline credit order (network fallback)')
+            }
+
+            result = save_credit_order_offline(order_data)
+            if result.get('success'):
+                return jsonify({
+                    'success': True,
+                    'queued': True,
+                    'message': 'Credit purchase saved offline. It will sync when the connection is available.',
+                    'order_id': order_data['order_id']
+                })
+        except Exception as fallback_error:
+            print(f"❌ Offline fallback failed: {fallback_error}")
+
+        return jsonify({
+            'success': False,
+            'message': str(e),
+            'error': str(e)
+        }), 500
 
 # ============================================================
 # CREDIT PAYMENT ROUTE
@@ -2664,6 +2693,8 @@ def api_sales_stats():
         today_orders = 0
         today_returns = 0
         today_return_amount = 0
+        credit_sales = 0
+        credit_orders = 0
         all_customers = set()
 
         for order in orders:
@@ -2706,6 +2737,8 @@ def api_sales_stats():
                 if order_date == today:
                     status = order.get('status', '')
                     total = float(order.get('total', 0))
+                    order_source = order.get('source', '')
+                    is_credit_order = order.get('is_credit') is True or order_source == 'credit'
 
                     if status == 'returned':
                         today_returns += 1
@@ -2714,6 +2747,10 @@ def api_sales_stats():
                     elif status != 'cancelled':
                         today_revenue += total
                         today_orders += 1
+
+                        if is_credit_order:
+                            credit_sales += total
+                            credit_orders += 1
 
             except Exception as e:
                 print(f"Error processing order: {e}")
@@ -2738,6 +2775,8 @@ def api_sales_stats():
             'today_orders': today_orders,
             'today_returns': today_returns,
             'today_return_amount': today_return_amount,
+            'credit_sales': credit_sales,
+            'credit_orders': credit_orders,
             'total_customers': len(all_customers),
             'total_products': total_products,
             'low_stock_count': low_stock_count,
@@ -2954,18 +2993,20 @@ def api_sync_credit_offline():
         
         synced_payments = 0
         failed_payments = 0
+        synced_payment_ids = []
         
         if payment_queue:
             for payment in payment_queue:
                 try:
                     customer_id = payment.get('customer_id')
                     amount = float(payment.get('amount'))
+                    payment_id = payment.get('payment_id', f"payment-{customer_id}-{len(synced_payment_ids) + 1}")
                     
                     balance_info = get_customer_balance(customer_id)
                     if balance_info:
                         current_balance = balance_info.get('current_balance', 0)
                         if amount > current_balance:
-                            print(f"⚠️ Skipping payment {payment.get('payment_id')}: Amount {amount} exceeds balance {current_balance}")
+                            print(f"⚠️ Skipping payment {payment_id}: Amount {amount} exceeds balance {current_balance}")
                             failed_payments += 1
                             continue
                     
@@ -2977,6 +3018,7 @@ def api_sync_credit_offline():
                     )
                     if result.get('success'):
                         synced_payments += 1
+                        synced_payment_ids.append(payment_id)
                         print(f"✅ Synced payment for: {customer_id}")
                     else:
                         failed_payments += 1
@@ -2985,7 +3027,10 @@ def api_sync_credit_offline():
                     failed_payments += 1
                     print(f"❌ Error syncing payment: {e}")
             
-            json_data['credit_payment_queue'] = [p for p in payment_queue if p.get('payment_id') not in synced_payments]
+            json_data['credit_payment_queue'] = [
+                p for p in payment_queue
+                if p.get('payment_id') not in synced_payment_ids
+            ]
             save_json_data(json_data)
         
         return jsonify({
@@ -3418,9 +3463,44 @@ def admin_pos():
 
     customers.sort(key=lambda x: x['name'])
 
+    credit_customers = []
+    try:
+        from utils.credit import get_all_credit_customers
+        credit_customers = get_all_credit_customers() or []
+    except Exception as e:
+        print(f"⚠️ Error loading credit customers for admin POS seed: {e}")
+        credit_customers = []
+
+    if not credit_customers:
+        try:
+            pos_orders_path = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'pos_orders.json')
+            if os.path.exists(pos_orders_path):
+                with open(pos_orders_path, 'r', encoding='utf-8') as f:
+                    orders = json.load(f)
+
+                seen = {}
+                for order in orders or []:
+                    customer_id = order.get('customer_id') or order.get('customer', {}).get('id')
+                    customer_name = order.get('customer_name') or order.get('customer', {}).get('name') or 'Credit Customer'
+                    if customer_id and customer_name and customer_id not in seen:
+                        seen[customer_id] = {
+                            'customer_id': customer_id,
+                            'full_name': customer_name,
+                            'phone': order.get('customer_phone') or order.get('customer', {}).get('phone') or '',
+                            'email': order.get('customer_email') or order.get('customer', {}).get('email') or '',
+                            'current_balance': order.get('balance_after', 0) or 0,
+                            'credit_limit': order.get('credit_limit', 0) or 0,
+                            'account_status': 'active'
+                        }
+                credit_customers = list(seen.values())
+        except Exception as e:
+            print(f"⚠️ Error loading local order-based credit customer seed for admin POS: {e}")
+            credit_customers = []
+
     return render_template('pos.html',
         products=all_products,
         customers=customers,
+        credit_customers=credit_customers,
         DB_CONNECTED=True
     )
 
