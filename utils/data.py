@@ -146,25 +146,26 @@ def load_orders():
 # ============================================================
 
 def load_products():
-    """Load products - ONLY from Supabase, NEVER from cache or samples"""
+    """Load products from Supabase, with offline fallback to the local catalog."""
     global products_cache
-    
-    # Clear cache to force fresh load
+
     products_cache = []
-    
+
+    local_json = load_json_data()
+    local_products = local_json.get('products', []) or []
+
     try:
         print("🔄 Loading products from Supabase...")
-        
+
         response = requests.get(
             f"{Config.SUPABASE_URL}/rest/v1/products?select=*&order=name.asc",
             headers=Config.SUPABASE_HEADERS,
             timeout=10,
         )
-        
+
         if response.status_code == 200:
             data = response.json()
             if isinstance(data, list):
-                # Ensure required fields exist
                 for product in data:
                     if 'barcode' not in product:
                         product['barcode'] = ''
@@ -178,8 +179,14 @@ def load_products():
                         product['stock'] = 0
                     if 'price' not in product:
                         product['price'] = 0
-                
+
                 products_cache = data
+                try:
+                    local_json['products'] = data
+                    save_json_data(local_json)
+                except Exception as exc:
+                    print(f"⚠️ Could not update offline product cache: {exc}")
+
                 print(f"✅ Loaded {len(data)} products from Supabase")
                 return data
             else:
@@ -187,16 +194,19 @@ def load_products():
         else:
             print(f"⚠️ Failed to load from Supabase: {response.status_code}")
             print(f"Response: {response.text[:200]}")
-            
+
     except requests.exceptions.ConnectionError as e:
         print(f"❌ Connection error: {e}")
     except Exception as exc:
         print(f'❌ Error loading products: {exc}')
         traceback.print_exc()
-    
-    # ⚠️ CRITICAL: Return EMPTY list - NEVER use sample products
-    # This ensures ONLY database products are shown
-    print("⚠️ Returning EMPTY list - no products loaded (database unavailable)")
+
+    if local_products:
+        products_cache = local_products
+        print(f"📦 Using cached offline products: {len(local_products)}")
+        return local_products
+
+    print("⚠️ No products available locally or from Supabase")
     return []
 
 
