@@ -3,7 +3,7 @@
 // SERVICE WORKER - PricePoint POS (Complete Offline Solution)
 // ============================================================
 
-const CACHE_NAME = 'pricepoint-v10';
+const CACHE_NAME = 'pricepoint-v12';
 const OFFLINE_URL = '/offline.html';
 
 // ===== PAGES TO CACHE =====
