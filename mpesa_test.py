@@ -14,15 +14,16 @@ CONSUMER_KEY    = "drj3u3o4WAu9OLj5CxgeubDLT0ovutxLB1d7tpP0GfdaDXwU"
 CONSUMER_SECRET = "qupk3DKgDPhPegrnGhwzA7vGyZvvFhnk6ktCs4GZKUAuQo8teCdearePphcWkzpA"
 PASSKEY         = "217e9329cf5855e1f89757bbc467cdb9d4e6b42986d4857b96b7fa34eb48a376"
 
+# ✅ CONFIRMED FROM ORG PORTAL: 4671257 = ACACIA MINIMART HO (Paybill)
 SHORTCODE       = "4671257"
-TILL_NUMBER     = "8454832"
+TILL_NUMBER     = "8454832"     # kept for the Buy Goods fallback test
 CALLBACK_URL    = "https://acaciamart.shop/mpesa/callback"
 
-# ---------- DEFAULT TEST PHONE ----------
-DEFAULT_PHONE = "0745793237"    # ← your other SIM
+DEFAULT_PHONE   = "0745793237"
 
 AUTH_URL = "https://api.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials"
 STK_URL  = "https://api.safaricom.co.ke/mpesa/stkpush/v1/processrequest"
+QUERY_URL = "https://api.safaricom.co.ke/mpesa/stkpushquery/v1/query"
 
 
 def format_phone(phone):
@@ -61,12 +62,28 @@ def _send_stk(payload, token):
     return r, j
 
 
+def _query_status(checkout_id, token):
+    pw, ts = _password()
+    headers = {"Authorization": f"Bearer {token}", "Content-Type": "application/json"}
+    payload = {
+        "BusinessShortCode": SHORTCODE,
+        "Password": pw,
+        "Timestamp": ts,
+        "CheckoutRequestID": checkout_id,
+    }
+    try:
+        r = requests.post(QUERY_URL, headers=headers, json=payload, timeout=30)
+        return r.json()
+    except Exception as e:
+        return {"error": str(e)}
+
+
 # ============================================================
-# ROUTE 1 — PAYBILL
+# ROUTE 1 — PAYBILL (PRIMARY — matches your org portal)
 # ============================================================
 @mpesa_test_bp.route('/mpesa/test-stk', methods=['GET', 'POST'])
 def test_stk():
-    """Paybill STK push — CustomerPayBillOnline."""
+    """Paybill STK push — CustomerPayBillOnline. This is the correct mode for 4671257."""
 
     body = request.get_json(silent=True) if request.method == 'POST' and request.is_json else request.args
     phone  = body.get('phone', DEFAULT_PHONE)
@@ -90,10 +107,10 @@ def test_stk():
         "BusinessShortCode": SHORTCODE,
         "Password": password,
         "Timestamp": timestamp,
-        "TransactionType": "CustomerPayBillOnline",
+        "TransactionType": "CustomerPayBillOnline",   # ✅ correct for Paybill
         "Amount": amount,
         "PartyA": formatted,
-        "PartyB": SHORTCODE,
+        "PartyB": SHORTCODE,                           # ✅ 4671257
         "PhoneNumber": formatted,
         "CallBackURL": CALLBACK_URL,
         "AccountReference": "TEST",
@@ -101,6 +118,12 @@ def test_stk():
     }
 
     stk_resp, stk_json = _send_stk(payload, token)
+
+    # Immediately query once to see what Safaricom reports for this CheckoutRequestID
+    query_result = None
+    checkout_id = (stk_json or {}).get('CheckoutRequestID')
+    if checkout_id:
+        query_result = _query_status(checkout_id, token)
 
     return jsonify({
         'mode': 'PAYBILL',
@@ -115,16 +138,17 @@ def test_stk():
             'http_status': stk_resp.status_code,
             'raw': stk_resp.text,
             'json': stk_json,
-        }
+        },
+        'immediate_query': query_result,
     })
 
 
 # ============================================================
-# ROUTE 2 — BUY GOODS / TILL
+# ROUTE 2 — BUY GOODS / TILL (secondary — kept for comparison)
 # ============================================================
 @mpesa_test_bp.route('/mpesa/test-stk-buygoods', methods=['GET', 'POST'])
 def test_stk_buygoods():
-    """Buy Goods STK push — CustomerBuyGoodsOnline."""
+    """Buy Goods STK push — CustomerBuyGoodsOnline. Kept for comparison."""
 
     body = request.get_json(silent=True) if request.method == 'POST' and request.is_json else request.args
     phone  = body.get('phone', DEFAULT_PHONE)
@@ -160,6 +184,11 @@ def test_stk_buygoods():
 
     stk_resp, stk_json = _send_stk(payload, token)
 
+    query_result = None
+    checkout_id = (stk_json or {}).get('CheckoutRequestID')
+    if checkout_id:
+        query_result = _query_status(checkout_id, token)
+
     return jsonify({
         'mode': 'BUY_GOODS',
         'input': {'phone': phone, 'formatted_phone': formatted, 'amount': amount},
@@ -173,5 +202,6 @@ def test_stk_buygoods():
             'http_status': stk_resp.status_code,
             'raw': stk_resp.text,
             'json': stk_json,
-        }
+        },
+        'immediate_query': query_result,
     })
