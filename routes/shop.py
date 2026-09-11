@@ -5,7 +5,6 @@ import requests
 import re
 import urllib.parse
 import base64
-import threading
 
 from flask import Blueprint, flash, jsonify, redirect, render_template, request, session, url_for
 from werkzeug.utils import secure_filename
@@ -21,83 +20,76 @@ from utils.data import (
     save_order_to_supabase,
     update_product_stock,
 )
-from utils.storage import load_json_data, save_json_data
 
 shop_bp = Blueprint('shop', __name__)
 
 
 # ============================================================
-# PERSISTENT CALLBACK STORE
+# SUPABASE-BACKED CALLBACK STORE
+# Persists across Vercel function instances (no /tmp, no memory)
 # ============================================================
-_callback_lock = threading.Lock()
-CALLBACK_TTL_SECONDS = 600  # keep results for 10 minutes
 
+def save_callback_result(checkout_request_id, result_code, result_desc,
+                         amount=None, receipt=None, phone=None, order_id=None):
+    """Upsert callback result into Supabase so any instance can read it."""
+    if not checkout_request_id:
+        print("⚠️ save_callback_result: missing checkout_request_id")
+        return False
 
-def _load_callback_store():
-    """Load callback results from the persistent JSON store."""
+    payload = {
+        'checkout_request_id': checkout_request_id,
+        'result_code': str(result_code),
+        'result_desc': str(result_desc),
+        'amount': amount,
+        'mpesa_receipt': receipt,
+        'phone': str(phone) if phone else None,
+        'order_id': order_id,
+        'updated_at': datetime.utcnow().isoformat(),
+    }
+
     try:
-        data = load_json_data()
-        callbacks = data.get('mpesa_callback_results', {})
-        if isinstance(callbacks, dict):
-            return callbacks
+        response = requests.post(
+            f"{Config.SUPABASE_URL}/rest/v1/mpesa_callbacks",
+            headers={
+                **Config.SUPABASE_HEADERS,
+                'Prefer': 'resolution=merge-duplicates,return=representation',
+            },
+            json=payload,
+            timeout=10,
+        )
+        if response.status_code in (200, 201, 204):
+            print(f"💾 Callback persisted to Supabase: {checkout_request_id}")
+            return True
+        print(f"❌ Supabase callback save failed: {response.status_code} {response.text}")
+        return False
     except Exception as exc:
-        print(f"⚠️ Could not load MPesa callback store: {exc}")
-    return {}
-
-
-def _save_callback_store(callbacks):
-    """Persist callback results back to the JSON store."""
-    try:
-        data = load_json_data()
-        data['mpesa_callback_results'] = callbacks
-        save_json_data(data)
-    except Exception as exc:
-        print(f"⚠️ Could not save MPesa callback store: {exc}")
-
-
-def _cleanup_expired_callbacks():
-    """Remove expired callback results from the persistent store."""
-    callbacks = _load_callback_store()
-    now = datetime.utcnow().timestamp()
-    valid_callbacks = {}
-
-    for checkout_request_id, entry in callbacks.items():
-        if not isinstance(entry, dict):
-            continue
-
-        if now - entry.get('timestamp', 0) <= CALLBACK_TTL_SECONDS:
-            valid_callbacks[checkout_request_id] = entry
-
-    if len(valid_callbacks) != len(callbacks):
-        _save_callback_store(valid_callbacks)
-
-    return valid_callbacks
-
-
-def save_callback_result(checkout_request_id, result_code, result_desc, amount=None, receipt=None, phone=None):
-    """Save callback result to the persistent JSON store."""
-    with _callback_lock:
-        callbacks = _cleanup_expired_callbacks()
-        callbacks[checkout_request_id] = {
-            'result_code': str(result_code),
-            'result_desc': str(result_desc),
-            'amount': amount,
-            'mpesa_receipt': receipt,
-            'phone': str(phone) if phone else None,
-            'timestamp': datetime.utcnow().timestamp()
-        }
-        _save_callback_store(callbacks)
-    print(f"💾 Callback stored persistently for {checkout_request_id}")
+        print(f"❌ Supabase callback save error: {exc}")
+        return False
 
 
 def get_callback_result(checkout_request_id):
-    """Read callback result from the persistent JSON store."""
-    with _callback_lock:
-        callbacks = _cleanup_expired_callbacks()
-        entry = callbacks.get(checkout_request_id)
-        if not entry:
+    """Read callback result from Supabase."""
+    if not checkout_request_id:
+        return None
+    try:
+        response = requests.get(
+            f"{Config.SUPABASE_URL}/rest/v1/mpesa_callbacks",
+            headers=Config.SUPABASE_HEADERS,
+            params={
+                'checkout_request_id': f'eq.{checkout_request_id}',
+                'select': '*',
+                'limit': 1,
+            },
+            timeout=10,
+        )
+        if response.status_code != 200:
+            print(f"❌ Supabase callback read failed: {response.status_code}")
             return None
-        return entry
+        rows = response.json()
+        return rows[0] if rows else None
+    except Exception as exc:
+        print(f"❌ Supabase callback read error: {exc}")
+        return None
 
 
 # ============================================================
@@ -801,6 +793,16 @@ def mpesa_initiate():
             session['mpesa_checkout_id'] = checkout_id
             session['mpesa_order_id'] = order_id
 
+            # Persist a pending record so we can distinguish
+            # "callback never arrived" from "callback arrived but failed"
+            save_callback_result(
+                checkout_request_id=checkout_id,
+                result_code='PENDING',
+                result_desc='STK Push initiated, awaiting callback',
+                amount=amount,
+                order_id=order_id,
+            )
+
             return jsonify({
                 'success': True,
                 'checkout_request_id': checkout_id,
@@ -818,7 +820,7 @@ def mpesa_initiate():
 
 @shop_bp.route('/mpesa/status', methods=['POST'])
 def mpesa_status():
-    """Check M-Pesa payment status - checks MEMORY callback result FIRST"""
+    """Check M-Pesa payment status - checks Supabase callback result FIRST"""
     try:
         data = request.get_json()
         checkout_id = data.get('checkout_request_id')
@@ -827,11 +829,11 @@ def mpesa_status():
         if not checkout_id:
             return jsonify({'success': False, 'message': 'Checkout ID required'})
 
-        # ✅ STEP 1: Check callback result in memory (fastest, most reliable)
+        # ✅ STEP 1: Check callback result in Supabase (fastest, most reliable)
         callback = get_callback_result(checkout_id)
         if callback:
             cb_code = str(callback.get('result_code', ''))
-            print(f"📱 CALLBACK found in memory: code={cb_code}")
+            print(f"📱 CALLBACK found in Supabase: code={cb_code}")
 
             if cb_code == '0':
                 return jsonify({
@@ -850,6 +852,9 @@ def mpesa_status():
                 return jsonify({'success': True, 'status': 'wrong_pin', 'message': 'Wrong M-Pesa PIN.'})
             elif cb_code == '1019':
                 return jsonify({'success': True, 'status': 'expired', 'message': 'Transaction expired.'})
+            elif cb_code == 'PENDING':
+                # Keep polling — STK still awaiting callback
+                pass
 
         # ✅ STEP 2: Fallback - query Safaricom directly
         result, error = mpesa_query_status(checkout_id)
@@ -866,7 +871,7 @@ def mpesa_status():
             if result_code == '0':
                 return jsonify({'success': True, 'status': 'completed', 'message': 'Payment successful!', 'data': result})
 
-            elif result_code in ['1037', '1001', '4999', '429', '500']:
+            elif result_code in ['1037', '1001', '4999', '429', '500', '2029']:
                 if result_code == '1037' and elapsed > 90:
                     return jsonify({'success': True, 'status': 'unreachable', 'message': 'Could not reach your phone. Check signal and retry.', 'data': result})
                 return jsonify({'success': True, 'status': 'pending', 'message': 'Waiting for confirmation...', 'data': result})
@@ -891,7 +896,7 @@ def mpesa_status():
 
 @shop_bp.route('/mpesa/callback', methods=['POST'])
 def mpesa_callback():
-    """M-Pesa callback - SAVES result in memory so /mpesa/status can read it"""
+    """M-Pesa callback - SAVES result to Supabase so /mpesa/status can read it"""
     try:
         data = request.get_json()
         print(f"\n{'='*60}")
@@ -931,14 +936,16 @@ def mpesa_callback():
                 result_desc=result_desc,
                 amount=amount,
                 receipt=mpesa_receipt,
-                phone=phone
+                phone=phone,
+                order_id=session.get('mpesa_order_id'),
             )
         else:
             print(f"❌ PAYMENT FAILED: [{result_code}] {result_desc}")
             save_callback_result(
                 checkout_request_id=checkout_request_id,
                 result_code=str(result_code),
-                result_desc=result_desc
+                result_desc=result_desc,
+                order_id=session.get('mpesa_order_id'),
             )
 
         return jsonify({'ResultCode': 0, 'ResultDesc': 'Success'})
