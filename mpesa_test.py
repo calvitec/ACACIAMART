@@ -14,9 +14,12 @@ CONSUMER_KEY    = "drj3u3o4WAu9OLj5CxgeubDLT0ovutxLB1d7tpP0GfdaDXwU"
 CONSUMER_SECRET = "qupk3DKgDPhPegrnGhwzA7vGyZvvFhnk6ktCs4GZKUAuQo8teCdearePphcWkzpA"
 PASSKEY         = "217e9329cf5855e1f89757bbc467cdb9d4e6b42986d4857b96b7fa34eb48a376"
 
-SHORTCODE       = "4671257"     # Paybill / Store number
-TILL_NUMBER     = "8454832"     # Till (Buy Goods) number
+SHORTCODE       = "4671257"
+TILL_NUMBER     = "8454832"
 CALLBACK_URL    = "https://acaciamart.shop/mpesa/callback"
+
+# ---------- DEFAULT TEST PHONE ----------
+DEFAULT_PHONE = "0745793237"    # ← your other SIM
 
 AUTH_URL = "https://api.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials"
 STK_URL  = "https://api.safaricom.co.ke/mpesa/stkpush/v1/processrequest"
@@ -59,14 +62,14 @@ def _send_stk(payload, token):
 
 
 # ============================================================
-# ROUTE 1 — PAYBILL (current behaviour)
+# ROUTE 1 — PAYBILL
 # ============================================================
 @mpesa_test_bp.route('/mpesa/test-stk', methods=['GET', 'POST'])
 def test_stk():
-    """Paybill STK push — TransactionType: CustomerPayBillOnline."""
+    """Paybill STK push — CustomerPayBillOnline."""
 
     body = request.get_json(silent=True) if request.method == 'POST' and request.is_json else request.args
-    phone  = body.get('phone', '0728922614')
+    phone  = body.get('phone', DEFAULT_PHONE)
     amount = int(body.get('amount', 1))
 
     formatted = format_phone(phone)
@@ -87,10 +90,10 @@ def test_stk():
         "BusinessShortCode": SHORTCODE,
         "Password": password,
         "Timestamp": timestamp,
-        "TransactionType": "CustomerPayBillOnline",   # ← Paybill
+        "TransactionType": "CustomerPayBillOnline",
         "Amount": amount,
         "PartyA": formatted,
-        "PartyB": SHORTCODE,                           # ← Paybill number
+        "PartyB": SHORTCODE,
         "PhoneNumber": formatted,
         "CallBackURL": CALLBACK_URL,
         "AccountReference": "TEST",
@@ -121,10 +124,10 @@ def test_stk():
 # ============================================================
 @mpesa_test_bp.route('/mpesa/test-stk-buygoods', methods=['GET', 'POST'])
 def test_stk_buygoods():
-    """Buy Goods STK push — TransactionType: CustomerBuyGoodsOnline."""
+    """Buy Goods STK push — CustomerBuyGoodsOnline."""
 
     body = request.get_json(silent=True) if request.method == 'POST' and request.is_json else request.args
-    phone  = body.get('phone', '0728922614')
+    phone  = body.get('phone', DEFAULT_PHONE)
     amount = int(body.get('amount', 1))
 
     formatted = format_phone(phone)
@@ -142,13 +145,13 @@ def test_stk_buygoods():
     password, timestamp = _password()
 
     payload = {
-        "BusinessShortCode": SHORTCODE,                 # 4671257 (Store/HO)
-        "Password": password,                           # built from 4671257 + passkey
+        "BusinessShortCode": SHORTCODE,
+        "Password": password,
         "Timestamp": timestamp,
-        "TransactionType": "CustomerBuyGoodsOnline",    # ← Buy Goods
+        "TransactionType": "CustomerBuyGoodsOnline",
         "Amount": amount,
         "PartyA": formatted,
-        "PartyB": TILL_NUMBER,                          # ← 8454832 (Till)
+        "PartyB": TILL_NUMBER,
         "PhoneNumber": formatted,
         "CallBackURL": CALLBACK_URL,
         "AccountReference": "TEST",
