@@ -21,22 +21,64 @@ from utils.data import (
     save_order_to_supabase,
     update_product_stock,
 )
+from utils.storage import load_json_data, save_json_data
 
 shop_bp = Blueprint('shop', __name__)
 
 
 # ============================================================
-# IN-MEMORY CALLBACK STORE (no DB needed)
+# PERSISTENT CALLBACK STORE
 # ============================================================
-_callback_store = {}
 _callback_lock = threading.Lock()
 CALLBACK_TTL_SECONDS = 600  # keep results for 10 minutes
 
 
+def _load_callback_store():
+    """Load callback results from the persistent JSON store."""
+    try:
+        data = load_json_data()
+        callbacks = data.get('mpesa_callback_results', {})
+        if isinstance(callbacks, dict):
+            return callbacks
+    except Exception as exc:
+        print(f"⚠️ Could not load MPesa callback store: {exc}")
+    return {}
+
+
+def _save_callback_store(callbacks):
+    """Persist callback results back to the JSON store."""
+    try:
+        data = load_json_data()
+        data['mpesa_callback_results'] = callbacks
+        save_json_data(data)
+    except Exception as exc:
+        print(f"⚠️ Could not save MPesa callback store: {exc}")
+
+
+def _cleanup_expired_callbacks():
+    """Remove expired callback results from the persistent store."""
+    callbacks = _load_callback_store()
+    now = datetime.utcnow().timestamp()
+    valid_callbacks = {}
+
+    for checkout_request_id, entry in callbacks.items():
+        if not isinstance(entry, dict):
+            continue
+
+        if now - entry.get('timestamp', 0) <= CALLBACK_TTL_SECONDS:
+            valid_callbacks[checkout_request_id] = entry
+
+    if len(valid_callbacks) != len(callbacks):
+        _save_callback_store(valid_callbacks)
+
+    return valid_callbacks
+
+
 def save_callback_result(checkout_request_id, result_code, result_desc, amount=None, receipt=None, phone=None):
-    """Save callback result in memory"""
+    """Save callback result to the persistent JSON store."""
     with _callback_lock:
-        _callback_store[checkout_request_id] = {
+        callbacks = _cleanup_expired_callbacks()
+        callbacks[checkout_request_id] = {
             'result_code': str(result_code),
             'result_desc': str(result_desc),
             'amount': amount,
@@ -44,18 +86,16 @@ def save_callback_result(checkout_request_id, result_code, result_desc, amount=N
             'phone': str(phone) if phone else None,
             'timestamp': datetime.utcnow().timestamp()
         }
-    print(f"💾 Callback stored in memory for {checkout_request_id}")
+        _save_callback_store(callbacks)
+    print(f"💾 Callback stored persistently for {checkout_request_id}")
 
 
 def get_callback_result(checkout_request_id):
-    """Read callback result from memory"""
+    """Read callback result from the persistent JSON store."""
     with _callback_lock:
-        entry = _callback_store.get(checkout_request_id)
+        callbacks = _cleanup_expired_callbacks()
+        entry = callbacks.get(checkout_request_id)
         if not entry:
-            return None
-        # Clean up old entries
-        if datetime.utcnow().timestamp() - entry.get('timestamp', 0) > CALLBACK_TTL_SECONDS:
-            del _callback_store[checkout_request_id]
             return None
         return entry
 
@@ -162,6 +202,18 @@ def get_mpesa_shortcode():
     return Config.MPESA_SHORTCODE
 
 
+def get_mpesa_callback_url():
+    """Resolve a public HTTPS callback URL for M-Pesa STK push."""
+    configured_callback = (Config.MPESA_CALLBACK_URL or '').strip()
+    if configured_callback:
+        return configured_callback
+
+    if request and request.url_root.startswith('https://'):
+        return request.url_root.rstrip('/') + '/mpesa/callback'
+
+    return None
+
+
 def generate_mpesa_password():
     """Generate password for STK Push - uses PAYBILL"""
     shortcode = get_mpesa_shortcode()
@@ -194,8 +246,12 @@ def format_phone_number(phone):
         return None
 
 
-def mpesa_stk_push(phone_number, amount, order_id):
+def mpesa_stk_push(phone_number, amount, order_id, callback_url=None):
     """Initiate M-Pesa STK Push - PAYBILL with full logging"""
+
+    callback_url = callback_url or get_mpesa_callback_url()
+    if not callback_url:
+        return False, None, 'M-Pesa callback URL is not configured. Set MPESA_CALLBACK_URL to your public HTTPS endpoint, for example https://yourdomain.com/mpesa/callback.'
 
     formatted_phone = format_phone_number(phone_number)
 
@@ -230,7 +286,7 @@ def mpesa_stk_push(phone_number, amount, order_id):
         'PartyA': formatted_phone,
         'PartyB': shortcode,
         'PhoneNumber': formatted_phone,
-        'CallBackURL': Config.MPESA_CALLBACK_URL,
+        'CallBackURL': callback_url,
         'AccountReference': str(order_id)[:12],
         'TransactionDesc': f'Payment for order {order_id}'[:50]
     }
@@ -238,7 +294,7 @@ def mpesa_stk_push(phone_number, amount, order_id):
     print(f"📤 STK Push (PAYBILL) to {formatted_phone} for KSh {amount_int}")
     print(f"   BusinessShortCode: {shortcode}")
     print(f"   TransactionType: CustomerPayBillOnline")
-    print(f"   CallBackURL: {Config.MPESA_CALLBACK_URL}")
+    print(f"   CallBackURL: {callback_url}")
 
     try:
         response = requests.post(
@@ -739,7 +795,7 @@ def mpesa_initiate():
         if amount <= 0:
             return jsonify({'success': False, 'message': 'Invalid amount'})
 
-        success, checkout_id, message = mpesa_stk_push(phone, amount, order_id)
+        success, checkout_id, message = mpesa_stk_push(phone, amount, order_id, callback_url=get_mpesa_callback_url())
 
         if success:
             session['mpesa_checkout_id'] = checkout_id
