@@ -19,9 +19,15 @@ class Config:
     MAX_CONTENT_LENGTH = 5 * 1024 * 1024
 
     # ===== SUPABASE CONFIGURATION =====
-    SUPABASE_URL = os.environ.get('NEXT_PUBLIC_SUPABASE_URL', 'https://haqqknmerdnfvwmsnath.supabase.co')
-    SUPABASE_KEY = os.environ.get('NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY', 'sb_publishable_fKWHaWSF-h5O8raSZzWMKA_udQTGyAA')
-    
+    SUPABASE_URL = os.environ.get(
+        'NEXT_PUBLIC_SUPABASE_URL',
+        'https://hzqrdwerkgfmfaufabjr.supabase.co'
+    )
+    SUPABASE_KEY = os.environ.get(
+        'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY',
+        'sb_publishable_tnBOmCO7EFfIoXfNjEH_Tg_D7WX-zld'
+    )
+
     SUPABASE_HEADERS = {
         'apikey': SUPABASE_KEY,
         'Authorization': f'Bearer {SUPABASE_KEY}',
@@ -34,33 +40,24 @@ class Config:
     # ============================================================
     # M-PESA PRODUCTION CONFIGURATION - ACACIA MINIMART
     # ============================================================
-    # ✅ Business Details
     MPESA_BUSINESS_NAME = "Acacia Minimart"
-    
-    # ✅ PAYBILL - MATCHES YOUR DARAJA CREDENTIALS
-    MPESA_SHORTCODE = "4671257"                # ✅ Paybill (matches Daraja app)
-    MPESA_TRANSACTION_TYPE = "CustomerPayBillOnline"  # ✅ Paybill type
-    
-    # ✅ TILL (for reference/in-store)
+    MPESA_SHORTCODE = "4671257"
+    MPESA_TRANSACTION_TYPE = "CustomerPayBillOnline"
     MPESA_TILL_NUMBER = "8454832"
-    
     MPESA_USERNAME = "VICHAMINYA"
     MPESA_BUSINESS_PHONE = "254728922614"
-    
-    # ✅ LIVE CREDENTIALS (from Prod-Acacia Minimart-1789064285137)
+
     MPESA_CONSUMER_KEY = os.environ.get('MPESA_CONSUMER_KEY', 'drj3u3o4WAu9OLj5CxgeubDLT0ovutxLB1d7tpP0GfdaDXwU')
     MPESA_CONSUMER_SECRET = os.environ.get('MPESA_CONSUMER_SECRET', 'qupk3DKgDPhPegrnGhwzA7vGyZvvFhnk6ktCs4GZKUAuQo8teCdearePphcWkzpA')
     MPESA_PASSKEY = os.environ.get('MPESA_PASSKEY', '217e9329cf5855e1f89757bbc467cdb9d4e6b42986d4857b96b7fa34eb48a376')
-    
-    # ✅ PRODUCTION ENDPOINTS
+
     MPESA_BASE_URL = 'https://api.safaricom.co.ke'
     MPESA_AUTH_URL = 'https://api.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials'
     MPESA_STK_PUSH_URL = 'https://api.safaricom.co.ke/mpesa/stkpush/v1/processrequest'
     MPESA_QUERY_URL = 'https://api.safaricom.co.ke/mpesa/stkpushquery/v1/query'
-    
-    # ✅ CALLBACK URL - Must be HTTPS
+
     MPESA_CALLBACK_URL = os.environ.get(
-        'MPESA_CALLBACK_URL', 
+        'MPESA_CALLBACK_URL',
         'https://acaciamart.shop/mpesa/callback'
     )
 
@@ -73,6 +70,7 @@ class Config:
     print(f"📱 Till (reference): {MPESA_TILL_NUMBER}")
     print(f"📱 Callback: {MPESA_CALLBACK_URL}")
     print(f"📱 Base URL: {MPESA_BASE_URL}")
+    print(f"🗄️  Supabase URL: {SUPABASE_URL}")
     print(f"🔑 Consumer Key: {MPESA_CONSUMER_KEY[:15]}...")
     print(f"🔑 Passkey: {MPESA_PASSKEY[:15]}...")
     print("=" * 60)
