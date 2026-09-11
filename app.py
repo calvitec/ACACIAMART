@@ -73,6 +73,15 @@ app.permanent_session_lifetime = Config.PERMANENT_SESSION_LIFETIME
 app.template_folder = 'templates'
 app.static_folder = Config.STATIC_FOLDER
 
+# ---------- REGISTER M-PESA TEST BLUEPRINT (debug only) ----------
+try:
+    from mpesa_test import mpesa_test_bp
+    app.register_blueprint(mpesa_test_bp)
+    print("✅ M-Pesa test blueprint registered at /mpesa/test-stk")
+except Exception as e:
+    print(f"⚠️ M-Pesa test blueprint not loaded: {e}")
+# ---------- END DEBUG ----------
+
 os.makedirs(Config.UPLOAD_FOLDER, exist_ok=True)
 
 
