@@ -44,10 +44,8 @@ def load_orders():
     """Load orders - try Supabase first, fallback to local for offline"""
     global orders_cache
     
-    # Force refresh - clear cache
     orders_cache = []
     
-    # First, try to load from local cache (for offline)
     json_data = load_json_data()
     local_orders = json_data.get('orders', [])
     
@@ -109,7 +107,6 @@ def load_orders():
                 
                 orders_cache = processed_orders
                 
-                # Update local cache with latest orders
                 try:
                     json_data['orders'] = processed_orders
                     save_json_data(json_data)
@@ -123,7 +120,6 @@ def load_orders():
             print(f"⚠️ Failed to load from Supabase: {response.status_code}")
             print(f"Response: {response.text[:200]}")
         
-        # If we get here, Supabase failed - use local cache
         print(f"📂 Using local cache: {len(local_orders)} orders")
         orders_cache = local_orders
         return local_orders
@@ -219,7 +215,6 @@ def save_order_to_supabase(order_data):
     try:
         print(f"💾 Saving order: {order_data.get('order_id')}")
         
-        # Always save locally first
         json_data = load_json_data()
         json_data.setdefault('orders', [])
         
@@ -237,11 +232,9 @@ def save_order_to_supabase(order_data):
         
         save_json_data(json_data)
         
-        # Clear cache so orders reload fresh
         global orders_cache
         orders_cache = []
         
-        # Try to save to Supabase
         try:
             supabase_order = {
                 'order_id': order_data.get('order_id'),
@@ -268,7 +261,6 @@ def save_order_to_supabase(order_data):
             
             if response.status_code in [200, 201, 204]:
                 print(f"✅ Order saved to Supabase: {order_data.get('order_id')}")
-                # Mark as synced
                 json_data = load_json_data()
                 for order in json_data.get('orders', []):
                     if order.get('order_id') == order_data.get('order_id'):
@@ -278,7 +270,6 @@ def save_order_to_supabase(order_data):
                 return {'success': True, 'synced': True, 'queued': False, 'message': 'Order saved successfully.'}
             else:
                 print(f"⚠️ Supabase save failed: {response.status_code}")
-                # Queue for later sync
                 queue = json_data.get('order_queue', [])
                 if order_data.get('order_id') not in [q.get('order_id') for q in queue]:
                     queue.append({**order_data, 'queued_at': datetime.utcnow().isoformat()})
@@ -288,7 +279,6 @@ def save_order_to_supabase(order_data):
                 
         except Exception as e:
             print(f"❌ Error saving to Supabase: {e}")
-            # Queue for later sync
             queue = json_data.get('order_queue', [])
             if order_data.get('order_id') not in [q.get('order_id') for q in queue]:
                 queue.append({**order_data, 'queued_at': datetime.utcnow().isoformat()})
@@ -451,11 +441,15 @@ def get_cart():
 
 
 # ============================================================
-# SALES ANALYTICS
+# SALES ANALYTICS  ✅ FIXED: Revenue = products only (excludes shipping)
 # ============================================================
 
 def get_sales_analytics():
-    """Get sales analytics with proper revenue and profit calculation"""
+    """
+    Get sales analytics with revenue EXCLUDING shipping.
+    Revenue = product sales only.
+    Shipping = tracked separately.
+    """
     try:
         orders = load_orders()
         products = load_products()
@@ -463,6 +457,7 @@ def get_sales_analytics():
         if not orders:
             return {
                 'total_revenue': 0,
+                'total_shipping': 0,
                 'total_cost': 0,
                 'total_profit': 0,
                 'total_orders': 0,
@@ -478,9 +473,10 @@ def get_sales_analytics():
 
         product_lookup = {str(p.get('id')): p for p in products if p and p.get('id')}
 
-        total_revenue = 0
-        total_cost = 0
-        total_profit = 0
+        total_revenue = 0.0         # ✅ Products only (no shipping)
+        total_shipping = 0.0        # 🚚 Tracked separately
+        total_cost = 0.0
+        total_profit = 0.0
         total_orders = len(orders)
         total_items_sold = 0
         pos_orders_count = 0
@@ -531,6 +527,7 @@ def get_sales_analytics():
                 }
             if customer_name in customer_data:
                 customer_data[customer_name]['orders'] += 1
+                # Customer's total_spent can be their full payment (includes shipping) — that's correct for a customer record
                 customer_data[customer_name]['total_spent'] += float(order.get('total', 0) or 0)
 
             created_at = order.get('created_at') or order.get('createdAt') or order.get('date') or datetime.utcnow().isoformat()
@@ -542,15 +539,25 @@ def get_sales_analytics():
             month_entry = monthly_data.setdefault(month_key, {
                 'orders': 0,
                 'items': 0,
-                'revenue': 0.0,
+                'revenue': 0.0,     # ✅ products only
+                'shipping': 0.0,    # 🚚 separate
                 'cost': 0.0,
                 'profit': 0.0,
             })
             month_entry['orders'] += 1
 
+            # ✅ Revenue = SUBTOTAL (products only), shipping tracked separately
             order_total = float(order.get('total', 0) or 0)
+            order_subtotal = float(order.get('subtotal', 0) or 0)
+            if order_subtotal == 0:
+                # Fallback for old orders that don't have subtotal saved
+                # Derive it from items below (products only)
+                order_subtotal = 0
+
+            order_shipping = float(order.get('shipping', 0) or 0)
             order_cost = 0.0
             order_items_count = 0
+            computed_subtotal = 0.0
 
             for item in items:
                 product_id = str(item.get('product_id', item.get('id', '')))
@@ -583,6 +590,9 @@ def get_sales_analytics():
                 item_cost = cost_price * quantity
                 order_cost += item_cost
                 order_items_count += quantity
+                computed_subtotal += item_total
+
+                # ✅ Revenue = product line totals only
                 total_revenue += item_total
                 total_cost += item_cost
                 total_profit += (item_total - item_cost)
@@ -613,16 +623,25 @@ def get_sales_analytics():
                 category_entry['cost'] += item_cost
                 category_entry['profit'] += (item_total - item_cost)
 
+            # ✅ If subtotal wasn't stored, use the computed subtotal from items
+            if order_subtotal == 0:
+                order_subtotal = computed_subtotal
+
+            # ✅ Track shipping separately (not revenue)
+            total_shipping += order_shipping
+
             month_entry['items'] += order_items_count
-            month_entry['revenue'] += order_total
+            month_entry['revenue'] += order_subtotal          # ✅ Products only
+            month_entry['shipping'] += order_shipping         # 🚚 Separate
             month_entry['cost'] += order_cost
-            month_entry['profit'] += (order_total - order_cost)
+            month_entry['profit'] += (order_subtotal - order_cost)
 
         sorted_product_sales = dict(sorted(product_sales.items(), key=lambda item: item[1].get('profit', 0), reverse=True))
         sorted_category_sales = dict(sorted(category_sales.items(), key=lambda item: item[1].get('revenue', 0), reverse=True))
 
         return {
-            'total_revenue': total_revenue,
+            'total_revenue': total_revenue,      # ✅ Products only
+            'total_shipping': total_shipping,    # 🚚 Tracked separately
             'total_cost': total_cost,
             'total_profit': total_profit,
             'total_orders': total_orders,
@@ -641,6 +660,7 @@ def get_sales_analytics():
         traceback.print_exc()
         return {
             'total_revenue': 0,
+            'total_shipping': 0,
             'total_cost': 0,
             'total_profit': 0,
             'total_orders': 0,
@@ -650,6 +670,7 @@ def get_sales_analytics():
             'total_customers': 0,
             'monthly_data': {},
             'product_sales': {},
+            'category_sales': {},
             'customer_data': {},
         }
 
