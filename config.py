@@ -19,13 +19,14 @@ class Config:
     MAX_CONTENT_LENGTH = 5 * 1024 * 1024
 
     # ===== SUPABASE CONFIGURATION =====
+    # Currently pointing to: tkotvyblutchsudpqqqe (TEST)
     SUPABASE_URL = os.environ.get(
         'NEXT_PUBLIC_SUPABASE_URL',
-        'https://hzqrdwerkgfmfaufabjr.supabase.co'
+        'https://tkotvyblutchsudpqqqe.supabase.co'
     )
     SUPABASE_KEY = os.environ.get(
         'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY',
-        'sb_publishable_tnBOmCO7EFfIoXfNjEH_Tg_D7WX-zld'
+        'sb_publishable_NSVq3YS29H-U5vjhB6gC7A_uWFsezmy'
     )
 
     SUPABASE_HEADERS = {
@@ -42,18 +43,9 @@ class Config:
     # Merchant Till (Buy Goods) — NOT PayBill
     # ============================================================
     MPESA_BUSINESS_NAME = "Acacia Minimart"
-
-    # BusinessShortCode = HO/store number that went live on Daraja.
-    # Used for: OAuth password, STK Push payload's BusinessShortCode, status queries.
     MPESA_SHORTCODE = "4671257"
-
-    # PartyB = actual Till number customers pay to.
-    # Used for: STK Push payload's PartyB only.
     MPESA_TILL_NUMBER = "8454832"
-
-    # ✅ Buy Goods — required because this is a Merchant Till, not a PayBill.
     MPESA_TRANSACTION_TYPE = "CustomerBuyGoodsOnline"
-
     MPESA_USERNAME = "VICHAMINYA"
     MPESA_BUSINESS_PHONE = "254728922614"
 
@@ -71,16 +63,17 @@ class Config:
         'https://acaciamart.shop/mpesa/callback'
     )
 
+    # ============================================================
+    # STARTUP LOG
+    # ============================================================
     print("=" * 60)
-    print("🏪 ACACIA MINIMART - M-PESA PRODUCTION (BUY GOODS / TILL)")
+    print("🏪 ACACIA MINIMART - STARTUP CONFIG")
     print("=" * 60)
-    print(f"📱 Business: {MPESA_BUSINESS_NAME}")
-    print(f"📱 BusinessShortCode (HO/Store): {MPESA_SHORTCODE}")
-    print(f"📱 Till Number (PartyB): {MPESA_TILL_NUMBER}")
+    print(f"🗄️  Supabase URL: {SUPABASE_URL}")
+    print(f"🔑 Supabase Key: {SUPABASE_KEY[:25]}...")
+    print(f"📱 M-Pesa Business: {MPESA_BUSINESS_NAME}")
+    print(f"📱 BusinessShortCode: {MPESA_SHORTCODE}")
+    print(f"📱 Till Number: {MPESA_TILL_NUMBER}")
     print(f"📱 Transaction Type: {MPESA_TRANSACTION_TYPE}")
     print(f"📱 Callback: {MPESA_CALLBACK_URL}")
-    print(f"📱 Base URL: {MPESA_BASE_URL}")
-    print(f"🗄️  Supabase URL: {SUPABASE_URL}")
-    print(f"🔑 Consumer Key: {MPESA_CONSUMER_KEY[:15]}...")
-    print(f"🔑 Passkey: {MPESA_PASSKEY[:15]}...")
     print("=" * 60)
