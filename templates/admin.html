@@ -1784,7 +1784,6 @@ var txnPerPage = 20;
 // DELETE CREDIT CUSTOMER
 // ============================================================
 
-
 function deleteCreditCustomer(customerId, customerName) {
     console.log('🗑️ Deleting customer:', customerId, customerName);
     
@@ -1864,7 +1863,11 @@ function deleteCreditCustomer(customerId, customerName) {
         });
 }
 
-// =========================================================
+// ============================================================
+// TOAST NOTIFICATION
+// ============================================================
+function showToast(msg, type) {
+    type = type || 'success';
     console.log('🔔 Toast:', msg, type);
     
     var oldToast = document.getElementById('toast');
@@ -1888,9 +1891,33 @@ function deleteCreditCustomer(customerId, customerName) {
     toast.style.maxWidth = '90%';
     toast.style.transition = 'all 0.3s ease';
     toast.style.display = 'flex';
-    toast.style.alignItems = 'center';===
-// TOAST NOTIFICATION
-// ============================================================
+    toast.style.alignItems = 'center';
+    toast.style.gap = '10px';
+    
+    var colors = {
+        'success': 'linear-gradient(135deg, #065f46, #047857)',
+        'error': 'linear-gradient(135deg, #991b1b, #dc2626)',
+        'info': 'linear-gradient(135deg, #1e3a5f, #2563eb)',
+        'warning': 'linear-gradient(135deg, #78350f, #d97706)'
+    };
+    toast.style.background = colors[type] || colors.success;
+    toast.textContent = msg;
+    
+    document.body.appendChild(toast);
+    
+    if (window.toastTimeout) {
+        clearTimeout(window.toastTimeout);
+    }
+    
+    window.toastTimeout = setTimeout(function() {
+        toast.style.opacity = '0';
+        setTimeout(function() {
+            if (toast.parentNode) {
+                toast.remove();
+            }
+        }, 300);
+    }, 3000);
+}
 
 // ============================================================
 // SHOW SECTION
