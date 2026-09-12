@@ -2,7 +2,7 @@ import os
 from datetime import timedelta
 
 class Config:
-    SECRET_KEY = 'allison-electronics-secret-2026'
+    SECRET_KEY = os.environ.get('SECRET_KEY', 'allison-electronics-secret-2026')
     PERMANENT_SESSION_LIFETIME = timedelta(days=7)
 
     IS_VERCEL = 'VERCEL' in os.environ or 'NOW' in os.environ
@@ -39,11 +39,21 @@ class Config:
 
     # ============================================================
     # M-PESA PRODUCTION CONFIGURATION - ACACIA MINIMART
+    # Merchant Till (Buy Goods) — NOT PayBill
     # ============================================================
     MPESA_BUSINESS_NAME = "Acacia Minimart"
+
+    # BusinessShortCode = HO/store number that went live on Daraja.
+    # Used for: OAuth password, STK Push payload's BusinessShortCode, status queries.
     MPESA_SHORTCODE = "4671257"
-    MPESA_TRANSACTION_TYPE = "CustomerPayBillOnline"
+
+    # PartyB = actual Till number customers pay to.
+    # Used for: STK Push payload's PartyB only.
     MPESA_TILL_NUMBER = "8454832"
+
+    # ✅ Buy Goods — required because this is a Merchant Till, not a PayBill.
+    MPESA_TRANSACTION_TYPE = "CustomerBuyGoodsOnline"
+
     MPESA_USERNAME = "VICHAMINYA"
     MPESA_BUSINESS_PHONE = "254728922614"
 
@@ -62,12 +72,12 @@ class Config:
     )
 
     print("=" * 60)
-    print("🏪 ACACIA MINIMART - M-PESA PRODUCTION (PAYBILL)")
+    print("🏪 ACACIA MINIMART - M-PESA PRODUCTION (BUY GOODS / TILL)")
     print("=" * 60)
     print(f"📱 Business: {MPESA_BUSINESS_NAME}")
-    print(f"📱 Paybill Shortcode: {MPESA_SHORTCODE}")
+    print(f"📱 BusinessShortCode (HO/Store): {MPESA_SHORTCODE}")
+    print(f"📱 Till Number (PartyB): {MPESA_TILL_NUMBER}")
     print(f"📱 Transaction Type: {MPESA_TRANSACTION_TYPE}")
-    print(f"📱 Till (reference): {MPESA_TILL_NUMBER}")
     print(f"📱 Callback: {MPESA_CALLBACK_URL}")
     print(f"📱 Base URL: {MPESA_BASE_URL}")
     print(f"🗄️  Supabase URL: {SUPABASE_URL}")
