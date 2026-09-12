@@ -26,7 +26,6 @@ shop_bp = Blueprint('shop', __name__)
 
 # ============================================================
 # SUPABASE-BACKED CALLBACK STORE
-# Persists across Vercel function instances (no /tmp, no memory)
 # ============================================================
 
 def save_callback_result(checkout_request_id, result_code, result_desc,
@@ -793,8 +792,6 @@ def mpesa_initiate():
             session['mpesa_checkout_id'] = checkout_id
             session['mpesa_order_id'] = order_id
 
-            # Persist a pending record so we can distinguish
-            # "callback never arrived" from "callback arrived but failed"
             save_callback_result(
                 checkout_request_id=checkout_id,
                 result_code='PENDING',
@@ -829,7 +826,6 @@ def mpesa_status():
         if not checkout_id:
             return jsonify({'success': False, 'message': 'Checkout ID required'})
 
-        # ✅ STEP 1: Check callback result in Supabase (fastest, most reliable)
         callback = get_callback_result(checkout_id)
         if callback:
             cb_code = str(callback.get('result_code', ''))
@@ -853,10 +849,8 @@ def mpesa_status():
             elif cb_code == '1019':
                 return jsonify({'success': True, 'status': 'expired', 'message': 'Transaction expired.'})
             elif cb_code == 'PENDING':
-                # Keep polling — STK still awaiting callback
                 pass
 
-        # ✅ STEP 2: Fallback - query Safaricom directly
         result, error = mpesa_query_status(checkout_id)
 
         if error:
@@ -1135,7 +1129,7 @@ def place_order():
 
 
 # ============================================================
-# PLACE WHATSAPP ORDER
+# PLACE WHATSAPP ORDER (FIXED - only sends valid Supabase columns)
 # ============================================================
 
 @shop_bp.route('/place-order-whatsapp', methods=['POST'])
@@ -1158,11 +1152,11 @@ def place_order_whatsapp():
         customer_email = data.get('customer_email') or data.get('email') or 'whatsapp@example.com'
         customer_phone = data.get('customer_phone') or data.get('phone') or 'N/A'
         customer_address = data.get('customer_address') or data.get('address') or 'WhatsApp Order'
+        delivery_zone = data.get('delivery_zone', '')
+        delivery_notes = data.get('delivery_notes', '')
 
         shipping = float(data.get('shipping', 0) or 0)
         subtotal = float(data.get('subtotal', 0) or 0)
-        discount = float(data.get('discount', 0) or 0)
-        tax_rate = 0.16
         order_id = data.get('order_id', f'WA-{datetime.now().strftime("%Y%m%d%H%M%S")}')
 
         if subtotal == 0:
@@ -1180,9 +1174,7 @@ def place_order_whatsapp():
                             subtotal += float(bundle.get('price', 0) or 0) * int(quantity)
                             break
 
-        net_revenue = subtotal - discount
-        tax = subtotal * tax_rate
-        total_charged = net_revenue + tax + shipping
+        total_charged = subtotal + shipping
 
         products = load_products()
         products = clean_products(products)
@@ -1229,18 +1221,6 @@ def place_order_whatsapp():
 
         order_data = {
             'order_id': str(order_id),
-            'items': order_items,
-            'subtotal': float(subtotal),
-            'discount': float(discount),
-            'tax': float(tax),
-            'net_revenue': float(net_revenue),
-            'shipping': float(shipping),
-            'shipping_cost': float(data.get('shipping_cost', 0) or 0),
-            'total_charged': float(total_charged),
-            'status': 'pending',
-            'source': 'whatsapp',
-            'payment_method': 'whatsapp',
-            'created_at': datetime.utcnow().isoformat(),
             'customer_name': str(customer_name),
             'customer_email': str(customer_email),
             'customer_phone': str(customer_phone),
@@ -1250,10 +1230,23 @@ def place_order_whatsapp():
                 'email': str(customer_email),
                 'phone': str(customer_phone),
                 'address': str(customer_address),
+                'delivery_zone': str(delivery_zone),
+                'delivery_notes': str(delivery_notes),
             },
-            'delivery_zone': str(data.get('delivery_zone', '')),
-            'delivery_notes': str(data.get('delivery_notes', '')),
+            'items': order_items,
+            'subtotal': float(subtotal),
+            'shipping': float(shipping),
+            'total': float(total_charged),
+            'status': 'pending',
+            'payment_method': 'whatsapp',
+            'payment_status': 'pending',
+            'source': 'whatsapp',
+            'notes': str(delivery_notes),
+            'created_at': datetime.utcnow().isoformat(),
         }
+
+        print("📤 Sending to Supabase:")
+        print(json.dumps(order_data, indent=2, default=str))
 
         try:
             response = requests.post(
@@ -1267,7 +1260,8 @@ def place_order_whatsapp():
                 timeout=15,
             )
 
-            print(f"📥 Supabase: {response.status_code}")
+            print(f"📥 Supabase status: {response.status_code}")
+            print(f"📥 Supabase response: {response.text[:500]}")
 
             if response.status_code in [200, 201, 204]:
                 print(f"✅ WhatsApp order saved: {order_id}")
@@ -1288,7 +1282,7 @@ def place_order_whatsapp():
 👤 *Customer:* {customer_name}
 📱 *Phone:* {customer_phone}
 📍 *Address:* {customer_address}
-🚚 *Zone:* {data.get('delivery_zone', 'N/A')}
+🚚 *Zone:* {delivery_zone or 'N/A'}
 
 📦 *Items:*
 {items_text}
@@ -1298,7 +1292,7 @@ def place_order_whatsapp():
   • Delivery: KSh {shipping:,.0f}
   • Total: KSh {total_charged:,.0f}
 
-📝 *Notes:* {data.get('delivery_notes', 'None')}
+📝 *Notes:* {delivery_notes or 'None'}
 
 ✅ *Please confirm my order via WhatsApp.*"""
 
@@ -1315,7 +1309,7 @@ def place_order_whatsapp():
             else:
                 return jsonify({
                     'success': False,
-                    'message': f'Database error: {response.status_code}'
+                    'message': f'Database error: {response.status_code} - {response.text[:200]}'
                 }), 500
 
         except Exception as e:
