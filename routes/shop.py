@@ -242,7 +242,7 @@ def mpesa_stk_push(phone_number, amount, order_id, callback_url=None):
 
     callback_url = callback_url or get_mpesa_callback_url()
     if not callback_url:
-        return False, None, 'M-Pesa callback URL is not configured. Set MPESA_CALLBACK_URL to your public HTTPS endpoint, for example https://yourdomain.com/mpesa/callback.'
+        return False, None, 'M-Pesa callback URL is not configured.'
 
     formatted_phone = format_phone_number(phone_number)
 
@@ -1129,7 +1129,7 @@ def place_order():
 
 
 # ============================================================
-# PLACE WHATSAPP ORDER (FIXED - only sends valid Supabase columns)
+# PLACE WHATSAPP ORDER
 # ============================================================
 
 @shop_bp.route('/place-order-whatsapp', methods=['POST'])
