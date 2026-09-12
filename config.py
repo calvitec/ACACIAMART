@@ -2,7 +2,10 @@ import os
 from datetime import timedelta
 
 class Config:
-    SECRET_KEY = os.environ.get('SECRET_KEY', 'allison-electronics-secret-2026')
+    # ============================================================
+    # FLASK
+    # ============================================================
+    SECRET_KEY = os.environ.get('SECRET_KEY')
     PERMANENT_SESSION_LIFETIME = timedelta(days=7)
 
     IS_VERCEL = 'VERCEL' in os.environ or 'NOW' in os.environ
@@ -18,15 +21,11 @@ class Config:
     ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
     MAX_CONTENT_LENGTH = 5 * 1024 * 1024
 
-    # ===== SUPABASE CONFIGURATION =====
-    SUPABASE_URL = os.environ.get(
-        'NEXT_PUBLIC_SUPABASE_URL',
-        'https://hzqrdwerkgfmfaufabjr.supabase.co'
-    )
-    SUPABASE_KEY = os.environ.get(
-        'NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY',
-        'sb_publishable_tnBOmCO7EFfIoXfNjEH_Tg_D7WX-zld'
-    )
+    # ============================================================
+    # SUPABASE
+    # ============================================================
+    SUPABASE_URL = os.environ.get('SUPABASE_URL')
+    SUPABASE_KEY = os.environ.get('SUPABASE_KEY')
 
     SUPABASE_HEADERS = {
         'apikey': SUPABASE_KEY,
@@ -38,49 +37,60 @@ class Config:
     DATA_FILE = os.path.join(PROJECT_ROOT, 'offline_data.json')
 
     # ============================================================
-    # M-PESA PRODUCTION CONFIGURATION - ACACIA MINIMART
-    # Merchant Till (Buy Goods) — NOT PayBill
+    # M-PESA — Acacia Minimart (Merchant Till / Buy Goods)
     # ============================================================
-    MPESA_BUSINESS_NAME = "Acacia Minimart"
+    MPESA_BUSINESS_NAME = os.environ.get('MPESA_BUSINESS_NAME', 'Acacia Minimart')
+    MPESA_SHORTCODE = os.environ.get('MPESA_SHORTCODE')
+    MPESA_TILL_NUMBER = os.environ.get('MPESA_TILL_NUMBER')
+    MPESA_TRANSACTION_TYPE = os.environ.get('MPESA_TRANSACTION_TYPE', 'CustomerBuyGoodsOnline')
+    MPESA_USERNAME = os.environ.get('MPESA_USERNAME', '')
+    MPESA_BUSINESS_PHONE = os.environ.get('MPESA_BUSINESS_PHONE', '')
 
-    # BusinessShortCode = HO/store number that went live on Daraja.
-    # Used for: OAuth password, STK Push payload's BusinessShortCode, status queries.
-    MPESA_SHORTCODE = "4671257"
-
-    # PartyB = actual Till number customers pay to.
-    # Used for: STK Push payload's PartyB only.
-    MPESA_TILL_NUMBER = "8454832"
-
-    # ✅ Buy Goods — required because this is a Merchant Till, not a PayBill.
-    MPESA_TRANSACTION_TYPE = "CustomerBuyGoodsOnline"
-
-    MPESA_USERNAME = "VICHAMINYA"
-    MPESA_BUSINESS_PHONE = "254728922614"
-
-    MPESA_CONSUMER_KEY = os.environ.get('MPESA_CONSUMER_KEY', 'drj3u3o4WAu9OLj5CxgeubDLT0ovutxLB1d7tpP0GfdaDXwU')
-    MPESA_CONSUMER_SECRET = os.environ.get('MPESA_CONSUMER_SECRET', 'qupk3DKgDPhPegrnGhwzA7vGyZvvFhnk6ktCs4GZKUAuQo8teCdearePphcWkzpA')
-    MPESA_PASSKEY = os.environ.get('MPESA_PASSKEY', '217e9329cf5855e1f89757bbc467cdb9d4e6b42986d4857b96b7fa34eb48a376')
+    MPESA_CONSUMER_KEY = os.environ.get('MPESA_CONSUMER_KEY')
+    MPESA_CONSUMER_SECRET = os.environ.get('MPESA_CONSUMER_SECRET')
+    MPESA_PASSKEY = os.environ.get('MPESA_PASSKEY')
 
     MPESA_BASE_URL = 'https://api.safaricom.co.ke'
     MPESA_AUTH_URL = 'https://api.safaricom.co.ke/oauth/v1/generate?grant_type=client_credentials'
     MPESA_STK_PUSH_URL = 'https://api.safaricom.co.ke/mpesa/stkpush/v1/processrequest'
     MPESA_QUERY_URL = 'https://api.safaricom.co.ke/mpesa/stkpushquery/v1/query'
 
-    MPESA_CALLBACK_URL = os.environ.get(
-        'MPESA_CALLBACK_URL',
-        'https://acaciamart.shop/mpesa/callback'
-    )
+    MPESA_CALLBACK_URL = os.environ.get('MPESA_CALLBACK_URL')
 
+    # ============================================================
+    # FAIL-FAST: refuse to start if critical secrets are missing
+    # ============================================================
+    _REQUIRED = [
+        'SECRET_KEY',
+        'SUPABASE_URL',
+        'SUPABASE_KEY',
+        'MPESA_SHORTCODE',
+        'MPESA_TILL_NUMBER',
+        'MPESA_CONSUMER_KEY',
+        'MPESA_CONSUMER_SECRET',
+        'MPESA_PASSKEY',
+        'MPESA_CALLBACK_URL',
+    ]
+    _missing = [k for k in _REQUIRED if not os.environ.get(k)]
+    if _missing:
+        raise RuntimeError(
+            "❌ Missing required environment variables: "
+            + ", ".join(_missing)
+            + ". Set them in .env locally, or in Vercel → Settings → Environment Variables."
+        )
+
+    # ============================================================
+    # Startup log (no secret values shown)
+    # ============================================================
     print("=" * 60)
-    print("🏪 ACACIA MINIMART - M-PESA PRODUCTION (BUY GOODS / TILL)")
+    print("🏪 ACACIAMART — M-PESA PRODUCTION (BUY GOODS / TILL)")
     print("=" * 60)
-    print(f"📱 Business: {MPESA_BUSINESS_NAME}")
-    print(f"📱 BusinessShortCode (HO/Store): {MPESA_SHORTCODE}")
-    print(f"📱 Till Number (PartyB): {MPESA_TILL_NUMBER}")
-    print(f"📱 Transaction Type: {MPESA_TRANSACTION_TYPE}")
-    print(f"📱 Callback: {MPESA_CALLBACK_URL}")
-    print(f"📱 Base URL: {MPESA_BASE_URL}")
+    print(f"📱 Business:      {MPESA_BUSINESS_NAME}")
+    print(f"📱 Shortcode:     {MPESA_SHORTCODE}")
+    print(f"📱 Till Number:   {MPESA_TILL_NUMBER}")
+    print(f"📱 Txn Type:      {MPESA_TRANSACTION_TYPE}")
+    print(f"📱 Callback:      {MPESA_CALLBACK_URL}")
     print(f"🗄️  Supabase URL: {SUPABASE_URL}")
-    print(f"🔑 Consumer Key: {MPESA_CONSUMER_KEY[:15]}...")
-    print(f"🔑 Passkey: {MPESA_PASSKEY[:15]}...")
+    print(f"🔑 SECRET_KEY:    {'✓ set (' + str(len(SECRET_KEY)) + ' chars)' if SECRET_KEY else '✗ MISSING'}")
+    print(f"🔑 MPESA keys:    {'✓ set' if MPESA_CONSUMER_KEY and MPESA_CONSUMER_SECRET else '✗ MISSING'}")
     print("=" * 60)
