@@ -1164,7 +1164,7 @@
     }
 
     // ============================================================
-    // ORDER VIA WHATSAPP — shows "Placed" first, THEN opens WhatsApp
+    // ORDER VIA WHATSAPP — saves order, then redirects STRAIGHT to WhatsApp
     // ============================================================
     function orderViaWhatsApp() {
         if (isProcessingPayment) return;
@@ -1231,25 +1231,25 @@
                 orderPlaced = true;
                 isProcessingPayment = false;
 
+                // Silently populate confirmation screen data (in case user returns to this tab)
                 document.getElementById('orderId').textContent = result.order_id || orderId;
                 document.getElementById('trackingNumber').textContent = trackingNumber;
                 document.getElementById('deliveryName').textContent = customerName;
                 document.getElementById('deliveryAddress').textContent = fullAddress;
-                document.getElementById('orderTypeMessage').innerHTML = '💬 Order saved! Confirm in WhatsApp to complete';
+                document.getElementById('orderTypeMessage').innerHTML = '💬 Order saved! Complete payment in WhatsApp';
 
                 const notes = document.getElementById('deliveryNotesDisplay');
                 notes.textContent = data.delivery_notes ? '📝 ' + data.delivery_notes : 'No special instructions';
 
-                // ✅ STEP 1: Show the "Order Placed!" screen FIRST
-                goToStep(3);
-                launchConfetti();
                 showToast('✅ Order saved! Opening WhatsApp...', 'success', 'Confirm your order in WhatsApp');
 
-                // ✅ STEP 2: Open WhatsApp AFTER 2 seconds
+                // ✅ STRAIGHT TO WHATSAPP — no confirmation screen, no delay
                 if (result.whatsapp_url) {
-                    setTimeout(() => {
-                        window.open(result.whatsapp_url, '_blank');
-                    }, 2000);
+                    window.location.href = result.whatsapp_url;
+                } else {
+                    // Fallback: if server didn't return a URL, show the confirmation screen
+                    goToStep(3);
+                    launchConfetti();
                 }
             } else {
                 showToast('❌ ' + (result.message || 'Failed to save order'), 'error');
