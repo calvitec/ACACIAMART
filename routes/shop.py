@@ -158,7 +158,7 @@ def send_whatsapp_notification(order_data, customer_name, order_id, total):
 
 
 # ============================================================
-# M-PESA HELPER FUNCTIONS - PRODUCTION (PAYBILL)
+# M-PESA HELPER FUNCTIONS - PRODUCTION (BUY GOODS / MERCHANT TILL)
 # ============================================================
 
 def get_mpesa_access_token():
@@ -189,8 +189,14 @@ def get_mpesa_access_token():
 
 
 def get_mpesa_shortcode():
-    """Get the Paybill shortcode"""
+    """Get the BusinessShortCode (HO/store number that went live on Daraja)."""
     return Config.MPESA_SHORTCODE
+
+
+def get_mpesa_till_number():
+    """Get the actual Till (PartyB) number used by customers to pay."""
+    # Fall back to shortcode if TILL_NUMBER isn't configured (e.g., for PayBill setups)
+    return getattr(Config, 'MPESA_TILL_NUMBER', None) or Config.MPESA_SHORTCODE
 
 
 def get_mpesa_callback_url():
@@ -206,7 +212,7 @@ def get_mpesa_callback_url():
 
 
 def generate_mpesa_password():
-    """Generate password for STK Push - uses PAYBILL"""
+    """Generate password for STK Push - uses BusinessShortCode (HO/store number)."""
     shortcode = get_mpesa_shortcode()
     timestamp = datetime.now().strftime('%Y%m%d%H%M%S')
     password_str = shortcode + Config.MPESA_PASSKEY + timestamp
@@ -238,7 +244,7 @@ def format_phone_number(phone):
 
 
 def mpesa_stk_push(phone_number, amount, order_id, callback_url=None):
-    """Initiate M-Pesa STK Push - PAYBILL with full logging"""
+    """Initiate M-Pesa STK Push - BUY GOODS (Merchant Till) with full logging"""
 
     callback_url = callback_url or get_mpesa_callback_url()
     if not callback_url:
@@ -259,7 +265,8 @@ def mpesa_stk_push(phone_number, amount, order_id, callback_url=None):
         return False, None, "Failed to authenticate with M-Pesa. Check credentials."
 
     password, timestamp = generate_mpesa_password()
-    shortcode = get_mpesa_shortcode()
+    shortcode = get_mpesa_shortcode()            # 4671257 - HO/store number
+    till_number = get_mpesa_till_number()        # 8454832 - actual till (PartyB)
 
     headers = {
         'Authorization': f'Bearer {access_token}',
@@ -269,22 +276,23 @@ def mpesa_stk_push(phone_number, amount, order_id, callback_url=None):
     amount_int = int(float(amount))
 
     payload = {
-        'BusinessShortCode': shortcode,
+        'BusinessShortCode': shortcode,               # 4671257 (HO/store)
         'Password': password,
         'Timestamp': timestamp,
-        'TransactionType': 'CustomerPayBillOnline',
+        'TransactionType': 'CustomerBuyGoodsOnline',  # ✅ BUY GOODS (Merchant Till)
         'Amount': amount_int,
         'PartyA': formatted_phone,
-        'PartyB': shortcode,
+        'PartyB': till_number,                        # ✅ 8454832 (actual till)
         'PhoneNumber': formatted_phone,
         'CallBackURL': callback_url,
         'AccountReference': str(order_id)[:12],
         'TransactionDesc': f'Payment for order {order_id}'[:50]
     }
 
-    print(f"📤 STK Push (PAYBILL) to {formatted_phone} for KSh {amount_int}")
+    print(f"📤 STK Push (BUY GOODS) to {formatted_phone} for KSh {amount_int}")
     print(f"   BusinessShortCode: {shortcode}")
-    print(f"   TransactionType: CustomerPayBillOnline")
+    print(f"   TransactionType: CustomerBuyGoodsOnline")
+    print(f"   PartyB (Till): {till_number}")
     print(f"   CallBackURL: {callback_url}")
 
     try:
@@ -329,7 +337,7 @@ def mpesa_stk_push(phone_number, amount, order_id, callback_url=None):
 
 
 def mpesa_query_status(checkout_request_id):
-    """Query STK Push status - uses PAYBILL"""
+    """Query STK Push status - uses BusinessShortCode (HO/store number)"""
     access_token = get_mpesa_access_token()
     if not access_token:
         return None, "Failed to authenticate"
@@ -769,7 +777,7 @@ def checkout_page():
 
 @shop_bp.route('/mpesa/initiate', methods=['POST'])
 def mpesa_initiate():
-    """Initiate M-Pesa payment - PAYBILL"""
+    """Initiate M-Pesa payment - BUY GOODS (Merchant Till)"""
     try:
         data = request.get_json()
         phone = data.get('phone', '')
@@ -777,7 +785,7 @@ def mpesa_initiate():
         order_id = data.get('order_id', f'ORD-{datetime.now().strftime("%Y%m%d%H%M%S")}')
 
         print(f"\n{'='*60}")
-        print(f"📱 M-PESA INITIATE (PAYBILL) | Phone: {phone} | Amount: {amount}")
+        print(f"📱 M-PESA INITIATE (BUY GOODS) | Phone: {phone} | Amount: {amount}")
         print(f"{'='*60}")
 
         if not phone:
@@ -1355,21 +1363,24 @@ def mpesa_test_auth():
     try:
         token = get_mpesa_access_token()
         shortcode = get_mpesa_shortcode()
+        till_number = get_mpesa_till_number()
         if token:
             return jsonify({
                 'success': True,
                 'message': 'Authentication works!',
                 'token_preview': token[:30] + '...',
                 'auth_url': Config.MPESA_AUTH_URL,
-                'shortcode': shortcode,
-                'transaction_type': 'CustomerPayBillOnline'
+                'business_shortcode': shortcode,
+                'till_number': till_number,
+                'transaction_type': 'CustomerBuyGoodsOnline'
             })
         else:
             return jsonify({
                 'success': False,
                 'message': 'Authentication failed.',
                 'auth_url': Config.MPESA_AUTH_URL,
-                'shortcode': shortcode
+                'business_shortcode': shortcode,
+                'till_number': till_number
             })
     except Exception as e:
         return jsonify({'success': False, 'error': str(e)})
