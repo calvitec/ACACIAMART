@@ -4131,5 +4131,52 @@ console.log('  • Retail payment terms (Cash, Credit, M-Pesa, etc.)');
 console.log('  • Order management');
 console.log('  • Analytics with charts');
 </script>
+<script>
+// FORCE-OVERRIDE deleteProduct after all other scripts
+(function() {
+    window.deleteProduct = function(productId) {
+        if (!productId) {
+            if (window.showToast) window.showToast('❌ No product ID', 'error');
+            return;
+        }
+        if (!confirm('⚠️ Delete product "' + productId + '"?\n\nThis cannot be undone.')) return;
+
+        console.log('🗑️ DELETE /admin/api/product/' + encodeURIComponent(productId));
+
+        fetch('/admin/api/product/' + encodeURIComponent(productId), {
+            method: 'DELETE',
+            credentials: 'same-origin',
+            headers: {
+                'Content-Type': 'application/json',
+                'Accept': 'application/json'
+            }
+        })
+        .then(function(r) {
+            console.log('DELETE status:', r.status);
+            return r.text().then(function(text) {
+                return { status: r.status, text: text };
+            });
+        })
+        .then(function(res) {
+            console.log('DELETE body:', res.text);
+            var d = null;
+            try { d = JSON.parse(res.text); } catch (e) {}
+            if (d && d.success) {
+                if (window.showToast) window.showToast('✅ Product deleted!', 'success');
+                setTimeout(function() { location.reload(); }, 1000);
+            } else if (res.status === 401) {
+                if (window.showToast) window.showToast('❌ Not authorized. Log out and log in again.', 'error');
+            } else {
+                if (window.showToast) window.showToast('❌ ' + ((d && d.message) || 'Delete failed: HTTP ' + res.status), 'error');
+            }
+        })
+        .catch(function(err) {
+            console.error('Delete error:', err);
+            if (window.showToast) window.showToast('❌ Network error: ' + err.message, 'error');
+        });
+    };
+    console.log('✅ deleteProduct force-overridden');
+})();
+</script>
 
 {% endblock %}
