@@ -2367,6 +2367,7 @@ function renderProductsTable(products) {
         html += '<td style="text-align:right;display:none;font-size:0.7rem;color:' + profitColor + ';" class="md-table-cell">KSh ' + (p.cost_price || 0).toLocaleString() + '</td>';
         html += '<td style="text-align:center;font-weight:700;color:' + stockColor + ';">' + stock + '</td>';
         html += '<td style="text-align:center;">';
+        html += '<button type="button" onclick="deleteProduct(\'' + String(p.id).replace(/\'/g, "\\\'") + '\')" class="btn-danger" style="font-size:0.55rem;padding:2px 8px;" title="Delete"><i class="fas fa-trash"></i></button>';
         
         html += '<button onclick="openEditModal(\'' + p.id + '\')" class="btn-outline" style="font-size:0.55rem;padding:2px 8px;" title="Edit"><i class="fas fa-edit"></i></button> ';
         html += '</td></tr>';
