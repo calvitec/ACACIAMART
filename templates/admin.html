@@ -1781,18 +1781,72 @@ var txnPerPage = 20;
 
 
 // ============================================================
+// SAFE TOAST — CAN NEVER THROW, OVERRIDES ANY BROKEN VERSION
+// ============================================================
+(function() {
+    function buildToast(msg, type) {
+        try {
+            var existing = document.getElementById('safe-toast');
+            if (existing && existing.parentNode) {
+                existing.parentNode.removeChild(existing);
+            }
+
+            var toast = document.createElement('div');
+            toast.id = 'safe-toast';
+            toast.textContent = String(msg || '');
+
+            toast.style.position = 'fixed';
+            toast.style.bottom = '30px';
+            toast.style.left = '50%';
+            toast.style.transform = 'translateX(-50%)';
+            toast.style.padding = '12px 28px';
+            toast.style.borderRadius = '12px';
+            toast.style.color = 'white';
+            toast.style.fontWeight = '500';
+            toast.style.fontSize = '0.85rem';
+            toast.style.zIndex = '2147483647';
+            toast.style.boxShadow = '0 20px 60px rgba(0,0,0,0.3)';
+            toast.style.maxWidth = '90%';
+            toast.style.transition = 'opacity 0.3s ease';
+            toast.style.pointerEvents = 'none';
+
+            var colors = {
+                success: 'linear-gradient(135deg, #065f46, #047857)',
+                error:   'linear-gradient(135deg, #991b1b, #dc2626)',
+                info:    'linear-gradient(135deg, #1e3a5f, #2563eb)',
+                warning: 'linear-gradient(135deg, #78350f, #d97706)'
+            };
+            toast.style.background = colors[type] || colors.success;
+
+            document.body.appendChild(toast);
+
+            if (window.__toastTimeout) clearTimeout(window.__toastTimeout);
+            window.__toastTimeout = setTimeout(function() {
+                toast.style.opacity = '0';
+                setTimeout(function() {
+                    if (toast.parentNode) toast.parentNode.removeChild(toast);
+                }, 300);
+            }, 3000);
+        } catch (e) {
+            console.warn('Toast failed (non-fatal):', e);
+        }
+    }
+
+    window.showToast = buildToast;
+    window.safeToast = buildToast;
+})();
+
+// ============================================================
 // DELETE CREDIT CUSTOMER
 // ============================================================
-
 function deleteCreditCustomer(customerId, customerName) {
     console.log('🗑️ Deleting customer:', customerId, customerName);
-    
+
     if (!customerId) {
         showToast('❌ No customer ID provided', 'error');
         return;
     }
-    
-    // First, check if customer exists and get their balance
+
     fetch('/admin/api/credit/customers/' + customerId + '?t=' + Date.now())
         .then(function(response) {
             if (!response.ok) {
@@ -1802,13 +1856,13 @@ function deleteCreditCustomer(customerId, customerName) {
         })
         .then(function(data) {
             console.log('📦 Customer data:', data);
-            
+
             if (data.success && data.customer) {
                 var customer = data.customer;
                 var balance = customer.current_balance || 0;
-                
+
                 var confirmMsg = '⚠️ Are you sure you want to delete "' + customerName + '"?\n\n';
-                
+
                 if (balance > 0) {
                     confirmMsg += '💀 WARNING: This customer has a balance of KSh ' + balance.toLocaleString() + '!\n';
                     confirmMsg += 'Deleting this customer will also remove ALL their transaction history.\n\n';
@@ -1816,19 +1870,17 @@ function deleteCreditCustomer(customerId, customerName) {
                     confirmMsg += 'This action CANNOT be undone!\n\n';
                 }
                 confirmMsg += 'Click OK to delete, Cancel to abort.';
-                
+
                 if (!confirm(confirmMsg)) {
                     console.log('❌ Deletion cancelled');
                     return;
                 }
-                
-                // Double confirm for safety
+
                 if (!confirm('🔴 FINAL WARNING: Are you ABSOLUTELY sure you want to delete "' + customerName + '"?')) {
                     console.log('❌ Deletion cancelled');
                     return;
                 }
-                
-                // Delete the customer
+
                 fetch('/admin/api/credit/customers/' + customerId, {
                     method: 'DELETE',
                     headers: { 'Content-Type': 'application/json' }
@@ -1841,7 +1893,6 @@ function deleteCreditCustomer(customerId, customerName) {
                     console.log('📡 Delete result:', result);
                     if (result.success) {
                         showToast('✅ Customer "' + customerName + '" deleted successfully!', 'success');
-                        // Reload the page after a moment
                         setTimeout(function() {
                             location.reload();
                         }, 1500);
@@ -1864,63 +1915,6 @@ function deleteCreditCustomer(customerId, customerName) {
 }
 
 // ============================================================
-// TOAST NOTIFICATION — SAFE VERSION
-// ============================================================
-function showToast(msg, type) {
-    type = type || 'success';
-    console.log('🔔 Toast:', msg, type);
-
-    try {
-        var existing = document.getElementById('safe-toast');
-        if (existing && existing.parentNode) {
-            existing.parentNode.removeChild(existing);
-        }
-
-        var toast = document.createElement('div');
-        toast.id = 'safe-toast';
-        toast.textContent = msg;
-
-        toast.style.position = 'fixed';
-        toast.style.bottom = '30px';
-        toast.style.left = '50%';
-        toast.style.transform = 'translateX(-50%)';
-        toast.style.padding = '12px 28px';
-        toast.style.borderRadius = '12px';
-        toast.style.color = 'white';
-        toast.style.fontWeight = '500';
-        toast.style.fontSize = '0.85rem';
-        toast.style.zIndex = '999999';
-        toast.style.boxShadow = '0 20px 60px rgba(0,0,0,0.3)';
-        toast.style.maxWidth = '90%';
-        toast.style.transition = 'opacity 0.3s ease';
-        toast.style.display = 'flex';
-        toast.style.alignItems = 'center';
-        toast.style.gap = '10px';
-        toast.style.pointerEvents = 'none';
-
-        var colors = {
-            success: 'linear-gradient(135deg, #065f46, #047857)',
-            error:   'linear-gradient(135deg, #991b1b, #dc2626)',
-            info:    'linear-gradient(135deg, #1e3a5f, #2563eb)',
-            warning: 'linear-gradient(135deg, #78350f, #d97706)'
-        };
-        toast.style.background = colors[type] || colors.success;
-
-        document.body.appendChild(toast);
-
-        if (window.__toastTimeout) clearTimeout(window.__toastTimeout);
-        window.__toastTimeout = setTimeout(function() {
-            toast.style.opacity = '0';
-            setTimeout(function() {
-                if (toast.parentNode) toast.parentNode.removeChild(toast);
-            }, 300);
-        }, 3000);
-    } catch (e) {
-        console.warn('Toast failed (non-fatal):', e);
-    }
-}
-
-// ============================================================
 // SHOW SECTION
 // ============================================================
 function showSection(sectionName) {
@@ -1928,10 +1922,10 @@ function showSection(sectionName) {
     for (var i = 0; i < sections.length; i++) {
         sections[i].classList.add('hidden');
     }
-    
+
     var target = document.getElementById(sectionName + '-section');
     if (target) target.classList.remove('hidden');
-    
+
     var titles = {
         'dashboard': 'Dashboard',
         'orders': 'Orders',
@@ -1945,7 +1939,7 @@ function showSection(sectionName) {
     };
     var titleEl = document.getElementById('pageTitle');
     if (titleEl) titleEl.innerHTML = titles[sectionName] || 'Dashboard';
-    
+
     if (sectionName === 'products') setTimeout(loadProductsWithFilters, 300);
     if (sectionName === 'analytics') setTimeout(loadAnalyticsData, 300);
     if (sectionName === 'orders') setTimeout(loadOrders, 300);
@@ -1966,12 +1960,12 @@ function toggleDarkMode() {
 
 if (localStorage.getItem('pos-theme') === 'dark') {
     document.documentElement.setAttribute('data-theme', 'dark');
-    var icon = document.getElementById('themeIcon');
-    if (icon) icon.textContent = '☀️';
+    var iconEl = document.getElementById('themeIcon');
+    if (iconEl) iconEl.textContent = '☀️';
 } else {
     document.documentElement.setAttribute('data-theme', 'light');
-    var icon = document.getElementById('themeIcon');
-    if (icon) icon.textContent = '🌙';
+    var iconEl2 = document.getElementById('themeIcon');
+    if (iconEl2) iconEl2.textContent = '🌙';
 }
 
 // ============================================================
@@ -1991,15 +1985,15 @@ function closeModal(event, modalId) {
 // ============================================================
 function loadCategories() {
     console.log('🔄 Loading categories dynamically...');
-    
+
     fetch('/api/categories?t=' + Date.now())
-        .then(function(r) { 
+        .then(function(r) {
             if (!r.ok) throw new Error('HTTP ' + r.status);
-            return r.json(); 
+            return r.json();
         })
         .then(function(data) {
             console.log('📦 Categories loaded:', data);
-            
+
             var categoryNames = [];
             if (data && typeof data === 'object') {
                 for (var key in data) {
@@ -2008,7 +2002,7 @@ function loadCategories() {
                     }
                 }
             }
-            
+
             if (categoryNames.length === 0) {
                 return fetch('/admin/api/products?limit=100&t=' + Date.now())
                     .then(function(r) { return r.json(); })
@@ -2049,21 +2043,21 @@ function populateCategorySelects(categories) {
         document.getElementById('prodCategory'),
         document.getElementById('editCategory')
     ];
-    
+
     for (var i = 0; i < selects.length; i++) {
         var select = selects[i];
         if (!select) continue;
-        
+
         var currentValue = select.value;
         select.innerHTML = '<option value="">Select Category</option>';
-        
+
         for (var j = 0; j < categories.length; j++) {
             var opt = document.createElement('option');
             opt.value = categories[j];
             opt.textContent = categories[j];
             select.appendChild(opt);
         }
-        
+
         if (currentValue && categories.indexOf(currentValue) !== -1) {
             select.value = currentValue;
         }
@@ -2073,12 +2067,12 @@ function populateCategorySelects(categories) {
 function addNewCategoryIfNeeded(categoryName) {
     if (!categoryName) return;
     if (allCategories.indexOf(categoryName) !== -1) return;
-    
+
     allCategories.push(categoryName);
     allCategories.sort();
     window.allCategories = allCategories;
     populateCategorySelects(allCategories);
-    
+
     fetch('/api/categories', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2093,7 +2087,7 @@ function addNewCategoryIfNeeded(categoryName) {
 // ============================================================
 function loadSuppliersForProducts() {
     console.log('🔄 Loading suppliers for product forms...');
-    
+
     fetch('/admin/api/suppliers?t=' + Date.now())
         .then(function(r) { return r.json(); })
         .then(function(data) {
@@ -2102,29 +2096,29 @@ function loadSuppliersForProducts() {
                     document.getElementById('prodSupplier'),
                     document.getElementById('editSupplier')
                 ];
-                
+
                 for (var i = 0; i < selects.length; i++) {
                     var select = selects[i];
                     if (!select) continue;
-                    
+
                     var currentValue = select.value;
                     select.innerHTML = '<option value="">Select Supplier (Optional)</option>';
-                    
+
                     for (var j = 0; j < data.suppliers.length; j++) {
                         var s = data.suppliers[j];
                         if (s.status !== 'active') continue;
-                        
+
                         var opt = document.createElement('option');
                         opt.value = s.supplier_id;
                         opt.textContent = s.business_name + (s.contact_person ? ' (' + s.contact_person + ')' : '');
                         select.appendChild(opt);
                     }
-                    
+
                     if (currentValue) {
                         select.value = currentValue;
                     }
                 }
-                
+
                 console.log('✅ Suppliers loaded:', data.suppliers.length);
             }
         })
@@ -2134,19 +2128,19 @@ function loadSuppliersForProducts() {
 }
 
 // ============================================================
-// [NEW] LOAD CATEGORIES FOR SUPPLIER MODAL
+// LOAD CATEGORIES FOR SUPPLIER MODAL
 // ============================================================
 function loadSupplierCategories() {
     console.log('🔄 Loading categories for supplier modal...');
-    
+
     var categorySelect = document.getElementById('businessCategory');
     if (!categorySelect) return;
-    
+
     var currentValue = categorySelect.value;
     categorySelect.innerHTML = '<option value="">Select Category</option>';
-    
+
     var categories = window.allCategories || [];
-    
+
     if (categories.length === 0) {
         fetch('/api/categories?t=' + Date.now())
             .then(function(r) { return r.json(); })
@@ -2178,20 +2172,20 @@ function loadSupplierCategories() {
 function populateSupplierCategories(categories, currentValue) {
     var categorySelect = document.getElementById('businessCategory');
     if (!categorySelect) return;
-    
+
     categorySelect.innerHTML = '<option value="">Select Category</option>';
-    
+
     for (var i = 0; i < categories.length; i++) {
         var opt = document.createElement('option');
         opt.value = categories[i];
         opt.textContent = categories[i];
         categorySelect.appendChild(opt);
     }
-    
+
     if (currentValue && categories.indexOf(currentValue) !== -1) {
         categorySelect.value = currentValue;
     }
-    
+
     console.log('✅ Supplier categories loaded:', categories.length);
 }
 
@@ -2201,9 +2195,9 @@ function populateSupplierCategories(categories, currentValue) {
 function loadOrders() {
     var tbody = document.getElementById('ordersTableBody');
     if (!tbody) return;
-    
+
     tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text-muted);">Loading orders...</td></tr>';
-    
+
     fetch('/admin/api/orders?t=' + Date.now())
         .then(function(r) { return r.json(); })
         .then(function(data) {
@@ -2221,20 +2215,20 @@ function loadOrders() {
 function renderOrders(orders) {
     var tbody = document.getElementById('ordersTableBody');
     if (!tbody) return;
-    
+
     if (!orders || orders.length === 0) {
         tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:30px;color:var(--text-muted);">No orders found</td></tr>';
         return;
     }
-    
+
     var html = '';
     for (var i = 0; i < orders.length; i++) {
         var order = orders[i];
-        var customerName = order.customer_name || order.customer?.name || 'Customer';
+        var customerName = order.customer_name || (order.customer && order.customer.name) || 'Customer';
         var orderId = (order.order_id || order.id || '');
-        
+
         html += '<tr>';
-        html += '<td class="font-mono">#' + orderId.slice(0, 8) + '</td>';
+        html += '<td class="font-mono">#' + String(orderId).slice(0, 8) + '</td>';
         html += '<td class="sm-table-cell">' + customerName + '</td>';
         html += '<td style="text-align:right;font-weight:600;color:var(--success);">KSh ' + (order.total || 0).toLocaleString() + '</td>';
         html += '<td style="text-align:center;">';
@@ -2244,7 +2238,7 @@ function renderOrders(orders) {
         html += '<option value="shipped" ' + (order.status === 'shipped' ? 'selected' : '') + '>📦 Shipped</option>';
         html += '<option value="delivered" ' + (order.status === 'delivered' ? 'selected' : '') + '>🎯 Delivered</option>';
         html += '</select></td>';
-        html += '<td class="md-table-cell">' + (order.created_at || '').slice(0, 10) + '</td>';
+        html += '<td class="md-table-cell">' + String(order.created_at || '').slice(0, 10) + '</td>';
         html += '<td style="text-align:center;">';
         html += '<button onclick="viewOrder(\'' + orderId + '\')" class="btn-outline" style="font-size:0.6rem;padding:2px 10px;"><i class="fas fa-eye"></i></button>';
         html += '</td></tr>';
@@ -2280,8 +2274,8 @@ function viewOrder(orderId) {
                         itemsHtml += '</div>';
                     }
                 }
-                
-                document.getElementById('orderDetails').innerHTML = 
+
+                document.getElementById('orderDetails').innerHTML =
                     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:12px;">' +
                     '<div><span style="color:var(--text-muted);font-size:0.6rem;">Order ID</span><div style="font-weight:600;font-family:monospace;">' + (order.order_id || 'N/A') + '</div></div>' +
                     '<div><span style="color:var(--text-muted);font-size:0.6rem;">Status</span><div><span class="badge ' + (order.status == 'delivered' ? 'badge-success' : order.status == 'shipped' ? 'badge-info' : order.status == 'confirmed' ? 'badge-purple' : 'badge-warning') + '">' + (order.status || 'Pending') + '</span></div></div>' +
@@ -2293,7 +2287,7 @@ function viewOrder(orderId) {
                     (itemsHtml || '<div style="font-size:0.7rem;color:var(--text-muted);">No items</div>') +
                     '</div>' +
                     '<div style="font-size:0.6rem;color:var(--text-muted);margin-top:8px;">' + (order.created_at ? 'Created: ' + new Date(order.created_at).toLocaleString() : '') + '</div>';
-                
+
                 document.getElementById('orderModal').classList.remove('hidden');
                 document.getElementById('orderModal').style.display = 'flex';
             } else {
@@ -2309,16 +2303,16 @@ function viewOrder(orderId) {
 function loadProductsWithFilters() {
     var tbody = document.getElementById('productsTableBody');
     if (!tbody) return;
-    
+
     tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-muted);">Loading products...</td></tr>';
-    
+
     var params = new URLSearchParams();
     params.append('page', currentPage);
     params.append('per_page', perPageLimit);
     if (searchTerm) params.append('search', searchTerm);
     if (filterType === 'low_stock') params.append('low_stock', 'true');
     if (filterType === 'out_of_stock') params.append('out_of_stock', 'true');
-    
+
     fetch('/admin/api/products?' + params.toString() + '&t=' + Date.now())
         .then(function(r) { return r.json(); })
         .then(function(data) {
@@ -2336,11 +2330,13 @@ function loadProductsWithFilters() {
 
 function renderProductsTable(products) {
     var tbody = document.getElementById('productsTableBody');
+    if (!tbody) return;
+
     if (!products || products.length === 0) {
         tbody.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:30px;color:var(--text-muted);">No products found</td></tr>';
         return;
     }
-    
+
     var html = '';
     for (var i = 0; i < products.length; i++) {
         var p = products[i];
@@ -2349,7 +2345,7 @@ function renderProductsTable(products) {
         var profit = (p.price || 0) - (p.cost_price || 0);
         var profitColor = profit > 0 ? 'var(--success)' : profit < 0 ? 'var(--danger)' : 'var(--text-muted)';
         var supplierName = p.supplier_name || p.supplier || '—';
-        
+
         html += '<tr>';
         html += '<td><div style="display:flex;align-items:center;gap:10px;">';
         html += '<div style="width:36px;height:36px;border-radius:8px;background:var(--bg-input);display:flex;align-items:center;justify-content:center;font-size:1rem;flex-shrink:0;">';
@@ -2368,7 +2364,7 @@ function renderProductsTable(products) {
         html += '<td style="text-align:center;font-weight:700;color:' + stockColor + ';">' + stock + '</td>';
         html += '<td style="text-align:center;">';
         html += '<button type="button" onclick="deleteProduct(\'' + String(p.id).replace(/\'/g, "\\\'") + '\')" class="btn-danger" style="font-size:0.55rem;padding:2px 8px;" title="Delete"><i class="fas fa-trash"></i></button>';
-        
+
         html += '<button onclick="openEditModal(\'' + p.id + '\')" class="btn-outline" style="font-size:0.55rem;padding:2px 8px;" title="Edit"><i class="fas fa-edit"></i></button> ';
         html += '</td></tr>';
     }
@@ -2377,23 +2373,27 @@ function renderProductsTable(products) {
 
 function updateProductsPagination(data) {
     var container = document.getElementById('productsPaginationLinks');
-    document.getElementById('productsStart').textContent = data.start || 0;
-    document.getElementById('productsEnd').textContent = data.end || 0;
-    document.getElementById('productsTotal').textContent = data.total || 0;
-    
+    var startEl = document.getElementById('productsStart');
+    var endEl = document.getElementById('productsEnd');
+    var totalEl = document.getElementById('productsTotal');
+
+    if (startEl) startEl.textContent = data.start || 0;
+    if (endEl) endEl.textContent = data.end || 0;
+    if (totalEl) totalEl.textContent = data.total || 0;
+
     if (!container || data.total_pages <= 1) {
-        container.innerHTML = '';
+        if (container) container.innerHTML = '';
         return;
     }
-    
+
     var html = '';
     var totalPages = data.total_pages || 1;
     var current = data.page || 1;
-    
+
     if (current > 1) {
         html += '<a href="javascript:void(0)" class="page-link" onclick="changeProductPage(' + (current - 1) + ')"><i class="fas fa-chevron-left"></i></a>';
     }
-    
+
     for (var p = 1; p <= totalPages; p++) {
         if (p === current) {
             html += '<span class="page-link active">' + p + '</span>';
@@ -2401,7 +2401,7 @@ function updateProductsPagination(data) {
             html += '<a href="javascript:void(0)" class="page-link" onclick="changeProductPage(' + p + ')">' + p + '</a>';
         }
     }
-    
+
     if (current < totalPages) {
         html += '<a href="javascript:void(0)" class="page-link" onclick="changeProductPage(' + (current + 1) + ')"><i class="fas fa-chevron-right"></i></a>';
     }
@@ -2432,7 +2432,7 @@ document.addEventListener('DOMContentLoaded', function() {
             loadProductsWithFilters();
         });
     }
-    
+
     var filterSelect = document.getElementById('productFilterSelect');
     if (filterSelect) {
         filterSelect.addEventListener('change', function() {
@@ -2448,21 +2448,20 @@ document.addEventListener('DOMContentLoaded', function() {
 // ============================================================
 function openEditModal(productId) {
     console.log('✏️ Opening edit for:', productId);
-    
+
     if (!productId) {
         showToast('❌ No product ID', 'error');
         return;
     }
-    
+
     var modal = document.getElementById('editModal');
     if (!modal) {
         showToast('❌ Modal not found', 'error');
         return;
     }
-    
+
     modal.style.display = 'flex';
-    
-    // Reset form
+
     document.getElementById('editId').value = '';
     document.getElementById('editIdDisplay').value = '';
     document.getElementById('editName').value = '';
@@ -2476,12 +2475,12 @@ function openEditModal(productId) {
     document.getElementById('editDesc').value = '';
     document.getElementById('editSpecs').value = '';
     document.getElementById('editBadge').value = '';
-    
+
     if (allCategories.length === 0) {
         loadCategories();
     }
     loadSuppliersForProducts();
-    
+
     fetch('/admin/api/product/' + productId + '?t=' + Date.now())
         .then(function(response) {
             if (!response.ok) {
@@ -2491,15 +2490,14 @@ function openEditModal(productId) {
         })
         .then(function(data) {
             console.log('Product data:', data);
-            
+
             if (data.success && data.product) {
                 var p = data.product;
-                
+
                 document.getElementById('editId').value = p.id || '';
                 document.getElementById('editIdDisplay').value = p.id || '';
                 document.getElementById('editName').value = p.name || '';
-                
-                // Set category
+
                 var catSelect = document.getElementById('editCategory');
                 if (p.category) {
                     var found = false;
@@ -2518,12 +2516,11 @@ function openEditModal(productId) {
                     }
                     catSelect.value = p.category;
                 }
-                
-                // Set supplier
+
                 if (p.supplier_id) {
                     document.getElementById('editSupplier').value = p.supplier_id;
                 }
-                
+
                 document.getElementById('editBarcode').value = p.barcode || '';
                 document.getElementById('editPrice').value = p.price || 0;
                 document.getElementById('editCostPrice').value = p.cost_price || 0;
@@ -2531,7 +2528,7 @@ function openEditModal(productId) {
                 document.getElementById('editImage').value = p.image || '';
                 document.getElementById('editDesc').value = p.description || '';
                 document.getElementById('editBadge').value = p.badge || '';
-                
+
                 if (p.specs && Array.isArray(p.specs)) {
                     document.getElementById('editSpecs').value = p.specs.join(', ');
                 } else if (p.specs && typeof p.specs === 'string') {
@@ -2539,7 +2536,7 @@ function openEditModal(productId) {
                 } else {
                     document.getElementById('editSpecs').value = '';
                 }
-                
+
                 updateProfitDisplay('edit');
                 showToast('✅ Product loaded: ' + p.name, 'success');
             } else {
@@ -2559,24 +2556,24 @@ function openEditModal(productId) {
 // ============================================================
 function saveEditForm(event) {
     event.preventDefault();
-    
+
     var productId = document.getElementById('editId').value;
     if (!productId) {
         showToast('❌ No product ID', 'error');
         return;
     }
-    
+
     var specsInput = document.getElementById('editSpecs').value.trim();
     var specs = [];
     if (specsInput) {
         specs = specsInput.split(',').map(function(s) { return s.trim(); }).filter(function(s) { return s; });
     }
-    
+
     var category = document.getElementById('editCategory').value;
     if (category) {
         addNewCategoryIfNeeded(category);
     }
-    
+
     var data = {
         name: document.getElementById('editName').value.trim(),
         category: category,
@@ -2590,9 +2587,9 @@ function saveEditForm(event) {
         badge: document.getElementById('editBadge').value,
         specs: specs
     };
-    
+
     console.log('Saving:', data);
-    
+
     if (!data.name) {
         showToast('❌ Name is required', 'error');
         return;
@@ -2605,14 +2602,14 @@ function saveEditForm(event) {
         showToast('❌ Please select a category', 'error');
         return;
     }
-    
+
     var btn = document.querySelector('#editForm button[type="submit"]');
     var originalText = btn ? btn.innerHTML : 'Update';
     if (btn) {
         btn.innerHTML = '⏳ Saving...';
         btn.disabled = true;
     }
-    
+
     fetch('/admin/api/product/' + productId, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
@@ -2624,7 +2621,7 @@ function saveEditForm(event) {
             btn.innerHTML = originalText;
             btn.disabled = false;
         }
-        
+
         console.log('Result:', result);
         if (result.success) {
             showToast('✅ Product updated successfully!', 'success');
@@ -2652,21 +2649,30 @@ function closeEditModal() {
 }
 
 // ============================================================
-// DELETE PRODUCT — BULLETPROOF
+// DELETE PRODUCT — BULLETPROOF FIXED VERSION
 // ============================================================
 function deleteProduct(productId) {
+    console.log('🗑️ deleteProduct called with:', productId);
+
     if (!productId) {
         showToast('❌ No product ID', 'error');
         return;
     }
-    if (!confirm('⚠️ Delete "' + productId + '"? This cannot be undone.')) return;
 
-    console.log('🗑️ Deleting product:', productId);
+    if (!confirm('⚠️ Delete product "' + productId + '"?\n\nThis cannot be undone.')) {
+        console.log('❌ Delete cancelled by user');
+        return;
+    }
+
+    console.log('🗑️ Sending DELETE to /admin/api/product/' + encodeURIComponent(productId));
 
     fetch('/admin/api/product/' + encodeURIComponent(productId), {
         method: 'DELETE',
         credentials: 'same-origin',
-        headers: { 'Content-Type': 'application/json' }
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
+        }
     })
     .then(function(r) {
         console.log('DELETE status:', r.status);
@@ -2678,12 +2684,13 @@ function deleteProduct(productId) {
         try { result = JSON.parse(text); } catch (e) {}
 
         if (result && result.success) {
-            showToast('✅ ' + (result.message || 'Product deleted'), 'success');
+            showToast('✅ ' + (result.message || 'Product deleted successfully'), 'success');
         } else {
-            showToast('❌ ' + ((result && result.message) || 'Delete failed'), 'error');
+            var msg = (result && result.message) ? result.message : 'Delete failed (HTTP response not JSON)';
+            showToast('❌ ' + msg, 'error');
         }
 
-        // Refresh the table regardless of what happened with the toast
+        // Refresh the table regardless
         try {
             loadProductsWithFilters();
         } catch (e) {
@@ -2702,18 +2709,18 @@ function deleteProduct(productId) {
 // ============================================================
 function saveProduct(event) {
     event.preventDefault();
-    
+
     var specsInput = document.getElementById('prodSpecs').value.trim();
     var specs = [];
     if (specsInput) {
         specs = specsInput.split(',').map(function(s) { return s.trim(); }).filter(function(s) { return s; });
     }
-    
+
     var category = document.getElementById('prodCategory').value;
     if (category) {
         addNewCategoryIfNeeded(category);
     }
-    
+
     var data = {
         id: document.getElementById('prodId').value.trim(),
         name: document.getElementById('prodName').value.trim(),
@@ -2728,19 +2735,19 @@ function saveProduct(event) {
         badge: document.getElementById('prodBadge').value,
         specs: specs
     };
-    
+
     if (!data.id || !data.name || !data.category || data.price <= 0) {
         showToast('⚠️ Please fill all required fields (ID, Name, Category, Price)', 'warning');
         return;
     }
-    
+
     var btn = document.querySelector('#productForm button[type="submit"]');
     var originalText = btn ? btn.innerHTML : 'Save';
     if (btn) {
         btn.innerHTML = '⏳ Saving...';
         btn.disabled = true;
     }
-    
+
     fetch('/admin/products', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -2778,18 +2785,18 @@ function updateProfitDisplay(type) {
     var priceId = type === 'edit' ? 'editPrice' : 'prodPrice';
     var costId = type === 'edit' ? 'editCostPrice' : 'prodCostPrice';
     var displayId = type === 'edit' ? 'editProfitDisplay' : 'prodProfitDisplay';
-    
+
     var priceEl = document.getElementById(priceId);
     var costEl = document.getElementById(costId);
     var displayEl = document.getElementById(displayId);
-    
+
     if (!priceEl || !costEl || !displayEl) return;
-    
+
     var price = parseFloat(priceEl.value) || 0;
     var cost = parseFloat(costEl.value) || 0;
     var profit = price - cost;
     var profitPct = cost > 0 ? (profit / cost * 100) : 0;
-    
+
     if (profit > 0) {
         displayEl.textContent = 'Profit: KSh ' + profit.toFixed(2) + ' (' + profitPct.toFixed(1) + '% margin)';
         displayEl.style.color = 'var(--success)';
@@ -2808,19 +2815,19 @@ function updateProfitDisplay(type) {
 function loadAllTransactions() {
     var container = document.getElementById('recentTransactionsBody');
     if (!container) return;
-    
+
     container.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-muted);">Loading transactions...</td></tr>';
-    
+
     var allOrders = [];
     var page = 1;
     var hasMore = true;
-    
+
     function fetchPage() {
         if (!hasMore || page > 10) {
             renderTransactions(allOrders);
             return;
         }
-        
+
         fetch('/admin/api/orders?limit=50&page=' + page + '&t=' + Date.now())
             .then(function(r) { return r.json(); })
             .then(function(data) {
@@ -2839,14 +2846,14 @@ function loadAllTransactions() {
                 renderTransactions(allOrders);
             });
     }
-    
+
     function renderTransactions(orders) {
         if (orders.length > 0) {
             var sorted = orders.slice().sort(function(a, b) {
                 return new Date(b.created_at || 0) - new Date(a.created_at || 0);
             });
             var html = '';
-            
+
             for (var i = 0; i < Math.min(sorted.length, 20); i++) {
                 var order = sorted[i];
                 var statusColors = {
@@ -2858,19 +2865,20 @@ function loadAllTransactions() {
                     'cancelled': 'badge-danger',
                     'returned': 'badge-danger'
                 };
-                var statusClass = statusColors[order.status?.toLowerCase()] || 'badge-warning';
+                var statusKey = order.status ? order.status.toLowerCase() : '';
+                var statusClass = statusColors[statusKey] || 'badge-warning';
                 var orderId = (order.order_id || order.id || 'N/A');
-                var customerName = order.customer_name || order.customer?.name || 'Walk-in';
+                var customerName = order.customer_name || (order.customer && order.customer.name) || 'Walk-in';
                 var paymentMethod = order.payment_method || order.payment_type || 'Cash';
                 var createdAt = order.created_at || order.createdAt || order.date;
-                
+
                 html += '<tr>';
-                html += '<td class="font-mono">#' + orderId.slice(0, 8) + '</td>';
+                html += '<td class="font-mono">#' + String(orderId).slice(0, 8) + '</td>';
                 html += '<td class="sm-table-cell">' + customerName + '</td>';
                 html += '<td style="text-align:right;font-weight:600;color:var(--success);">KSh ' + (order.total || 0).toLocaleString() + '</td>';
                 html += '<td style="text-align:center;"><span class="badge badge-info">' + paymentMethod + '</span></td>';
                 html += '<td style="text-align:center;"><span class="badge ' + statusClass + '">' + (order.status || 'Pending') + '</span></td>';
-                html += '<td style="text-align:right;display:none;" class="lg-table-cell" style="color:var(--success);">KSh ' + (order.profit || 0).toLocaleString() + '</td>';
+                html += '<td style="text-align:right;display:none;color:var(--success);" class="lg-table-cell">KSh ' + (order.profit || 0).toLocaleString() + '</td>';
                 html += '<td style="text-align:center;font-size:0.6rem;color:var(--text-muted);">' + (createdAt ? new Date(createdAt).toLocaleDateString() : 'N/A') + '</td>';
                 html += '</tr>';
             }
@@ -2880,7 +2888,7 @@ function loadAllTransactions() {
             container.innerHTML = '<tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-muted);">No transactions found</td></tr>';
         }
     }
-    
+
     fetchPage();
 }
 
@@ -2889,29 +2897,33 @@ function loadAllTransactions() {
 // ============================================================
 function loadAnalyticsData() {
     console.log('🔄 Loading analytics...');
-    
+
     fetch('/admin/api/analytics?t=' + Date.now())
         .then(function(r) { return r.json(); })
         .then(function(data) {
             console.log('📊 Analytics data loaded');
-            
+
             var kpiRevenue = document.getElementById('kpiRevenue');
             var kpiOrders = document.getElementById('kpiOrders');
             var kpiProfit = document.getElementById('kpiProfit');
             var kpiCredit = document.getElementById('kpiCredit');
-            
+
             if (kpiRevenue) kpiRevenue.textContent = 'KSh ' + (data.total_revenue || 0).toLocaleString();
             if (kpiOrders) kpiOrders.textContent = data.total_orders || 0;
             if (kpiProfit) kpiProfit.textContent = 'KSh ' + (data.total_profit || 0).toLocaleString();
             if (kpiCredit) kpiCredit.textContent = 'KSh ' + (data.credit_sales || 0).toLocaleString();
-            
+
             if (data.status_counts) {
-                document.getElementById('statusPending').textContent = data.status_counts.pending || 0;
-                document.getElementById('statusCompleted').textContent = data.status_counts.completed || 0;
-                document.getElementById('statusShipped').textContent = data.status_counts.shipped || 0;
-                document.getElementById('statusCancelled').textContent = data.status_counts.cancelled || 0;
+                var sp = document.getElementById('statusPending');
+                var sc = document.getElementById('statusCompleted');
+                var ss = document.getElementById('statusShipped');
+                var sx = document.getElementById('statusCancelled');
+                if (sp) sp.textContent = data.status_counts.pending || 0;
+                if (sc) sc.textContent = data.status_counts.completed || 0;
+                if (ss) ss.textContent = data.status_counts.shipped || 0;
+                if (sx) sx.textContent = data.status_counts.cancelled || 0;
             }
-            
+
             updateTopProducts(data.product_sales || {});
             updateCategoryLegend(data.category_sales || {});
             updateChartsWithRealData(data);
@@ -2927,17 +2939,17 @@ function loadAnalyticsData() {
 function updateTopProducts(products) {
     var container = document.getElementById('topProductsList');
     if (!container) return;
-    
+
     var keys = Object.keys(products);
     if (keys.length === 0) {
         container.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.7rem;">No products sold</div>';
         return;
     }
-    
+
     var sorted = keys.slice().sort(function(a, b) {
         return (products[b].revenue || 0) - (products[a].revenue || 0);
     }).slice(0, 5);
-    
+
     var html = '';
     for (var i = 0; i < sorted.length; i++) {
         var name = sorted[i];
@@ -2956,13 +2968,13 @@ function updateTopProducts(products) {
 function updateCategoryLegend(categories) {
     var container = document.getElementById('categoryLegend');
     if (!container) return;
-    
+
     var keys = Object.keys(categories);
     if (keys.length === 0) {
         container.innerHTML = '<span style="font-size:0.55rem;color:var(--text-muted);">No categories</span>';
         return;
     }
-    
+
     var colors = ['#6C3CE1', '#4F46E5', '#3B82F6', '#10B981', '#F59E0B'];
     var sorted = keys.slice().sort(function(a, b) {
         return (categories[b].revenue || 0) - (categories[a].revenue || 0);
@@ -2971,7 +2983,7 @@ function updateCategoryLegend(categories) {
     for (var i = 0; i < sorted.length; i++) {
         total += categories[sorted[i]].revenue || 0;
     }
-    
+
     var html = '';
     for (var i = 0; i < sorted.length; i++) {
         var name = sorted[i];
@@ -2990,7 +3002,7 @@ function updateChartsWithRealData(data) {
         setTimeout(function() { updateChartsWithRealData(data); }, 500);
         return;
     }
-    
+
     try {
         if (window.advancedRevenueChart && typeof window.advancedRevenueChart.destroy === 'function') {
             window.advancedRevenueChart.destroy();
@@ -3011,7 +3023,7 @@ function updateChartsWithRealData(data) {
             window.categoryChart.destroy();
         }
     } catch(e) {}
-    
+
     // Revenue Chart
     var revenueCtx = document.getElementById('advancedRevenueChart');
     if (revenueCtx) {
@@ -3019,7 +3031,7 @@ function updateChartsWithRealData(data) {
         var months = Object.keys(monthlyData).sort();
         var revenueData = months.map(function(m) { return monthlyData[m].revenue || 0; });
         var profitData = months.map(function(m) { return monthlyData[m].profit || 0; });
-        
+
         window.advancedRevenueChart = new Chart(revenueCtx, {
             type: 'bar',
             data: {
@@ -3069,7 +3081,7 @@ function updateChartsWithRealData(data) {
         });
         console.log('✅ Revenue chart updated');
     }
-    
+
     // Category Chart
     var categoryCtx = document.getElementById('advancedCategoryChart');
     if (categoryCtx) {
@@ -3077,7 +3089,7 @@ function updateChartsWithRealData(data) {
         var categories = Object.keys(categoryData);
         var values = categories.map(function(c) { return categoryData[c].revenue || 0; });
         var colors = ['#6C3CE1', '#4F46E5', '#3B82F6', '#10B981', '#F59E0B', '#EF4444', '#8B5CF6'];
-        
+
         window.advancedCategoryChart = new Chart(categoryCtx, {
             type: 'doughnut',
             data: {
@@ -3103,14 +3115,14 @@ function updateChartsWithRealData(data) {
         });
         console.log('✅ Category chart updated');
     }
-    
+
     // Dashboard Revenue Chart
     var dashRevenueCtx = document.getElementById('revenueChart');
     if (dashRevenueCtx) {
         var monthlyData = data.monthly_data || {};
         var months = Object.keys(monthlyData).sort();
         var revenueData = months.map(function(m) { return monthlyData[m].revenue || 0; });
-        
+
         window.revenueChart = new Chart(dashRevenueCtx, {
             type: 'line',
             data: {
@@ -3132,7 +3144,7 @@ function updateChartsWithRealData(data) {
         });
         console.log('✅ Dashboard revenue chart updated');
     }
-    
+
     // Dashboard Category Chart
     var dashCategoryCtx = document.getElementById('categoryChart');
     if (dashCategoryCtx) {
@@ -3140,7 +3152,7 @@ function updateChartsWithRealData(data) {
         var categories = Object.keys(categoryData);
         var values = categories.map(function(c) { return categoryData[c].revenue || 0; });
         var colors = ['#6C3CE1', '#4F46E5', '#3B82F6', '#10B981', '#F59E0B'];
-        
+
         window.categoryChart = new Chart(dashCategoryCtx, {
             type: 'doughnut',
             data: {
@@ -3172,7 +3184,7 @@ function showAddCreditCustomerModal() {
     document.getElementById('creditModalTitle').textContent = '👤 Add Credit Customer';
     document.getElementById('creditCustomerForm').reset();
     document.getElementById('editCreditCustomerId').value = '';
-    
+
     var modal = document.getElementById('creditCustomerModal');
     if (modal) {
         modal.classList.remove('hidden');
@@ -3183,24 +3195,24 @@ function showAddCreditCustomerModal() {
 
 function editCreditCustomer(customerId) {
     console.log('✏️ Editing credit customer:', customerId);
-    
+
     if (!customerId) {
         showToast('❌ No customer ID provided', 'error');
         return;
     }
-    
+
     var modal = document.getElementById('creditCustomerModal');
     if (!modal) {
         showToast('❌ Credit customer modal not found', 'error');
         return;
     }
-    
+
     modal.classList.remove('hidden');
     modal.style.display = 'flex';
     modal.style.zIndex = '99999';
-    
+
     document.getElementById('creditModalTitle').textContent = 'Loading...';
-    
+
     fetch('/admin/api/credit/customers/' + customerId + '?t=' + Date.now())
         .then(function(response) {
             if (!response.ok) {
@@ -3210,7 +3222,7 @@ function editCreditCustomer(customerId) {
         })
         .then(function(data) {
             console.log('📦 Customer data:', data);
-            
+
             if (data.success && data.customer) {
                 var c = data.customer;
                 document.getElementById('creditModalTitle').textContent = 'Edit Credit Customer';
@@ -3219,7 +3231,7 @@ function editCreditCustomer(customerId) {
                 document.getElementById('creditPhone').value = c.phone || '';
                 document.getElementById('creditEmail').value = c.email || '';
                 document.getElementById('creditLimit').value = c.credit_limit || 0;
-                
+
                 var balanceDisplay = document.getElementById('paymentCurrentBalance');
                 if (balanceDisplay) {
                     balanceDisplay.textContent = 'Current Balance: KSh ' + (c.current_balance || 0).toLocaleString();
@@ -3239,23 +3251,29 @@ function editCreditCustomer(customerId) {
 
 function saveCreditCustomer(event) {
     event.preventDefault();
-    
-    var editId = document.getElementById('editCreditCustomerId')?.value || '';
+
+    var editIdEl = document.getElementById('editCreditCustomerId');
+    var editId = editIdEl ? editIdEl.value : '';
     var url = editId ? '/admin/api/credit/customers/' + editId : '/admin/api/credit/customers';
     var method = editId ? 'PUT' : 'POST';
-    
+
+    var fullNameEl = document.getElementById('creditFullName');
+    var phoneEl = document.getElementById('creditPhone');
+    var emailEl = document.getElementById('creditEmail');
+    var limitEl = document.getElementById('creditLimit');
+
     var data = {
-        full_name: document.getElementById('creditFullName')?.value?.trim() || '',
-        phone: document.getElementById('creditPhone')?.value?.trim() || '',
-        email: document.getElementById('creditEmail')?.value?.trim() || '',
-        credit_limit: parseFloat(document.getElementById('creditLimit')?.value) || 0
+        full_name: fullNameEl ? fullNameEl.value.trim() : '',
+        phone: phoneEl ? phoneEl.value.trim() : '',
+        email: emailEl ? emailEl.value.trim() : '',
+        credit_limit: limitEl ? (parseFloat(limitEl.value) || 0) : 0
     };
-    
+
     if (!data.full_name || !data.phone) {
         showToast('⚠️ Full name and phone are required', 'warning');
         return;
     }
-    
+
     if (method === 'POST') {
         fetch('/admin/api/credit/customers')
             .then(function(r) { return r.json(); })
@@ -3265,7 +3283,7 @@ function saveCreditCustomer(event) {
                         return c.full_name && c.full_name.toLowerCase() === data.full_name.toLowerCase() &&
                             c.phone === data.phone;
                     });
-                    
+
                     if (duplicate) {
                         showToast('⚠️ Customer "' + data.full_name + '" already exists!', 'warning');
                         editCreditCustomer(duplicate.customer_id);
@@ -3291,7 +3309,7 @@ function saveCustomerData(url, method, data) {
         btn.innerHTML = '⏳ Saving...';
         btn.disabled = true;
     }
-    
+
     fetch(url, {
         method: method,
         headers: { 'Content-Type': 'application/json' },
@@ -3342,26 +3360,25 @@ function viewCreditCustomer(customerId) {
         showToast('❌ View credit modal not found', 'error');
         return;
     }
-    
+
     modal.classList.remove('hidden');
     modal.style.display = 'flex';
     modal.style.zIndex = '99999';
-    
+
     document.getElementById('viewCreditContent').innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);">Loading customer details...</div>';
-    
-    // Fetch both customer and transactions
+
     Promise.all([
-        fetch('/admin/api/credit/customers/' + customerId + '?t=' + Date.now()).then(r => r.json()),
-        fetch('/admin/api/credit/transactions/' + customerId + '?limit=5&t=' + Date.now()).then(r => r.json())
+        fetch('/admin/api/credit/customers/' + customerId + '?t=' + Date.now()).then(function(r){return r.json();}),
+        fetch('/admin/api/credit/transactions/' + customerId + '?limit=5&t=' + Date.now()).then(function(r){return r.json();})
     ])
     .then(function(results) {
         var customerData = results[0];
         var txnData = results[1];
-        
+
         if (customerData.success && customerData.customer) {
             var c = customerData.customer;
             var transactions = txnData.success ? txnData.transactions : [];
-            
+
             var html = '<div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:10px;">';
             html += '<div><span style="color:var(--text-muted);font-size:0.6rem;">Name</span><div style="font-weight:700;">' + c.full_name + '</div></div>';
             html += '<div><span style="color:var(--text-muted);font-size:0.6rem;">Phone</span><div>' + (c.phone || 'N/A') + '</div></div>';
@@ -3370,22 +3387,20 @@ function viewCreditCustomer(customerId) {
             html += '<div><span style="color:var(--text-muted);font-size:0.6rem;">Total Purchases</span><div>KSh ' + (c.total_purchases || 0).toLocaleString() + '</div></div>';
             html += '<div><span style="color:var(--text-muted);font-size:0.6rem;">Total Payments</span><div style="color:var(--success);">KSh ' + (c.total_payments || 0).toLocaleString() + '</div></div>';
             html += '</div>';
-            
-            // Transaction history section
+
             html += '<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border-color);">';
             html += '<div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px;">';
             html += '<span style="font-weight:600;font-size:0.8rem;">📋 Recent Transactions</span>';
             html += '<button onclick="viewCreditTransactions(\'' + c.customer_id + '\')" class="btn-outline" style="font-size:0.55rem;padding:2px 12px;">View All</button>';
             html += '</div>';
-            
+
             if (transactions.length > 0) {
                 var recent = transactions.slice(0, 5);
                 html += '<div style="max-height:200px;overflow-y:auto;">';
                 for (var i = 0; i < recent.length; i++) {
                     var t = recent[i];
                     var isPurchase = t.transaction_type === 'purchase';
-                    
-                    // Date formatting with fallback
+
                     var dateStr = 'N/A';
                     var rawDate = t.created_at || t.date || t.transaction_date || '';
                     if (rawDate && rawDate !== 'N/A') {
@@ -3400,7 +3415,7 @@ function viewCreditCustomer(customerId) {
                             }
                         } catch(e) {}
                     }
-                    
+
                     html += '<div style="display:flex;justify-content:space-between;padding:4px 0;border-bottom:1px solid var(--border-color);font-size:0.7rem;">';
                     html += '<span style="color:var(--text-muted);">' + dateStr + '</span>';
                     html += '<span>' + (isPurchase ? '🛒 Purchase' : '💵 Payment') + '</span>';
@@ -3412,8 +3427,7 @@ function viewCreditCustomer(customerId) {
                 html += '<div style="text-align:center;padding:12px;color:var(--text-muted);font-size:0.7rem;">No transactions yet</div>';
             }
             html += '</div>';
-            
-            // Action buttons
+
             html += '<div style="margin-top:16px;padding-top:12px;border-top:1px solid var(--border-color);display:flex;gap:8px;flex-wrap:wrap;">';
             html += '<button onclick="document.getElementById(\'viewCreditModal\').classList.add(\'hidden\');openRecordPaymentModal(\'' + c.customer_id + '\',\'' + c.full_name + '\',\'' + (c.current_balance || 0) + '\')" class="btn-success" style="font-size:0.7rem;padding:6px 16px;">💵 Record Payment</button>';
             html += '<button onclick="editCreditCustomer(\'' + c.customer_id + '\');document.getElementById(\'viewCreditModal\').classList.add(\'hidden\')" class="btn-outline" style="font-size:0.7rem;padding:6px 16px;color:var(--primary-light);">✏️ Edit</button>';
@@ -3421,7 +3435,7 @@ function viewCreditCustomer(customerId) {
             html += '<button onclick="viewCreditProducts(\'' + c.customer_id + '\')" class="btn-gradient green" style="font-size:0.7rem;padding:6px 16px;">🛍️ View Products</button>';
             html += '<button onclick="document.getElementById(\'viewCreditModal\').classList.add(\'hidden\')" class="btn-outline" style="font-size:0.7rem;padding:6px 16px;">Close</button>';
             html += '</div>';
-            
+
             document.getElementById('viewCreditContent').innerHTML = html;
         } else {
             document.getElementById('viewCreditContent').innerHTML = '<div style="text-align:center;padding:20px;color:var(--danger);">Customer not found</div>';
@@ -3444,22 +3458,22 @@ function openRecordPaymentModal(customerId, customerName, balance) {
 
 function savePayment(event) {
     event.preventDefault();
-    
+
     var customerId = document.getElementById('paymentCustomerId').value;
     var amount = parseFloat(document.getElementById('paymentAmount').value);
-    
+
     if (!customerId || !amount || amount <= 0) {
         showToast('⚠️ Enter a valid amount', 'warning');
         return;
     }
-    
+
     var btn = document.querySelector('#paymentForm button[type="submit"]');
     var originalText = btn ? btn.innerHTML : 'Record';
     if (btn) {
         btn.innerHTML = '⏳ Saving...';
         btn.disabled = true;
     }
-    
+
     fetch('/admin/api/credit/payment', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -3503,12 +3517,12 @@ function updateCreditStats() {
                 var s = data.summary;
                 var totalPurchases = s.total_purchases || 0;
                 var totalPayments = s.total_payments || 0;
-                
+
                 var collectionRate = 0;
                 if (totalPurchases > 0) {
                     collectionRate = Math.min((totalPayments / totalPurchases) * 100, 100);
                 }
-                
+
                 var rateEl = document.getElementById('creditCollectionRate');
                 if (rateEl) {
                     rateEl.textContent = collectionRate.toFixed(1) + '%';
@@ -3530,22 +3544,22 @@ function refreshCreditData() {
 function viewCreditTransactions(customerId) {
     currentTxnCustomerId = customerId;
     currentTxnPage = 1;
-    
+
     var modal = document.getElementById('creditTransactionsModal');
     if (!modal) {
         showToast('❌ Modal not found', 'error');
         return;
     }
-    
+
     modal.classList.remove('hidden');
     modal.style.display = 'flex';
     modal.style.zIndex = '99999';
-    
+
     currentTxnPeriod = 'all';
     currentTxnType = 'all';
     document.getElementById('txnTypeFilter').value = 'all';
     highlightPeriodFilter('all');
-    
+
     loadCreditTransactions(customerId, currentTxnPage);
 }
 
@@ -3589,7 +3603,7 @@ function loadCreditTransactions(customerId, page) {
     if (body) {
         body.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-muted);">Loading transactions...</td></tr>';
     }
-    
+
     var url = '/admin/api/credit/transactions/' + customerId;
     var params = new URLSearchParams();
     params.append('page', page);
@@ -3597,24 +3611,24 @@ function loadCreditTransactions(customerId, page) {
     params.append('period', currentTxnPeriod);
     params.append('type', currentTxnType);
     params.append('t', Date.now());
-    
+
     Promise.all([
-        fetch('/admin/api/credit/customers/' + customerId + '?t=' + Date.now()).then(r => r.json()),
-        fetch(url + '?' + params.toString()).then(r => r.json())
+        fetch('/admin/api/credit/customers/' + customerId + '?t=' + Date.now()).then(function(r){return r.json();}),
+        fetch(url + '?' + params.toString()).then(function(r){return r.json();})
     ])
     .then(function(results) {
         var customerData = results[0];
         var txnData = results[1];
-        
+
         if (customerData.success && customerData.customer) {
             var c = customerData.customer;
-            
-            document.getElementById('creditCustomerInfo').innerHTML = 
+
+            document.getElementById('creditCustomerInfo').innerHTML =
                 '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:8px 12px;background:var(--bg-input);border-radius:8px;">' +
                 '<span><strong>' + c.full_name + '</strong> <span style="color:var(--text-muted);font-size:0.7rem;">' + (c.phone || 'No phone') + '</span></span>' +
                 '<span>Credit Limit: <strong>KSh ' + (c.credit_limit || 0).toLocaleString() + '</strong> | Balance: <span style="font-weight:700;color:' + (c.current_balance > 0 ? 'var(--warning)' : 'var(--success)') + ';">KSh ' + (c.current_balance || 0).toLocaleString() + '</span></span>' +
                 '</div>';
-            
+
             renderCreditTransactions(txnData);
         } else {
             document.getElementById('creditTransactionsBody').innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--danger);">Customer not found</td></tr>';
@@ -3627,12 +3641,12 @@ function loadCreditTransactions(customerId, page) {
 }
 
 // ============================================================
-// FIXED: RENDER CREDIT TRANSACTIONS WITH PROPER DATE HANDLING
+// RENDER CREDIT TRANSACTIONS WITH PROPER DATE HANDLING
 // ============================================================
 function renderCreditTransactions(txnData) {
     var body = document.getElementById('creditTransactionsBody');
     if (!body) return;
-    
+
     if (txnData.success && txnData.transactions) {
         var transactions = txnData.transactions;
         var pagination = txnData.pagination || {};
@@ -3640,41 +3654,38 @@ function renderCreditTransactions(txnData) {
         var currentPage = pagination.page || 1;
         var totalPages = pagination.total_pages || 1;
         var perPage = pagination.per_page || txnPerPage;
-        
+
         var totalPurchases = 0;
         var totalPayments = 0;
-        
+
         if (transactions.length === 0) {
             body.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-muted);">No transactions found for this period</td></tr>';
             updateTxnSummary(0, 0, 0);
             updateTxnPagination(1, 1, 0);
             return;
         }
-        
+
         var html = '';
         for (var i = 0; i < transactions.length; i++) {
             var t = transactions[i];
             var isPurchase = t.transaction_type === 'purchase';
-            
+
             if (isPurchase) totalPurchases += t.amount || 0;
             else totalPayments += t.amount || 0;
-            
-            // ============================================================
-            // FIX: Better date handling with fallbacks
-            // ============================================================
+
             var dateStr = 'N/A';
             var rawDate = t.created_at || t.date || t.transaction_date || '';
-            
+
             if (rawDate && rawDate !== 'N/A' && rawDate !== '') {
                 try {
                     var parsedDate = null;
-                    
+
                     if (typeof rawDate === 'string') {
-                        if (rawDate.includes('T')) {
+                        if (rawDate.indexOf('T') !== -1) {
                             parsedDate = new Date(rawDate);
-                        } else if (rawDate.includes(' ') && rawDate.includes('-')) {
+                        } else if (rawDate.indexOf(' ') !== -1 && rawDate.indexOf('-') !== -1) {
                             parsedDate = new Date(rawDate.replace(' ', 'T'));
-                        } else if (rawDate.includes('-') && rawDate.length === 10) {
+                        } else if (rawDate.indexOf('-') !== -1 && rawDate.length === 10) {
                             parsedDate = new Date(rawDate + 'T00:00:00');
                         } else if (!isNaN(rawDate)) {
                             parsedDate = new Date(parseInt(rawDate));
@@ -3684,7 +3695,7 @@ function renderCreditTransactions(txnData) {
                     } else if (rawDate instanceof Date) {
                         parsedDate = rawDate;
                     }
-                    
+
                     if (parsedDate && !isNaN(parsedDate.getTime())) {
                         dateStr = parsedDate.toLocaleDateString('en-US', {
                             year: 'numeric',
@@ -3701,17 +3712,16 @@ function renderCreditTransactions(txnData) {
                     dateStr = rawDate;
                 }
             }
-            
-            // Fallback: use transaction ID or index
+
             if (dateStr === 'N/A' || dateStr === '') {
                 var txnId = t.transaction_id || t.id || '';
                 if (txnId) {
-                    dateStr = 'TX: ' + txnId.slice(0, 8);
+                    dateStr = 'TX: ' + String(txnId).slice(0, 8);
                 } else {
                     dateStr = '#' + (i + 1);
                 }
             }
-            
+
             html += '<tr>';
             html += '<td style="font-size:0.7rem;">' + dateStr + '</td>';
             html += '<td><span class="badge ' + (isPurchase ? 'badge-danger' : 'badge-success') + '">' + (isPurchase ? '🛒 Purchase' : '💰 Payment') + '</span></td>';
@@ -3720,18 +3730,20 @@ function renderCreditTransactions(txnData) {
             html += '<td class="sm-table-cell" style="font-size:0.6rem;color:var(--text-muted);">' + (t.reference || t.order_id || '—') + '</td>';
             html += '</tr>';
         }
-        
+
         body.innerHTML = html;
-        
-        var balance = totalPurchases - totalPayments;
+
         updateTxnSummary(totalPurchases, totalPayments, transactions.length);
-        
+
         var start = ((currentPage - 1) * perPage) + 1;
         var end = Math.min(currentPage * perPage, total);
-        document.getElementById('txnShowingStart').textContent = total > 0 ? start : 0;
-        document.getElementById('txnShowingEnd').textContent = end;
-        document.getElementById('txnShowingTotal').textContent = total;
-        
+        var startEl = document.getElementById('txnShowingStart');
+        var endEl = document.getElementById('txnShowingEnd');
+        var totalEl = document.getElementById('txnShowingTotal');
+        if (startEl) startEl.textContent = total > 0 ? start : 0;
+        if (endEl) endEl.textContent = end;
+        if (totalEl) totalEl.textContent = total;
+
         updateTxnPagination(currentPage, totalPages, total);
     } else {
         body.innerHTML = '<tr><td colspan="5" style="text-align:center;padding:20px;color:var(--danger);">' + (txnData.message || 'Error loading transactions') + '</td></tr>';
@@ -3739,26 +3751,30 @@ function renderCreditTransactions(txnData) {
 }
 
 function updateTxnSummary(totalPurchases, totalPayments, count) {
-    document.getElementById('txnTotalPurchases').textContent = 'KSh ' + totalPurchases.toLocaleString();
-    document.getElementById('txnTotalPayments').textContent = 'KSh ' + totalPayments.toLocaleString();
-    document.getElementById('txnBalance').textContent = 'KSh ' + (totalPurchases - totalPayments).toLocaleString();
-    document.getElementById('txnCount').textContent = count;
+    var a = document.getElementById('txnTotalPurchases');
+    var b = document.getElementById('txnTotalPayments');
+    var c = document.getElementById('txnBalance');
+    var d = document.getElementById('txnCount');
+    if (a) a.textContent = 'KSh ' + totalPurchases.toLocaleString();
+    if (b) b.textContent = 'KSh ' + totalPayments.toLocaleString();
+    if (c) c.textContent = 'KSh ' + (totalPurchases - totalPayments).toLocaleString();
+    if (d) d.textContent = count;
 }
 
 function updateTxnPagination(currentPage, totalPages, total) {
     var container = document.getElementById('txnPaginationControls');
     if (!container) return;
-    
+
     if (totalPages <= 1) {
         container.innerHTML = '';
         return;
     }
-    
+
     var html = '';
     if (currentPage > 1) {
         html += '<button onclick="goToTxnPage(' + (currentPage - 1) + ')" class="page-link"><i class="fas fa-chevron-left"></i></button>';
     }
-    
+
     for (var p = 1; p <= totalPages; p++) {
         if (p === currentPage) {
             html += '<span class="page-link active">' + p + '</span>';
@@ -3766,11 +3782,11 @@ function updateTxnPagination(currentPage, totalPages, total) {
             html += '<button onclick="goToTxnPage(' + p + ')" class="page-link">' + p + '</button>';
         }
     }
-    
+
     if (currentPage < totalPages) {
         html += '<button onclick="goToTxnPage(' + (currentPage + 1) + ')" class="page-link"><i class="fas fa-chevron-right"></i></button>';
     }
-    
+
     container.innerHTML = html;
 }
 
@@ -3784,42 +3800,41 @@ function goToTxnPage(page) {
 // ============================================================
 // CREDIT PRODUCTS FUNCTIONS
 // ============================================================
-
 function viewCreditProducts(customerId) {
     console.log('🛍️ Viewing credit products for:', customerId);
-    
+
     var modal = document.getElementById('creditProductsModal');
     if (!modal) {
         showToast('❌ Modal not found', 'error');
         return;
     }
-    
+
     modal.classList.remove('hidden');
     modal.style.display = 'flex';
     modal.style.zIndex = '99999';
-    
-    document.getElementById('creditProductsBody').innerHTML = 
+
+    document.getElementById('creditProductsBody').innerHTML =
         '<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text-muted);">' +
         '<div style="font-size:2rem;margin-bottom:8px;">⏳</div>Loading products...</td></tr>';
     document.getElementById('creditProductsCustomerInfo').innerHTML = '';
-    
+
     document.getElementById('cpTotalProducts').textContent = '0';
     document.getElementById('cpTotalQuantity').textContent = '0';
     document.getElementById('cpTotalSpent').textContent = 'KSh 0';
     document.getElementById('cpAvgPerItem').textContent = 'KSh 0';
     document.getElementById('cpShowingCount').textContent = '0';
-    
+
     Promise.all([
-        fetch('/admin/api/credit/customers/' + customerId + '?t=' + Date.now()).then(r => r.json()),
-        fetch('/admin/api/credit/products/' + customerId + '?t=' + Date.now()).then(r => r.json())
+        fetch('/admin/api/credit/customers/' + customerId + '?t=' + Date.now()).then(function(r){return r.json();}),
+        fetch('/admin/api/credit/products/' + customerId + '?t=' + Date.now()).then(function(r){return r.json();})
     ])
     .then(function(results) {
         var customerData = results[0];
         var productData = results[1];
-        
+
         if (customerData.success && customerData.customer) {
             var c = customerData.customer;
-            document.getElementById('creditProductsCustomerInfo').innerHTML = 
+            document.getElementById('creditProductsCustomerInfo').innerHTML =
                 '<div style="display:flex;justify-content:space-between;flex-wrap:wrap;gap:8px;padding:10px 14px;background:var(--bg-input);border-radius:8px;border:1px solid var(--border-color);">' +
                 '<div><span style="font-weight:700;font-size:1rem;color:var(--text-primary);">' + c.full_name + '</span> ' +
                 '<span style="color:var(--text-muted);font-size:0.75rem;">' + (c.phone || 'No phone') + '</span></div>' +
@@ -3829,15 +3844,15 @@ function viewCreditProducts(customerId) {
                 '<span style="font-weight:700;color:' + (c.current_balance > 0 ? 'var(--warning)' : 'var(--success)') + ';">KSh ' + (c.current_balance || 0).toLocaleString() + '</span></div>' +
                 '</div>';
         } else {
-            document.getElementById('creditProductsCustomerInfo').innerHTML = 
+            document.getElementById('creditProductsCustomerInfo').innerHTML =
                 '<div style="padding:10px 14px;background:var(--bg-input);border-radius:8px;color:var(--text-muted);border:1px solid var(--border-color);">Customer not found</div>';
         }
-        
+
         renderCreditProducts(productData);
     })
     .catch(function(err) {
         console.error('Error:', err);
-        document.getElementById('creditProductsBody').innerHTML = 
+        document.getElementById('creditProductsBody').innerHTML =
             '<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--danger);">❌ Error loading products: ' + err.message + '</td></tr>';
         showToast('❌ Error loading credit products', 'error');
     });
@@ -3846,32 +3861,32 @@ function viewCreditProducts(customerId) {
 function renderCreditProducts(productData) {
     var body = document.getElementById('creditProductsBody');
     if (!body) return;
-    
+
     if (productData.success && productData.products) {
         var products = productData.products;
         var totalProducts = productData.total_products || 0;
         var totalQuantity = productData.total_quantity || 0;
         var totalSpent = productData.total_spent || 0;
-        
+
         document.getElementById('cpTotalProducts').textContent = totalProducts;
         document.getElementById('cpTotalQuantity').textContent = totalQuantity;
         document.getElementById('cpTotalSpent').textContent = 'KSh ' + totalSpent.toLocaleString();
         document.getElementById('cpAvgPerItem').textContent = totalQuantity > 0 ? 'KSh ' + (totalSpent / totalQuantity).toFixed(2) : 'KSh 0';
         document.getElementById('cpShowingCount').textContent = products.length;
-        
+
         if (products.length === 0) {
-            body.innerHTML = 
+            body.innerHTML =
                 '<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--text-muted);">' +
                 '<div style="font-size:2rem;margin-bottom:8px;">📭</div>No credit products found</td></tr>';
             return;
         }
-        
+
         var html = '';
         for (var i = 0; i < products.length; i++) {
             var p = products[i];
             var avgPrice = p.avg_price || 0;
             var qtyColor = p.total_quantity > 10 ? 'var(--success)' : p.total_quantity > 5 ? 'var(--warning)' : 'var(--info)';
-            
+
             html += '<tr>';
             html += '<td><div style="display:flex;align-items:center;gap:10px;">';
             html += '<span style="font-size:1.2rem;">📦</span>';
@@ -3886,12 +3901,12 @@ function renderCreditProducts(productData) {
             html += '<td style="text-align:center;font-size:0.6rem;color:var(--text-muted);">' + (p.last_purchased_str || 'N/A') + '</td>';
             html += '</tr>';
         }
-        
+
         body.innerHTML = html;
         console.log('✅ Credit products loaded:', products.length);
     } else {
-        body.innerHTML = 
-            '<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--danger);">' + 
+        body.innerHTML =
+            '<tr><td colspan="5" style="text-align:center;padding:30px;color:var(--danger);">' +
             (productData.message || '❌ Error loading products') + '</td></tr>';
     }
 }
@@ -3904,7 +3919,7 @@ function escapeHtml(text) {
 }
 
 // ============================================================
-// SUPPLIER FUNCTIONS - FIXED
+// SUPPLIER FUNCTIONS
 // ============================================================
 function showAddSupplierModal() {
     document.getElementById('modalTitle').textContent = '🏢 Add Supplier';
@@ -3912,8 +3927,7 @@ function showAddSupplierModal() {
     document.getElementById('editSupplierId').value = '';
     document.getElementById('supplierModal').classList.remove('hidden');
     document.getElementById('supplierModal').style.display = 'flex';
-    
-    // Load categories dynamically
+
     loadSupplierCategories();
 }
 
@@ -3924,10 +3938,9 @@ function editSupplier(supplierId) {
         modal.style.display = 'flex';
         modal.style.zIndex = '99999';
     }
-    
-    // Load categories first
+
     loadSupplierCategories();
-    
+
     fetch('/admin/api/suppliers/' + supplierId + '?t=' + Date.now())
         .then(function(r) { return r.json(); })
         .then(function(data) {
@@ -3959,13 +3972,13 @@ function viewSupplier(supplierId) {
         modal.style.display = 'flex';
         modal.style.zIndex = '99999';
     }
-    
+
     fetch('/admin/api/suppliers/' + supplierId + '?t=' + Date.now())
         .then(function(r) { return r.json(); })
         .then(function(data) {
             if (data.success) {
                 var s = data.supplier;
-                document.getElementById('viewSupplierContent').innerHTML = 
+                document.getElementById('viewSupplierContent').innerHTML =
                     '<div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">' +
                     '<div><span style="color:var(--text-muted);font-size:0.6rem;">Business</span><div style="font-weight:700;">' + s.business_name + '</div></div>' +
                     '<div><span style="color:var(--text-muted);font-size:0.6rem;">Contact</span><div>' + (s.contact_person || 'N/A') + '</div></div>' +
@@ -3985,7 +3998,7 @@ function viewSupplier(supplierId) {
 
 function saveSupplier(event) {
     event.preventDefault();
-    
+
     var data = {
         business_name: document.getElementById('businessName').value.trim(),
         contact_person: document.getElementById('contactPerson').value.trim(),
@@ -3994,23 +4007,23 @@ function saveSupplier(event) {
         business_category: document.getElementById('businessCategory').value,
         payment_terms: document.getElementById('paymentTerms').value
     };
-    
+
     if (!data.business_name || !data.contact_person || !data.phone) {
         showToast('⚠️ Business Name, Contact Person and Phone are required', 'warning');
         return;
     }
-    
+
     var editId = document.getElementById('editSupplierId').value;
     var url = editId ? '/admin/api/suppliers/' + editId : '/admin/api/suppliers';
     var method = editId ? 'PUT' : 'POST';
-    
+
     var btn = document.querySelector('#supplierForm button[type="submit"]');
     var originalText = btn ? btn.innerHTML : 'Save';
     if (btn) {
         btn.innerHTML = '⏳ Saving...';
         btn.disabled = true;
     }
-    
+
     fetch(url, {
         method: method,
         headers: { 'Content-Type': 'application/json' },
@@ -4044,7 +4057,7 @@ function showLowStockModal() {
     document.getElementById('lowStockContent').innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);">Loading low stock items...</div>';
     document.getElementById('lowStockModal').classList.remove('hidden');
     document.getElementById('lowStockModal').style.display = 'flex';
-    
+
     fetch('/admin/api/suppliers/low-stock?t=' + Date.now())
         .then(function(r) { return r.json(); })
         .then(function(data) {
@@ -4109,7 +4122,7 @@ console.log('✅ THEPENTAGON Admin - Complete Working Version!');
 console.log('📌 Features:');
 console.log('  • Dashboard with live stats');
 console.log('  • Products with supplier linking');
-console.log('  • Dynamic categoris (not hardcoded)');
+console.log('  • Dynamic categories (not hardcoded)');
 console.log('  • Credit management with period filters');
 console.log('  • Full transaction history with pagination');
 console.log('  • Credit products view (what customers bought)');
