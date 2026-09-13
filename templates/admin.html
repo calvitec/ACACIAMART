@@ -1517,7 +1517,7 @@
             </div>
             <div style="display:flex;gap:10px;margin-top:16px;padding-top:16px;border-top:1px solid var(--border-color);">
                 <button type="submit" class="btn-gradient">💾 Save Customer</button>
-                <button type="button" onclick="closeCreditCufstomerModal()" class="btn-outline">Cancel</button>
+                <button type="button" onclick="closeCreditCustomerModal()" class="btn-outline">Cancel</button>
             </div>
         </form>
     </div>
@@ -2443,6 +2443,16 @@ document.addEventListener('DOMContentLoaded', function() {
     }
 });
 
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('🚀 Admin dashboard loaded');
+    loadCategories();
+    loadSuppliersForProducts();
+    loadProductsWithFilters();
+    loadAnalyticsData();
+    loadOrders();
+    updateCreditStats();
+});
+
 // ============================================================
 // OPEN EDIT MODAL
 // ============================================================
@@ -2648,25 +2658,21 @@ function closeEditModal() {
     document.getElementById('editModal').style.display = 'none';
 }
 
-// ============================================================
-// DELETE PRODUCT — BULLETPROOF FIXED VERSION
-// ============================================================
-function deleteProduct(productId) {
-    console.log('🗑️ deleteProduct called with:', productId);
+function deleteProduct(id) {
+    console.log('🗑️ deleteProduct called with:', id);
 
-    if (!productId) {
+    if (!id) {
         showToast('❌ No product ID', 'error');
         return;
     }
 
-    if (!confirm('⚠️ Delete product "' + productId + '"?\n\nThis cannot be undone.')) {
-        console.log('❌ Delete cancelled by user');
+    if (!confirm('⚠️ Are you sure you want to delete product "' + id + '"?\n\nThis cannot be undone.')) {
         return;
     }
 
-    console.log('🗑️ Sending DELETE to /admin/api/product/' + encodeURIComponent(productId));
+    console.log('🗑️ DELETE /admin/products/' + encodeURIComponent(id));
 
-    fetch('/admin/api/product/' + encodeURIComponent(productId), {
+    fetch('/admin/products/' + encodeURIComponent(id), {
         method: 'DELETE',
         credentials: 'same-origin',
         headers: {
@@ -2680,22 +2686,14 @@ function deleteProduct(productId) {
     })
     .then(function(text) {
         console.log('DELETE body:', text);
-        var result = null;
-        try { result = JSON.parse(text); } catch (e) {}
+        var d = null;
+        try { d = JSON.parse(text); } catch (e) {}
 
-        if (result && result.success) {
-            showToast('✅ ' + (result.message || 'Product deleted successfully'), 'success');
+        if (d && d.success) {
+            showToast('✅ Product deleted successfully!');
+            setTimeout(function() { location.reload(); }, 1200);
         } else {
-            var msg = (result && result.message) ? result.message : 'Delete failed (HTTP response not JSON)';
-            showToast('❌ ' + msg, 'error');
-        }
-
-        // Refresh the table regardless
-        try {
-            loadProductsWithFilters();
-        } catch (e) {
-            console.error('Refresh failed:', e);
-            location.reload();
+            showToast('❌ ' + ((d && d.message) || 'Delete failed: ' + text.slice(0, 100)), 'error');
         }
     })
     .catch(function(err) {
