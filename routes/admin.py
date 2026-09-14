@@ -4074,5 +4074,263 @@ def api_process_return():
         print(f'❌ Return error: {e}')
         traceback.print_exc()
         return jsonify({'success': False, 'message': str(e)}), 500
+        # ============================================================
+# [NEW] FILTERED ANALYTICS API (MONTH + YEAR FILTERS)
+# ============================================================
+
+@admin_bp.route('/admin/api/analytics/filtered', methods=['GET'])
+@admin_required
+def api_analytics_filtered():
+    """
+    Return analytics data filtered by month / year.
+
+    Query params:
+    - year:  2025, 2026, ... or 'all' (default: current year)
+    - month: 1-12 or 'all' (default: 'all')
+    """
+    try:
+        year_param = request.args.get('year', 'all')
+        month_param = request.args.get('month', 'all')
+
+        # ---- Load all orders ----
+        orders = load_orders()
+
+        # ---- Also load credit purchases as orders ----
+        try:
+            credit_resp = requests.get(
+                f"{Config.SUPABASE_URL}/rest/v1/credit_transactions"
+                f"?transaction_type=eq.purchase&select=*",
+                headers=Config.SUPABASE_HEADERS,
+                timeout=15
+            )
+            credit_txns = credit_resp.json() if credit_resp.status_code == 200 else []
+        except Exception:
+            credit_txns = []
+
+        # Convert credit txns into order-like dicts
+        credit_as_orders = []
+        for txn in credit_txns:
+            items = txn.get('items_json') or []
+            if isinstance(items, str):
+                try:
+                    items = json.loads(items)
+                except Exception:
+                    items = []
+            credit_as_orders.append({
+                'order_id': f"CREDIT-{txn.get('transaction_id', txn.get('id', ''))}",
+                'items': items if isinstance(items, list) else [],
+                'total': float(txn.get('amount') or 0),
+                'subtotal': float(txn.get('amount') or 0),
+                'shipping': 0,
+                'status': 'confirmed',
+                'source': 'credit',
+                'payment_method': 'Credit',
+                'created_at': txn.get('created_at', ''),
+                'customer_name': 'Credit Customer',
+                'profit': float(txn.get('profit') or 0)
+            })
+
+        all_orders = orders + credit_as_orders
+
+        # ---- Parse dates & filter ----
+        def parse_order_date(o):
+            raw = o.get('created_at') or ''
+            if not raw:
+                return None
+            try:
+                if isinstance(raw, datetime):
+                    return raw
+                s = str(raw).replace('Z', '').replace('+00:00', '')
+                if 'T' in s:
+                    return datetime.fromisoformat(s[:19] if '.' not in s else s)
+                if ' ' in s:
+                    return datetime.strptime(s[:19], '%Y-%m-%d %H:%M:%S')
+                return datetime.strptime(s[:10], '%Y-%m-%d')
+            except Exception:
+                return None
+
+        filtered = []
+        for o in all_orders:
+            d = parse_order_date(o)
+            if not d:
+                continue
+            if year_param != 'all':
+                try:
+                    if d.year != int(year_param):
+                        continue
+                except Exception:
+                    pass
+            if month_param != 'all':
+                try:
+                    if d.month != int(month_param):
+                        continue
+                except Exception:
+                    pass
+            o['_dt'] = d
+            filtered.append(o)
+
+        # ---- Compute totals ----
+        products = load_products()
+        product_lookup = {str(p.get('id')): p for p in products if p and p.get('id')}
+
+        total_sales = 0.0
+        total_cost = 0.0
+        total_profit = 0.0
+        total_items = 0
+        order_count = 0
+        credit_sales = 0.0
+        cash_sales = 0.0
+        payment_breakdown = {}
+
+        for o in filtered:
+            if (o.get('status') or '').lower() == 'cancelled':
+                continue
+            order_count += 1
+            order_total = float(o.get('total') or 0)
+            total_sales += order_total
+
+            if (o.get('source') or '') == 'credit':
+                credit_sales += order_total
+            else:
+                cash_sales += order_total
+
+            pm = (o.get('payment_method') or 'cash').lower()
+            payment_breakdown[pm] = payment_breakdown.get(pm, 0) + order_total
+
+            # Compute cost + profit from items
+            order_cost = 0.0
+            order_profit = 0.0
+            items = o.get('items') or []
+            if isinstance(items, str):
+                try:
+                    items = json.loads(items)
+                except Exception:
+                    items = []
+            if not isinstance(items, list):
+                items = []
+
+            for it in items:
+                if not isinstance(it, dict):
+                    continue
+                qty = int(it.get('quantity') or 1)
+                price = float(it.get('price') or 0)
+                cost = float(it.get('cost_price') or 0)
+
+                if cost == 0:
+                    pid = str(it.get('product_id') or '')
+                    if pid and pid in product_lookup:
+                        cost = float(product_lookup[pid].get('cost_price') or 0)
+
+                total_items += qty
+                order_cost += cost * qty
+                order_profit += (price - cost) * qty
+
+            # If credit order has pre-computed profit, prefer it
+            if (o.get('source') or '') == 'credit' and o.get('profit'):
+                order_profit = float(o.get('profit') or 0)
+                order_cost = order_total - order_profit
+
+            total_cost += order_cost
+            total_profit += order_profit
+
+        # ---- Monthly breakdown (for the selected year) ----
+        monthly = {}
+        for o in filtered:
+            m = o['_dt'].strftime('%b')
+            y = o['_dt'].year
+            key = f"{m} {y}"
+            if key not in monthly:
+                monthly[key] = {'sales': 0.0, 'orders': 0, 'profit': 0.0}
+            monthly[key]['sales'] += float(o.get('total') or 0)
+            monthly[key]['orders'] += 1
+            monthly[key]['profit'] += float(o.get('profit') or 0)
+
+        # Sort monthly keys chronologically
+        def month_key_sort(k):
+            try:
+                parts = k.split()
+                return (int(parts[1]), datetime.strptime(parts[0], '%b').month)
+            except Exception:
+                return (9999, 99)
+
+        monthly_sorted = dict(sorted(monthly.items(), key=lambda kv: month_key_sort(kv[0])))
+
+        # ---- Available years ----
+        years = set()
+        for o in all_orders:
+            d = parse_order_date(o)
+            if d:
+                years.add(d.year)
+        years = sorted(years, reverse=True) or [datetime.utcnow().year]
+
+        # ---- Daily breakdown (last 30 days within filter) ----
+        daily = {}
+        for o in filtered:
+            d = o['_dt'].strftime('%Y-%m-%d')
+            if d not in daily:
+                daily[d] = {'sales': 0.0, 'orders': 0, 'profit': 0.0}
+            daily[d]['sales'] += float(o.get('total') or 0)
+            daily[d]['orders'] += 1
+            daily[d]['profit'] += float(o.get('profit') or 0)
+        daily_sorted = dict(sorted(daily.items())[-30:])
+
+        # ---- Top products for the period ----
+        product_sales = {}
+        for o in filtered:
+            items = o.get('items') or []
+            if isinstance(items, str):
+                try:
+                    items = json.loads(items)
+                except Exception:
+                    items = []
+            if not isinstance(items, list):
+                continue
+            for it in items:
+                if not isinstance(it, dict):
+                    continue
+                name = it.get('name') or 'Unknown'
+                qty = int(it.get('quantity') or 1)
+                price = float(it.get('price') or 0)
+                if name not in product_sales:
+                    product_sales[name] = {'qty': 0, 'revenue': 0.0}
+                product_sales[name]['qty'] += qty
+                product_sales[name]['revenue'] += price * qty
+
+        top_products = sorted(product_sales.items(),
+                              key=lambda kv: kv[1]['revenue'],
+                              reverse=True)[:10]
+        top_products_list = [
+            {'name': k, 'qty': v['qty'], 'revenue': round(v['revenue'], 2)}
+            for k, v in top_products
+        ]
+
+        return jsonify({
+            'success': True,
+            'filters': {
+                'year': year_param,
+                'month': month_param
+            },
+            'summary': {
+                'total_sales': round(total_sales, 2),
+                'total_cost': round(total_cost, 2),
+                'total_profit': round(total_profit, 2),
+                'total_items': total_items,
+                'order_count': order_count,
+                'credit_sales': round(credit_sales, 2),
+                'cash_sales': round(cash_sales, 2),
+                'profit_margin': round((total_profit / total_sales * 100), 2) if total_sales > 0 else 0
+            },
+            'payment_breakdown': {k: round(v, 2) for k, v in payment_breakdown.items()},
+            'monthly': monthly_sorted,
+            'daily': daily_sorted,
+            'top_products': top_products_list,
+            'available_years': years
+        })
+
+    except Exception as e:
+        print(f"❌ Filtered analytics error: {e}")
+        import traceback
+        traceback.print_exc()
+        return jsonify({'success': False, 'error': str(e)}), 500
 
 print("✅ Admin module loaded successfully with all features working!")

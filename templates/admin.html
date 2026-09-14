@@ -806,8 +806,12 @@
      ANALYTICS SECTION
      ============================================================ -->
 <div id="analytics-section" class="section hidden">
+
+    <!-- ============================================================ -->
+    <!-- HEADER + FILTERS + EXPORT -->
+    <!-- ============================================================ -->
     <div class="glass-card" style="margin-bottom:20px;">
-        <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;">
+        <div style="display:flex;flex-wrap:wrap;justify-content:space-between;align-items:center;gap:12px;margin-bottom:14px;">
             <div>
                 <h2 style="font-size:1.2rem;font-weight:700;color:var(--text-primary);">📊 Analytics Dashboard</h2>
                 <p style="font-size:0.75rem;color:var(--text-muted);">Comprehensive business intelligence</p>
@@ -816,35 +820,135 @@
                 <i class="fas fa-sync-alt"></i> Refresh
             </button>
         </div>
+
+        <!-- FILTER BAR -->
+        <div style="padding-top:14px;border-top:1px solid var(--border-color);">
+            <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;justify-content:space-between;">
+
+                <div style="display:flex;flex-wrap:wrap;gap:10px;align-items:flex-end;">
+                    <div>
+                        <label class="form-label" style="margin-bottom:4px;">Month</label>
+                        <select id="analyticsMonthFilter" class="form-input"
+                                style="font-size:0.75rem;padding:6px 12px;min-width:140px;"
+                                onchange="loadFilteredAnalytics()">
+                            <option value="all">All Months</option>
+                            <option value="1">January</option>
+                            <option value="2">February</option>
+                            <option value="3">March</option>
+                            <option value="4">April</option>
+                            <option value="5">May</option>
+                            <option value="6">June</option>
+                            <option value="7">July</option>
+                            <option value="8">August</option>
+                            <option value="9">September</option>
+                            <option value="10">October</option>
+                            <option value="11">November</option>
+                            <option value="12">December</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="form-label" style="margin-bottom:4px;">Year</label>
+                        <select id="analyticsYearFilter" class="form-input"
+                                style="font-size:0.75rem;padding:6px 12px;min-width:120px;"
+                                onchange="loadFilteredAnalytics()">
+                            <option value="all">All Years</option>
+                        </select>
+                    </div>
+
+                    <div>
+                        <label class="form-label" style="margin-bottom:4px;">Quick</label>
+                        <div style="display:flex;gap:4px;flex-wrap:wrap;">
+                            <button onclick="quickFilter('this_month')" class="btn-outline" style="font-size:0.65rem;padding:5px 12px;">This Month</button>
+                            <button onclick="quickFilter('last_month')" class="btn-outline" style="font-size:0.65rem;padding:5px 12px;">Last Month</button>
+                            <button onclick="quickFilter('this_year')" class="btn-outline" style="font-size:0.65rem;padding:5px 12px;">This Year</button>
+                            <button onclick="quickFilter('last_year')" class="btn-outline" style="font-size:0.65rem;padding:5px 12px;">Last Year</button>
+                        </div>
+                    </div>
+
+                    <button onclick="resetAnalyticsFilters()" class="btn-outline"
+                            style="font-size:0.7rem;padding:6px 14px;">
+                        ✕ Reset
+                    </button>
+                </div>
+
+                <div style="display:flex;gap:6px;flex-wrap:wrap;">
+                    <button onclick="exportAnalyticsCSV()" class="btn-gradient green"
+                            style="font-size:0.7rem;padding:6px 14px;">
+                        <i class="fas fa-file-csv"></i> CSV
+                    </button>
+                    <button onclick="exportAnalyticsExcel()" class="btn-gradient"
+                            style="font-size:0.7rem;padding:6px 14px;background:linear-gradient(135deg,#059669,#10b981);">
+                        <i class="fas fa-file-excel"></i> Excel
+                    </button>
+                    <button onclick="exportAnalyticsPDF()" class="btn-gradient"
+                            style="font-size:0.7rem;padding:6px 14px;background:linear-gradient(135deg,#dc2626,#ef4444);">
+                        <i class="fas fa-file-pdf"></i> Print
+                    </button>
+                </div>
+            </div>
+
+            <div id="activeFilterBadge" style="margin-top:10px;font-size:0.65rem;color:var(--text-muted);display:none;">
+                <i class="fas fa-info-circle"></i> Showing:
+                <span id="activeFilterText" style="font-weight:600;color:var(--primary-light);">All time</span>
+            </div>
+        </div>
     </div>
 
-    <!-- KPI Cards -->
-    <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(180px,1fr));">
+    <!-- KPI CARDS -->
+    <div class="stats-grid" style="grid-template-columns:repeat(auto-fit,minmax(160px,1fr));">
         <div class="stat-card-modern">
-            <div class="stat-label">Total Revenue</div>
+            <div class="stat-top">
+                <div class="stat-icon-wrap purple">💰</div>
+            </div>
+            <div class="stat-label">Total Sales</div>
             <div class="stat-value" id="kpiRevenue">KSh 0</div>
         </div>
         <div class="stat-card-modern">
-            <div class="stat-label">Total Orders</div>
+            <div class="stat-top">
+                <div class="stat-icon-wrap blue">🛒</div>
+            </div>
+            <div class="stat-label">Orders</div>
             <div class="stat-value" id="kpiOrders">0</div>
         </div>
         <div class="stat-card-modern">
-            <div class="stat-label">Total Profit</div>
+            <div class="stat-top">
+                <div class="stat-icon-wrap green">📈</div>
+            </div>
+            <div class="stat-label">Profit</div>
             <div class="stat-value" id="kpiProfit">KSh 0</div>
         </div>
         <div class="stat-card-modern">
+            <div class="stat-top">
+                <div class="stat-icon-wrap amber">💳</div>
+            </div>
             <div class="stat-label">Credit Sales</div>
             <div class="stat-value" id="kpiCredit">KSh 0</div>
         </div>
+        <div class="stat-card-modern">
+            <div class="stat-top">
+                <div class="stat-icon-wrap green">💵</div>
+            </div>
+            <div class="stat-label">Cash Sales</div>
+            <div class="stat-value" id="kpiCash">KSh 0</div>
+        </div>
+        <div class="stat-card-modern">
+            <div class="stat-top">
+                <div class="stat-icon-wrap purple">📊</div>
+            </div>
+            <div class="stat-label">Profit Margin</div>
+            <div class="stat-value" id="kpiMargin">0%</div>
+        </div>
     </div>
 
-    <!-- Charts Row -->
+    <!-- CHARTS ROW -->
     <div style="display:grid;grid-template-columns:2fr 1fr;gap:16px;margin-bottom:20px;">
         <div class="glass-card">
             <div class="card-header">
-                <div class="title"><span class="icon">📈</span> Revenue & Profit Trend</div>
+                <div class="title"><span class="icon">📈</span> Sales & Profit Trend</div>
+                <span class="badge-time" id="chartPeriodLabel">All time</span>
             </div>
-            <div style="position:relative;height:220px;width:100%;">
+            <div style="position:relative;height:240px;width:100%;">
                 <canvas id="advancedRevenueChart"></canvas>
             </div>
         </div>
@@ -864,13 +968,13 @@
         </div>
     </div>
 
-    <!-- Bottom Row -->
+    <!-- BOTTOM ROW -->
     <div style="display:grid;grid-template-columns:1fr 1fr 1fr;gap:16px;margin-bottom:20px;">
         <div class="glass-card">
             <div class="card-header">
                 <div class="title"><span class="icon">🏆</span> Top Products</div>
             </div>
-            <div id="topProductsList" style="max-height:200px;overflow-y:auto;">
+            <div id="topProductsList" style="max-height:220px;overflow-y:auto;">
                 <div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.7rem;">Loading...</div>
             </div>
         </div>
@@ -887,19 +991,54 @@
             <div class="card-header">
                 <div class="title"><span class="icon">💳</span> Payment Methods</div>
             </div>
-            <div id="paymentMethodsList">
+            <div id="paymentMethodsList" style="max-height:220px;overflow-y:auto;">
                 <div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.7rem;">Loading...</div>
             </div>
         </div>
     </div>
 
-    <!-- Transactions Table -->
-    <div class="glass-card">
+    <!-- MONTHLY BREAKDOWN TABLE -->
+    <div class="glass-card" style="margin-bottom:20px;">
         <div class="card-header">
+            <div class="title"><span class="icon">📅</span> Monthly Breakdown</div>
+            <span class="badge-time" id="monthlyBreakdownPeriod">All time</span>
+        </div>
+        <div class="table-wrap" style="max-height:300px;overflow-y:auto;">
+            <table>
+                <thead style="position:sticky;top:0;z-index:10;background:var(--bg-card);">
+                    <tr>
+                        <th>Month</th>
+                        <th style="text-align:center;">Orders</th>
+                        <th style="text-align:right;">Sales</th>
+                        <th style="text-align:right;">Profit</th>
+                        <th style="text-align:right;" class="lg-table-cell">Margin</th>
+                    </tr>
+                </thead>
+                <tbody id="monthlyBreakdownBody">
+                    <tr><td colspan="5" style="text-align:center;padding:20px;color:var(--text-muted);">Loading...</td></tr>
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+    <!-- TRANSACTIONS TABLE -->
+    <div class="glass-card">
+        <div class="card-header" style="flex-wrap:wrap;gap:8px;">
             <div class="title"><span class="icon">📋</span> Recent Transactions</div>
-            <button onclick="exportAnalyticsCSV()" class="btn-gradient" style="font-size:0.6rem;padding:4px 12px;">
-                <i class="fas fa-file-export"></i> Export
-            </button>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;align-items:center;">
+                <input type="text" id="txnSearchBox" placeholder="🔍 Search..."
+                       class="form-input"
+                       style="width:auto;font-size:0.65rem;padding:4px 10px;min-width:160px;"
+                       oninput="filterTxnTable()">
+                <select id="txnSourceFilter" class="form-input"
+                        style="width:auto;font-size:0.65rem;padding:4px 10px;"
+                        onchange="filterTxnTable()">
+                    <option value="all">All Sources</option>
+                    <option value="pos">POS</option>
+                    <option value="web">Web</option>
+                    <option value="credit">Credit</option>
+                </select>
+            </div>
         </div>
         <div class="table-wrap">
             <table>
@@ -918,6 +1057,16 @@
                     <tr><td colspan="7" style="text-align:center;padding:20px;color:var(--text-muted);">Loading transactions...</td></tr>
                 </tbody>
             </table>
+        </div>
+        <div style="display:flex;justify-content:space-between;align-items:center;flex-wrap:wrap;gap:8px;margin-top:12px;padding-top:12px;border-top:1px solid var(--border-color);">
+            <div style="font-size:0.65rem;color:var(--text-muted);">
+                Showing <span id="txnShowingCount">0</span> transactions
+            </div>
+            <div style="font-size:0.7rem;color:var(--text-primary);font-weight:600;">
+                Total: <span id="txnFilteredTotal" style="color:var(--success);">KSh 0</span>
+                &nbsp;|&nbsp;
+                Profit: <span id="txnFilteredProfit" style="color:var(--primary-light);">KSh 0</span>
+            </div>
         </div>
     </div>
 </div>
@@ -4546,6 +4695,336 @@ console.log('  • Analytics with charts');
     };
     console.log('✅ deleteProduct force-overridden');
 })();
+// ============================================================
+// FILTERED ANALYTICS (MONTH + YEAR)
+// ============================================================
+var __filteredAnalyticsData = null;
+
+function loadFilteredAnalytics() {
+    var month = (document.getElementById('analyticsMonthFilter') || {}).value || 'all';
+    var year  = (document.getElementById('analyticsYearFilter')  || {}).value || 'all';
+
+    // Show loading state on KPIs
+    ['kpiRevenue','kpiProfit','kpiCredit','kpiCash'].forEach(function(id) {
+        var el = document.getElementById(id);
+        if (el) el.textContent = '...';
+    });
+
+    fetch('/admin/api/analytics/filtered?year=' + encodeURIComponent(year)
+          + '&month=' + encodeURIComponent(month)
+          + '&t=' + Date.now(), { credentials: 'same-origin' })
+        .then(function(r) { return r.json(); })
+        .then(function(data) {
+            if (!data.success) {
+                if (window.showToast) showToast('❌ ' + (data.error || 'Failed to load'), 'error');
+                return;
+            }
+
+            __filteredAnalyticsData = data;
+
+            // ---- Update KPI cards ----
+            var s = data.summary || {};
+            var setEl = function(id, val) {
+                var el = document.getElementById(id);
+                if (el) el.textContent = val;
+            };
+
+            setEl('kpiRevenue', 'KSh ' + Number(s.total_sales || 0).toLocaleString());
+            setEl('kpiOrders',  String(s.order_count || 0));
+            setEl('kpiProfit',  'KSh ' + Number(s.total_profit || 0).toLocaleString());
+            setEl('kpiCredit',  'KSh ' + Number(s.credit_sales || 0).toLocaleString());
+            setEl('kpiCash',    'KSh ' + Number(s.cash_sales || 0).toLocaleString());
+            setEl('kpiMargin',  Number(s.profit_margin || 0).toFixed(1) + '%');
+
+            // ---- Populate year dropdown (once) ----
+            var yearSelect = document.getElementById('analyticsYearFilter');
+            if (yearSelect && data.available_years) {
+                var currentVal = yearSelect.value;
+                var opts = '<option value="all">All Years</option>';
+                data.available_years.forEach(function(y) {
+                    opts += '<option value="' + y + '">' + y + '</option>';
+                });
+                yearSelect.innerHTML = opts;
+                if (currentVal && currentVal !== 'all') {
+                    yearSelect.value = currentVal;
+                }
+            }
+
+            // ---- Redraw charts with filtered data ----
+            redrawChartsWithFilteredData(data);
+
+            if (window.showToast) {
+                showToast('✅ Filtered: ' + (month === 'all' ? 'All months' : 'Month ' + month)
+                          + ' ' + (year === 'all' ? 'All years' : year), 'success');
+            }
+        })
+        .catch(function(err) {
+            console.error('Filtered analytics error:', err);
+            if (window.showToast) showToast('❌ Error loading filtered data', 'error');
+        });
+}
+
+function resetAnalyticsFilters() {
+    var m = document.getElementById('analyticsMonthFilter');
+    var y = document.getElementById('analyticsYearFilter');
+    if (m) m.value = 'all';
+    if (y) y.value = 'all';
+    loadFilteredAnalytics();
+}
+
+function redrawChartsWithFilteredData(data) {
+    if (typeof Chart === 'undefined') return;
+
+    // ---- Monthly Sales Chart ----
+    var monthly = data.monthly || {};
+    var labels = Object.keys(monthly);
+    var sales  = labels.map(function(k) { return monthly[k].sales || 0; });
+    var profit = labels.map(function(k) { return monthly[k].profit || 0; });
+
+    var ctx1 = document.getElementById('advancedRevenueChart');
+    if (ctx1) {
+        if (window.advancedRevenueChart && window.advancedRevenueChart.destroy) {
+            window.advancedRevenueChart.destroy();
+        }
+        window.advancedRevenueChart = new Chart(ctx1, {
+            type: 'bar',
+            data: {
+                labels: labels.length ? labels : ['No data'],
+                datasets: [
+                    {
+                        label: 'Sales',
+                        data: sales.length ? sales : [0],
+                        backgroundColor: 'rgba(59,130,246,0.7)',
+                        borderColor: '#3b82f6',
+                        borderWidth: 2,
+                        borderRadius: 4
+                    },
+                    {
+                        label: 'Profit',
+                        data: profit.length ? profit : [0],
+                        backgroundColor: 'rgba(16,185,129,0.7)',
+                        borderColor: '#10b981',
+                        borderWidth: 2,
+                        borderRadius: 4
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: true, position: 'top',
+                              labels: { font: { size: 10 } } },
+                    title: {
+                        display: true,
+                        text: 'Monthly Sales & Profit',
+                        font: { size: 12, weight: 'bold' }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        ticks: {
+                            callback: function(v) { return 'KSh ' + v.toLocaleString(); },
+                            font: { size: 9 }
+                        }
+                    }
+                }
+            }
+        });
+    }
+
+    // ---- Top Products List ----
+    var topEl = document.getElementById('topProductsList');
+    if (topEl && data.top_products) {
+        if (data.top_products.length === 0) {
+            topEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.7rem;">No products sold in this period</div>';
+        } else {
+            var html = '';
+            data.top_products.forEach(function(p, i) {
+                var emoji = i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : '📦';
+                html += '<div style="display:flex;align-items:center;gap:10px;padding:6px 8px;border-bottom:1px solid var(--border-color);">';
+                html += '<span style="font-size:1.2rem;">' + emoji + '</span>';
+                html += '<div style="flex:1;"><div style="font-size:0.75rem;font-weight:600;color:var(--text-primary);">' + escapeHtml(p.name) + '</div>';
+                html += '<div style="font-size:0.55rem;color:var(--text-muted);">' + p.qty + ' sold</div></div>';
+                html += '<div style="text-align:right;font-size:0.7rem;font-weight:700;color:var(--success);">KSh ' + Number(p.revenue).toLocaleString() + '</div>';
+                html += '</div>';
+            });
+            topEl.innerHTML = html;
+        }
+    }
+
+    // ---- Payment Methods ----
+    var pmEl = document.getElementById('paymentMethodsList');
+    if (pmEl && data.payment_breakdown) {
+        var keys = Object.keys(data.payment_breakdown);
+        if (keys.length === 0) {
+            pmEl.innerHTML = '<div style="text-align:center;padding:20px;color:var(--text-muted);font-size:0.7rem;">No payment data</div>';
+        } else {
+            var total = 0;
+            keys.forEach(function(k) { total += data.payment_breakdown[k]; });
+            var pmHtml = '';
+            keys.forEach(function(k) {
+                var amt = data.payment_breakdown[k];
+                var pct = total > 0 ? (amt / total * 100) : 0;
+                pmHtml += '<div style="display:flex;justify-content:space-between;padding:6px 8px;border-bottom:1px solid var(--border-color);">';
+                pmHtml += '<div><div style="font-size:0.7rem;font-weight:600;color:var(--text-primary);text-transform:capitalize;">' + escapeHtml(k) + '</div>';
+                pmHtml += '<div style="font-size:0.55rem;color:var(--text-muted);">' + pct.toFixed(1) + '%</div></div>';
+                pmHtml += '<div style="font-size:0.7rem;font-weight:700;color:var(--success);">KSh ' + Number(amt).toLocaleString() + '</div>';
+                pmHtml += '</div>';
+            });
+            pmEl.innerHTML = pmHtml;
+        }
+    }
+}
+
+// ============================================================
+// EXPORT ANALYTICS TO CSV
+// ============================================================
+function exportAnalyticsCSV() {
+    if (!__filteredAnalyticsData) {
+        if (window.showToast) showToast('⚠️ Load analytics first (click Apply)', 'warning');
+        return;
+    }
+
+    var d = __filteredAnalyticsData;
+    var f = d.filters || {};
+    var s = d.summary || {};
+
+    var csv = '';
+    var addLine = function(line) { csv += line + '\n'; };
+
+    // Header
+    addLine('ACACIAMART — Analytics Export');
+    addLine('Filter,Month=' + (f.month || 'all') + ',Year=' + (f.year || 'all'));
+    addLine('Generated,' + new Date().toLocaleString());
+    addLine('');
+
+    // Summary
+    addLine('SUMMARY');
+    addLine('Metric,Value');
+    addLine('Total Sales,KSh ' + Number(s.total_sales || 0).toLocaleString());
+    addLine('Total Cost,KSh ' + Number(s.total_cost || 0).toLocaleString());
+    addLine('Total Profit,KSh ' + Number(s.total_profit || 0).toLocaleString());
+    addLine('Profit Margin,' + Number(s.profit_margin || 0).toFixed(2) + '%');
+    addLine('Total Orders,' + (s.order_count || 0));
+    addLine('Total Items Sold,' + (s.total_items || 0));
+    addLine('Credit Sales,KSh ' + Number(s.credit_sales || 0).toLocaleString());
+    addLine('Cash Sales,KSh ' + Number(s.cash_sales || 0).toLocaleString());
+    addLine('');
+
+    // Monthly breakdown
+    addLine('MONTHLY BREAKDOWN');
+    addLine('Month,Orders,Sales,Profit');
+    var monthly = d.monthly || {};
+    Object.keys(monthly).forEach(function(k) {
+        var m = monthly[k];
+        addLine('"' + k + '",' + m.orders + ',' + (m.sales || 0) + ',' + (m.profit || 0));
+    });
+    addLine('');
+
+    // Payment breakdown
+    addLine('PAYMENT METHODS');
+    addLine('Method,Amount');
+    var pb = d.payment_breakdown || {};
+    Object.keys(pb).forEach(function(k) {
+        addLine('"' + k + '",' + pb[k]);
+    });
+    addLine('');
+
+    // Top products
+    addLine('TOP PRODUCTS');
+    addLine('Product,Quantity,Revenue');
+    (d.top_products || []).forEach(function(p) {
+        addLine('"' + p.name.replace(/"/g, '""') + '",' + p.qty + ',' + p.revenue);
+    });
+
+    // Download
+    var blob = new Blob(['\ufeff' + csv], { type: 'text/csv;charset=utf-8;' });
+    var url = URL.createObjectURL(blob);
+    var link = document.createElement('a');
+    link.href = url;
+    link.download = 'acaciamart_analytics_' + (f.year || 'all') + '_' + (f.month || 'all') + '_' + Date.now() + '.csv';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    if (window.showToast) showToast('✅ CSV exported!', 'success');
+}
+
+// ============================================================
+// EXPORT ANALYTICS TO EXCEL (via HTML table trick — no lib needed)
+// ============================================================
+function exportAnalyticsExcel() {
+    if (!__filteredAnalyticsData) {
+        if (window.showToast) showToast('⚠️ Load analytics first (click Apply)', 'warning');
+        return;
+    }
+
+    var d = __filteredAnalyticsData;
+    var f = d.filters || {};
+    var s = d.summary || {};
+
+    var html = '<html><head><meta charset="utf-8"><title>ACACIAMART Analytics</title></head><body>';
+    html += '<h1>ACACIAMART — Analytics Report</h1>';
+    html += '<p><b>Period:</b> Month ' + (f.month || 'all') + ' / Year ' + (f.year || 'all') + '</p>';
+    html += '<p><b>Generated:</b> ' + new Date().toLocaleString() + '</p>';
+
+    // Summary
+    html += '<h2>Summary</h2><table border="1" cellpadding="5"><tr><th>Metric</th><th>Value</th></tr>';
+    html += '<tr><td>Total Sales</td><td>KSh ' + Number(s.total_sales || 0).toLocaleString() + '</td></tr>';
+    html += '<tr><td>Total Cost</td><td>KSh ' + Number(s.total_cost || 0).toLocaleString() + '</td></tr>';
+    html += '<tr><td>Total Profit</td><td>KSh ' + Number(s.total_profit || 0).toLocaleString() + '</td></tr>';
+    html += '<tr><td>Profit Margin</td><td>' + Number(s.profit_margin || 0).toFixed(2) + '%</td></tr>';
+    html += '<tr><td>Total Orders</td><td>' + (s.order_count || 0) + '</td></tr>';
+    html += '<tr><td>Total Items Sold</td><td>' + (s.total_items || 0) + '</td></tr>';
+    html += '<tr><td>Credit Sales</td><td>KSh ' + Number(s.credit_sales || 0).toLocaleString() + '</td></tr>';
+    html += '<tr><td>Cash Sales</td><td>KSh ' + Number(s.cash_sales || 0).toLocaleString() + '</td></tr>';
+    html += '</table>';
+
+    // Monthly
+    html += '<h2>Monthly Breakdown</h2><table border="1" cellpadding="5">';
+    html += '<tr><th>Month</th><th>Orders</th><th>Sales</th><th>Profit</th></tr>';
+    var monthly = d.monthly || {};
+    Object.keys(monthly).forEach(function(k) {
+        var m = monthly[k];
+        html += '<tr><td>' + k + '</td><td>' + m.orders + '</td><td>' + Number(m.sales || 0).toLocaleString() + '</td><td>' + Number(m.profit || 0).toLocaleString() + '</td></tr>';
+    });
+    html += '</table>';
+
+    // Payments
+    html += '<h2>Payment Methods</h2><table border="1" cellpadding="5">';
+    html += '<tr><th>Method</th><th>Amount</th></tr>';
+    var pb = d.payment_breakdown || {};
+    Object.keys(pb).forEach(function(k) {
+        html += '<tr><td>' + k + '</td><td>' + Number(pb[k]).toLocaleString() + '</td></tr>';
+    });
+    html += '</table>';
+
+    // Top products
+    html += '<h2>Top Products</h2><table border="1" cellpadding="5">';
+    html += '<tr><th>Product</th><th>Qty</th><th>Revenue</th></tr>';
+    (d.top_products || []).forEach(function(p) {
+        html += '<tr><td>' + p.name + '</td><td>' + p.qty + '</td><td>' + Number(p.revenue).toLocaleString() + '</td></tr>';
+    });
+    html += '</table>';
+
+    html += '</body></html>';
+
+    var blob = new Blob([html], { type: 'application/vnd.ms-excel' });
+    var url = URL.createObjectURL(blob);
+    var link = document.createElement('a');
+    link.href = url;
+    link.download = 'acaciamart_analytics_' + (f.year || 'all') + '_' + (f.month || 'all') + '_' + Date.now() + '.xls';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+
+    if (window.showToast) showToast('✅ Excel exported!', 'success');
+}
+
 </script>
 
 {% endblock %}
