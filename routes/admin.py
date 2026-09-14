@@ -4075,27 +4075,38 @@ def api_process_return():
         traceback.print_exc()
         return jsonify({'success': False, 'message': str(e)}), 500
         # ============================================================
-# [NEW] FILTERED ANALYTICS API (MONTH + YEAR FILTERS)
+# [FIXED v2] FILTERED ANALYTICS — NO DUPLICATES
 # ============================================================
 
 @admin_bp.route('/admin/api/analytics/filtered', methods=['GET'])
 @admin_required
 def api_analytics_filtered():
     """
-    Return analytics data filtered by month / year.
-
-    Query params:
-    - year:  2025, 2026, ... or 'all' (default: current year)
-    - month: 1-12 or 'all' (default: 'all')
+    Filtered analytics: combines orders (POS + Web) with credit_transactions.
+    Credit purchases are EXCLUDED from orders table to prevent duplicates.
     """
     try:
         year_param = request.args.get('year', 'all')
         month_param = request.args.get('month', 'all')
 
-        # ---- Load all orders ----
-        orders = load_orders()
+        # ---- 1. Load orders, BUT EXCLUDE any with source='credit' ----
+        # (Credit purchases come from credit_transactions, not orders)
+        raw_orders = load_orders()
 
-        # ---- Also load credit purchases as orders ----
+        orders = []
+        for o in raw_orders:
+            src = (o.get('source') or '').lower()
+            pm = (o.get('payment_method') or o.get('payment_type') or '').lower()
+
+            # Skip if it's a credit order — we'll load those from credit_transactions
+            if src == 'credit' or pm == 'credit':
+                continue
+
+            orders.append(o)
+
+        print(f"📋 Loaded {len(orders)} non-credit orders (skipped {len(raw_orders) - len(orders)} credit orders)")
+
+        # ---- 2. Load credit purchases from credit_transactions ----
         try:
             credit_resp = requests.get(
                 f"{Config.SUPABASE_URL}/rest/v1/credit_transactions"
@@ -4104,37 +4115,54 @@ def api_analytics_filtered():
                 timeout=15
             )
             credit_txns = credit_resp.json() if credit_resp.status_code == 200 else []
-        except Exception:
+        except Exception as e:
+            print(f"⚠️ Credit fetch failed: {e}")
             credit_txns = []
 
-        # Convert credit txns into order-like dicts
-        credit_as_orders = []
-        for txn in credit_txns:
-            items = txn.get('items_json') or []
+        print(f"💳 Loaded {len(credit_txns)} credit purchases")
+
+        # ---- 3. Normalize both into a common shape ----
+        def normalize(o, is_credit=False):
+            total = float(o.get('total') or o.get('amount') or 0)
+
+            if is_credit:
+                source = 'credit'
+                payment_method = 'credit'
+                order_id = f"CREDIT-{o.get('transaction_id', o.get('id', ''))}"
+            else:
+                source = (o.get('source') or 'web').lower()
+                payment_method = (o.get('payment_method') or o.get('payment_type') or 'cash').lower()
+                order_id = o.get('order_id') or o.get('id') or ''
+
+            items = o.get('items') or o.get('items_json') or []
             if isinstance(items, str):
                 try:
                     items = json.loads(items)
                 except Exception:
                     items = []
-            credit_as_orders.append({
-                'order_id': f"CREDIT-{txn.get('transaction_id', txn.get('id', ''))}",
-                'items': items if isinstance(items, list) else [],
-                'total': float(txn.get('amount') or 0),
-                'subtotal': float(txn.get('amount') or 0),
-                'shipping': 0,
-                'status': 'confirmed',
-                'source': 'credit',
-                'payment_method': 'Credit',
-                'created_at': txn.get('created_at', ''),
-                'customer_name': 'Credit Customer',
-                'profit': float(txn.get('profit') or 0)
-            })
+            if not isinstance(items, list):
+                items = []
 
-        all_orders = orders + credit_as_orders
+            return {
+                'order_id': order_id,
+                'total': total,
+                'source': source,
+                'payment_method': payment_method,
+                'status': (o.get('status') or 'confirmed').lower(),
+                'created_at': o.get('created_at') or '',
+                'items': items,
+                'customer_name': o.get('customer_name') or 'Customer',
+                'stored_profit': float(o.get('profit') or 0) if is_credit else 0,
+                'is_credit': is_credit
+            }
 
-        # ---- Parse dates & filter ----
-        def parse_order_date(o):
-            raw = o.get('created_at') or ''
+        all_orders = [normalize(o, False) for o in orders]
+        all_orders += [normalize(t, True) for t in credit_txns]
+
+        print(f"📊 Total normalized: {len(all_orders)} transactions")
+
+        # ---- 4. Parse dates ----
+        def parse_date(raw):
             if not raw:
                 return None
             try:
@@ -4149,9 +4177,10 @@ def api_analytics_filtered():
             except Exception:
                 return None
 
+        # ---- 5. Apply filters ----
         filtered = []
         for o in all_orders:
-            d = parse_order_date(o)
+            d = parse_date(o['created_at'])
             if not d:
                 continue
             if year_param != 'all':
@@ -4169,10 +4198,13 @@ def api_analytics_filtered():
             o['_dt'] = d
             filtered.append(o)
 
-        # ---- Compute totals ----
+        print(f"✅ Filtered: {len(filtered)} transactions (year={year_param}, month={month_param})")
+
+        # ---- 6. Product lookup for cost prices ----
         products = load_products()
         product_lookup = {str(p.get('id')): p for p in products if p and p.get('id')}
 
+        # ---- 7. Calculate totals ----
         total_sales = 0.0
         total_cost = 0.0
         total_profit = 0.0
@@ -4183,69 +4215,83 @@ def api_analytics_filtered():
         payment_breakdown = {}
 
         for o in filtered:
-            if (o.get('status') or '').lower() == 'cancelled':
+            if o['status'] == 'cancelled':
                 continue
+
             order_count += 1
-            order_total = float(o.get('total') or 0)
+            order_total = o['total']
             total_sales += order_total
 
-            if (o.get('source') or '') == 'credit':
+            if o['is_credit']:
                 credit_sales += order_total
             else:
                 cash_sales += order_total
 
-            pm = (o.get('payment_method') or 'cash').lower()
+            pm = o['payment_method']
             payment_breakdown[pm] = payment_breakdown.get(pm, 0) + order_total
 
-            # Compute cost + profit from items
-            order_cost = 0.0
+            # Compute profit
             order_profit = 0.0
-            items = o.get('items') or []
-            if isinstance(items, str):
-                try:
-                    items = json.loads(items)
-                except Exception:
-                    items = []
-            if not isinstance(items, list):
-                items = []
+            order_cost = 0.0
 
-            for it in items:
-                if not isinstance(it, dict):
-                    continue
-                qty = int(it.get('quantity') or 1)
-                price = float(it.get('price') or 0)
-                cost = float(it.get('cost_price') or 0)
-
-                if cost == 0:
-                    pid = str(it.get('product_id') or '')
-                    if pid and pid in product_lookup:
-                        cost = float(product_lookup[pid].get('cost_price') or 0)
-
-                total_items += qty
-                order_cost += cost * qty
-                order_profit += (price - cost) * qty
-
-            # If credit order has pre-computed profit, prefer it
-            if (o.get('source') or '') == 'credit' and o.get('profit'):
-                order_profit = float(o.get('profit') or 0)
+            if o['is_credit'] and o['stored_profit'] > 0:
+                order_profit = o['stored_profit']
                 order_cost = order_total - order_profit
+                for it in o['items']:
+                    if isinstance(it, dict):
+                        total_items += int(it.get('quantity') or 1)
+            else:
+                for it in o['items']:
+                    if not isinstance(it, dict):
+                        continue
+                    qty = int(it.get('quantity') or 1)
+                    price = float(it.get('price') or 0)
+                    cost = float(it.get('cost_price') or 0)
+
+                    if cost == 0:
+                        pid = str(it.get('product_id') or '')
+                        if pid and pid in product_lookup:
+                            cost = float(product_lookup[pid].get('cost_price') or 0)
+
+                    total_items += qty
+                    order_cost += cost * qty
+                    order_profit += (price - cost) * qty
 
             total_cost += order_cost
             total_profit += order_profit
 
-        # ---- Monthly breakdown (for the selected year) ----
+        # ---- 8. Margin ----
+        profit_margin = round((total_profit / total_sales) * 100, 2) if total_sales > 0 else 0.0
+
+        # ---- 9. Monthly breakdown ----
         monthly = {}
         for o in filtered:
-            m = o['_dt'].strftime('%b')
-            y = o['_dt'].year
-            key = f"{m} {y}"
+            if o['status'] == 'cancelled':
+                continue
+            key = o['_dt'].strftime('%b %Y')
+
+            order_profit = 0.0
+            if o['is_credit'] and o['stored_profit'] > 0:
+                order_profit = o['stored_profit']
+            else:
+                for it in o['items']:
+                    if not isinstance(it, dict):
+                        continue
+                    qty = int(it.get('quantity') or 1)
+                    price = float(it.get('price') or 0)
+                    cost = float(it.get('cost_price') or 0)
+                    if cost == 0:
+                        pid = str(it.get('product_id') or '')
+                        if pid and pid in product_lookup:
+                            cost = float(product_lookup[pid].get('cost_price') or 0)
+                    order_profit += (price - cost) * qty
+
             if key not in monthly:
                 monthly[key] = {'sales': 0.0, 'orders': 0, 'profit': 0.0}
-            monthly[key]['sales'] += float(o.get('total') or 0)
+            monthly[key]['sales'] += o['total']
             monthly[key]['orders'] += 1
-            monthly[key]['profit'] += float(o.get('profit') or 0)
+            monthly[key]['profit'] += order_profit
 
-        # Sort monthly keys chronologically
         def month_key_sort(k):
             try:
                 parts = k.split()
@@ -4255,37 +4301,20 @@ def api_analytics_filtered():
 
         monthly_sorted = dict(sorted(monthly.items(), key=lambda kv: month_key_sort(kv[0])))
 
-        # ---- Available years ----
+        # ---- 10. Available years ----
         years = set()
         for o in all_orders:
-            d = parse_order_date(o)
+            d = parse_date(o['created_at'])
             if d:
                 years.add(d.year)
         years = sorted(years, reverse=True) or [datetime.utcnow().year]
 
-        # ---- Daily breakdown (last 30 days within filter) ----
-        daily = {}
-        for o in filtered:
-            d = o['_dt'].strftime('%Y-%m-%d')
-            if d not in daily:
-                daily[d] = {'sales': 0.0, 'orders': 0, 'profit': 0.0}
-            daily[d]['sales'] += float(o.get('total') or 0)
-            daily[d]['orders'] += 1
-            daily[d]['profit'] += float(o.get('profit') or 0)
-        daily_sorted = dict(sorted(daily.items())[-30:])
-
-        # ---- Top products for the period ----
+        # ---- 11. Top products ----
         product_sales = {}
         for o in filtered:
-            items = o.get('items') or []
-            if isinstance(items, str):
-                try:
-                    items = json.loads(items)
-                except Exception:
-                    items = []
-            if not isinstance(items, list):
+            if o['status'] == 'cancelled':
                 continue
-            for it in items:
+            for it in o['items']:
                 if not isinstance(it, dict):
                     continue
                 name = it.get('name') or 'Unknown'
@@ -4296,20 +4325,21 @@ def api_analytics_filtered():
                 product_sales[name]['qty'] += qty
                 product_sales[name]['revenue'] += price * qty
 
-        top_products = sorted(product_sales.items(),
-                              key=lambda kv: kv[1]['revenue'],
-                              reverse=True)[:10]
+        top_products = sorted(
+            product_sales.items(),
+            key=lambda kv: kv[1]['revenue'],
+            reverse=True
+        )[:10]
+
         top_products_list = [
             {'name': k, 'qty': v['qty'], 'revenue': round(v['revenue'], 2)}
             for k, v in top_products
         ]
 
+        # ---- 12. Return ----
         return jsonify({
             'success': True,
-            'filters': {
-                'year': year_param,
-                'month': month_param
-            },
+            'filters': {'year': year_param, 'month': month_param},
             'summary': {
                 'total_sales': round(total_sales, 2),
                 'total_cost': round(total_cost, 2),
@@ -4318,11 +4348,10 @@ def api_analytics_filtered():
                 'order_count': order_count,
                 'credit_sales': round(credit_sales, 2),
                 'cash_sales': round(cash_sales, 2),
-                'profit_margin': round((total_profit / total_sales * 100), 2) if total_sales > 0 else 0
+                'profit_margin': profit_margin
             },
             'payment_breakdown': {k: round(v, 2) for k, v in payment_breakdown.items()},
             'monthly': monthly_sorted,
-            'daily': daily_sorted,
             'top_products': top_products_list,
             'available_years': years
         })

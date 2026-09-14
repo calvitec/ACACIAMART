@@ -2170,7 +2170,7 @@ function showSection(sectionName) {
     if (titleEl) titleEl.innerHTML = titles[sectionName] || 'Dashboard';
 
     if (sectionName === 'products') setTimeout(loadProductsWithFilters, 300);
-    if (sectionName === 'analytics') setTimeout(loadAnalyticsData, 300);
+    if (sectionName === 'analytics') setTimeout(loadFilteredAnalytics, 300);
     if (sectionName === 'orders') setTimeout(loadOrders, 300);
     if (sectionName === 'credit') setTimeout(updateCreditStats, 300);
 }
@@ -5025,6 +5025,50 @@ function exportAnalyticsExcel() {
     if (window.showToast) showToast('✅ Excel exported!', 'success');
 }
 
+</script>
+<script>
+(function() {
+    'use strict';
+
+    // Wait until every other script has loaded
+    window.addEventListener('load', function() {
+        setTimeout(function() {
+            console.log('🔧 Applying analytics auto-refresh fix...');
+
+            // Wrap showSection so analytics always loads filtered data
+            var _originalShowSection = window.showSection;
+
+            window.showSection = function(sectionName) {
+                // Call the original function first
+                if (typeof _originalShowSection === 'function') {
+                    _originalShowSection.apply(this, arguments);
+                }
+
+                // If user is going to analytics, force the filtered load
+                if (sectionName === 'analytics') {
+                    setTimeout(function() {
+                        if (typeof loadFilteredAnalytics === 'function') {
+                            console.log('📊 Auto-loading filtered analytics');
+                            loadFilteredAnalytics();
+                        }
+                    }, 350);
+                }
+            };
+
+            // Force analytics to load filtered data on page load if section is analytics
+            var savedSection = localStorage.getItem('admin_active_section');
+            if (savedSection === 'analytics') {
+                setTimeout(function() {
+                    if (typeof loadFilteredAnalytics === 'function') {
+                        loadFilteredAnalytics();
+                    }
+                }, 1000);
+            }
+
+            console.log('✅ Analytics fix applied');
+        }, 500);
+    });
+})();
 </script>
 
 {% endblock %}
