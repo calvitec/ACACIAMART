@@ -227,6 +227,55 @@
             font-weight: 700; letter-spacing: 1px;
         }
 
+        /* ===== FULFILLMENT TOGGLE ===== */
+        .fulfillment-toggle {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 16px;
+        }
+        .fulfillment-btn {
+            flex: 1;
+            padding: 14px;
+            border: 2px solid #e2e8f0;
+            border-radius: 14px;
+            background: white;
+            font-weight: 700;
+            color: #5a6d7a;
+            cursor: pointer;
+            font-size: 0.9rem;
+            transition: all 0.3s;
+            text-align: center;
+            font-family: inherit;
+        }
+        .fulfillment-btn:hover {
+            border-color: #0b2b1e;
+        }
+        .fulfillment-btn.active {
+            border-color: #0b2b1e;
+            background: #f0fdf4;
+            color: #0b2b1e;
+            box-shadow: 0 4px 16px rgba(11,43,30,0.1);
+        }
+        .fulfillment-btn .subtitle {
+            font-size: 0.7rem;
+            font-weight: 500;
+            color: #94a3b8;
+            margin-top: 2px;
+        }
+        .fulfillment-btn.active .subtitle {
+            color: #3d4f47;
+        }
+
+        .pickup-info {
+            background: #f0fdf4;
+            border: 2px dashed #0b2b1e;
+            border-radius: 12px;
+            padding: 16px;
+            margin-bottom: 16px;
+            display: none;
+        }
+        .pickup-info.visible { display: block; animation: slideUp 0.4s ease; }
+
         @media (max-width: 768px) {
             .glass-card { padding: 18px; }
             .brand-text { font-size: 1.1rem; }
@@ -246,6 +295,7 @@
             .payment-option .icon { font-size: 1.6rem; }
             .payment-option .title { font-size: 0.9rem; }
             .summary-total .value { font-size: 1.2rem; }
+            .fulfillment-btn { padding: 10px; font-size: 0.8rem; }
         }
 
         ::-webkit-scrollbar { width: 6px; }
@@ -303,6 +353,36 @@
                             </div>
                         </div>
 
+                        <!-- ===== FULFILLMENT TOGGLE (DELIVERY / PICKUP) ===== -->
+                        <div class="fulfillment-toggle">
+                            <button type="button" id="deliveryToggleBtn" class="fulfillment-btn active" onclick="setFulfillment('delivery')">
+                                🚚 Delivery
+                                <div class="subtitle">Deliver to your address</div>
+                            </button>
+                            <button type="button" id="pickupToggleBtn" class="fulfillment-btn" onclick="setFulfillment('pickup')">
+                                🏪 Pickup
+                                <div class="subtitle">Pick from our store</div>
+                            </button>
+                        </div>
+
+                        <!-- ===== PICKUP INFO ===== -->
+                        <div class="pickup-info" id="pickupInfo">
+                            <div style="display:flex;gap:12px;align-items:flex-start;">
+                                <i class="fas fa-store" style="color:#0b2b1e;font-size:1.4rem;margin-top:2px;"></i>
+                                <div>
+                                    <p style="font-weight:700;color:#0b2b1e;font-size:0.95rem;">Pickup at Our Store</p>
+                                    <p style="font-size:0.8rem;color:#3d4f47;margin-top:4px;">
+                                        📍 Rongai, Kenya<br>
+                                        📞 0717365706<br>
+                                        🕐 Open 7am – 8pm daily
+                                    </p>
+                                    <p style="font-size:0.75rem;color:#059669;font-weight:600;margin-top:8px;">
+                                        ✅ No delivery fee · Pick up at your convenience
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
+
                         <!-- Location Detection -->
                         <div class="location-detection" id="locationStatus">
                             <div style="display:flex;align-items:center;gap:12px;">
@@ -317,7 +397,7 @@
                             </div>
                         </div>
 
-                        <div class="space-y-4 mt-4">
+                        <div class="space-y-4 mt-4" id="deliveryFields">
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
                                     <label class="form-label"><i class="fas fa-user"></i> First Name <span class="required">*</span></label>
@@ -580,7 +660,7 @@
                             <span class="text-[#0b1a2f] font-semibold" id="summarySubtotal">KSh {{ "%.0f"|format(subtotal) }}</span>
                         </div>
                         <div class="summary-item">
-                            <span class="text-gray-500">Delivery Fee</span>
+                            <span class="text-gray-500" id="shippingLabel">Delivery Fee</span>
                             <span class="font-semibold text-[#0b2b1e]" id="shippingCostDisplay2">
                                 <span id="shippingPendingText">⏳ Detecting...</span>
                             </span>
@@ -620,23 +700,15 @@
     </div>
 
     <script>
-    console.log('🚀 ACACIAMART Checkout Loaded - Distance-Based Delivery');
+    console.log('🚀 ACACIAMART Checkout Loaded - Distance-Based Delivery + Pickup');
 
     // ============================================================
     // CONFIG - STORE LOCATION & DELIVERY RATES
     // ============================================================
-    // ✅ UPDATED: Store coordinates
     const STORE_LAT = -1.399201;
     const STORE_LNG = 36.725749;
     const FREE_DELIVERY_THRESHOLD = 5000;
 
-    // ✅ UPDATED: New distance-based tiers
-    // 0 - 500m      → KSh 50
-    // 500m - 1km    → KSh 100
-    // 1km - 5km     → KSh 200
-    // 5km - 10km    → KSh 300
-    // 10km - 20km   → KSh 400
-    // 20km+         → KSh 500
     function getDeliveryFee(distanceKm) {
         if (distanceKm <= 0.5)  return { fee: 50,  rate: '0 - 500m' };
         if (distanceKm <= 1.0)  return { fee: 100, rate: '500m - 1km' };
@@ -663,6 +735,63 @@
     let detectedDistance = 0;
     let locationDetected = false;
     let mpesaEscalated = false;
+    let fulfillmentType = 'delivery';   // 'delivery' or 'pickup'
+
+    // ============================================================
+    // FULFILLMENT TOGGLE: DELIVERY vs PICKUP
+    // ============================================================
+    function setFulfillment(type) {
+        fulfillmentType = type;
+
+        const deliveryBtn = document.getElementById('deliveryToggleBtn');
+        const pickupBtn = document.getElementById('pickupToggleBtn');
+        const pickupInfo = document.getElementById('pickupInfo');
+        const locationStatus = document.getElementById('locationStatus');
+        const deliveryFields = document.getElementById('deliveryFields');
+        const deliveryFeeDisplay = document.getElementById('deliveryFeeDisplay');
+        const shippingPending = document.getElementById('shippingPending');
+        const manualZoneFallback = document.getElementById('manualZoneFallback');
+        const shippingLabel = document.getElementById('shippingLabel');
+
+        if (type === 'pickup') {
+            deliveryBtn.classList.remove('active');
+            pickupBtn.classList.add('active');
+
+            pickupInfo.classList.add('visible');
+            if (locationStatus) locationStatus.style.display = 'none';
+            if (deliveryFeeDisplay) deliveryFeeDisplay.style.display = 'none';
+            if (shippingPending) shippingPending.style.display = 'none';
+            if (manualZoneFallback) manualZoneFallback.style.display = 'none';
+            if (shippingLabel) shippingLabel.textContent = 'Pickup';
+
+            // Set shipping to 0
+            shippingCost = 0;
+            shippingCalculated = true;
+            detectedDistance = 0;
+            selectedZone = null;
+
+            updateTotalsDisplay();
+            showToast('🏪 Pickup selected', 'success', 'No delivery fee · Pick up at our store');
+
+        } else {
+            pickupBtn.classList.remove('active');
+            deliveryBtn.classList.add('active');
+
+            pickupInfo.classList.remove('visible');
+            if (locationStatus) locationStatus.style.display = 'block';
+            if (shippingLabel) shippingLabel.textContent = 'Delivery Fee';
+
+            shippingCalculated = false;
+            shippingCost = 0;
+
+            // Re-run location detection
+            if (typeof detectLocation === 'function') {
+                detectLocation();
+            }
+
+            showToast('🚚 Delivery selected', 'info', 'Calculating delivery fee...');
+        }
+    }
 
     // ============================================================
     // HAVERSINE DISTANCE FORMULA
@@ -683,6 +812,11 @@
     // DETECT GPS LOCATION
     // ============================================================
     function detectLocation() {
+        if (fulfillmentType === 'pickup') {
+            console.log('📍 Pickup mode — skipping location detection');
+            return;
+        }
+
         console.log('📍 Detecting GPS location...');
         const statusDiv = document.getElementById('locationStatus');
         const spinner = document.getElementById('locationSpinner');
@@ -769,6 +903,8 @@
     // GEOCODE ADDRESS (if GPS fails)
     // ============================================================
     function geocodeAddress() {
+        if (fulfillmentType === 'pickup') return;
+
         const address = document.getElementById('address').value.trim();
         const city = document.getElementById('city').value.trim();
         const country = document.getElementById('country').value.trim() || 'Kenya';
@@ -827,6 +963,13 @@
     // APPLY DISTANCE-BASED DELIVERY FEE
     // ============================================================
     function applyDistanceDelivery(distanceKm) {
+        if (fulfillmentType === 'pickup') {
+            shippingCost = 0;
+            shippingCalculated = true;
+            updateTotalsDisplay();
+            return;
+        }
+
         const { fee, rate } = getDeliveryFee(distanceKm);
 
         if (subtotal >= FREE_DELIVERY_THRESHOLD) {
@@ -856,6 +999,8 @@
     // MANUAL ZONE FALLBACK
     // ============================================================
     function updateDeliveryFee() {
+        if (fulfillmentType === 'pickup') return;
+
         const select = document.getElementById('deliveryZone');
         const selected = select.options[select.selectedIndex];
 
@@ -900,9 +1045,14 @@
     function updateTotalsDisplay() {
         totalAmount = subtotal + shippingCost;
 
-        document.getElementById('shippingCostDisplay2').textContent = shippingCost === 0 
-            ? 'FREE 🎉' 
-            : 'KSh ' + shippingCost.toLocaleString();
+        const shippingDisplayEl = document.getElementById('shippingCostDisplay2');
+        if (fulfillmentType === 'pickup') {
+            shippingDisplayEl.textContent = 'FREE (Pickup) 🏪';
+        } else if (shippingCost === 0) {
+            shippingDisplayEl.textContent = 'FREE 🎉';
+        } else {
+            shippingDisplayEl.textContent = 'KSh ' + shippingCost.toLocaleString();
+        }
 
         document.getElementById('totalDisplay').textContent = 'KSh ' + totalAmount.toLocaleString();
         document.getElementById('orderTotal').textContent = 'KSh ' + totalAmount.toLocaleString();
@@ -913,7 +1063,9 @@
         }
 
         const freeShippingInfo = document.getElementById('freeShippingInfo');
-        if (subtotal >= FREE_DELIVERY_THRESHOLD) {
+        if (fulfillmentType === 'pickup') {
+            freeShippingInfo.innerHTML = '<i class="fas fa-store text-[#0b2b1e]"></i> <span class="text-[#0b2b1e] font-semibold">🏪 Pickup selected — no delivery fee</span>';
+        } else if (subtotal >= FREE_DELIVERY_THRESHOLD) {
             freeShippingInfo.innerHTML = '<i class="fas fa-gift text-[#0b2b1e]"></i> <span class="text-[#0b2b1e] font-semibold">🎉 FREE DELIVERY applied!</span>';
         } else {
             const remaining = FREE_DELIVERY_THRESHOLD - subtotal;
@@ -961,15 +1113,26 @@
             delivery_notes: document.getElementById('deliveryNotes').value.trim(),
             shipping_cost: shippingCost,
             delivery_zone: selectedZone,
-            distance_km: detectedDistance
+            distance_km: detectedDistance,
+            fulfillment_type: fulfillmentType
         };
     }
 
     function validateCustomerData() {
         const data = getCustomerData();
 
-        if (!data.first_name || !data.last_name || !data.email || !data.phone || !data.address || !data.city) {
-            showToast('⚠️ Please fill in all required fields', 'warning');
+        const basicFields = !data.first_name || !data.last_name || !data.email || !data.phone;
+        const addressFields = !data.address || !data.city;
+
+        if (basicFields) {
+            showToast('⚠️ Please fill in name, email, and phone', 'warning');
+            goToStep(1);
+            return false;
+        }
+
+        // Only require address if DELIVERY
+        if (fulfillmentType === 'delivery' && addressFields) {
+            showToast('⚠️ Please fill in delivery address', 'warning');
             goToStep(1);
             return false;
         }
@@ -1176,7 +1339,7 @@
     }
 
     // ============================================================
-    // ORDER VIA WHATSAPP — saves order, then redirects STRAIGHT to WhatsApp
+    // ORDER VIA WHATSAPP
     // ============================================================
     function orderViaWhatsApp() {
         if (isProcessingPayment) return;
@@ -1185,7 +1348,9 @@
 
         const data = getCustomerData();
         const customerName = data.first_name + ' ' + data.last_name;
-        const fullAddress = data.address + ', ' + data.city + ', ' + data.country;
+        const fullAddress = fulfillmentType === 'pickup'
+            ? '🏪 Pickup at Store — Rongai, Kenya'
+            : (data.address + ', ' + data.city + ', ' + data.country);
 
         const cartItems = [];
         document.querySelectorAll('.order-item').forEach(el => {
@@ -1219,7 +1384,8 @@
             customer_address: fullAddress,
             delivery_notes: data.delivery_notes,
             delivery_zone: data.delivery_zone,
-            distance_km: detectedDistance
+            distance_km: detectedDistance,
+            fulfillment_type: fulfillmentType
         };
 
         isProcessingPayment = true;
@@ -1281,7 +1447,9 @@
     function completeOrder(method) {
         const data = getCustomerData();
         const customerName = data.first_name + ' ' + data.last_name;
-        const fullAddress = data.address + ', ' + data.city + ', ' + data.country;
+        const fullAddress = fulfillmentType === 'pickup'
+            ? '🏪 Pickup at Store — Rongai, Kenya'
+            : (data.address + ', ' + data.city + ', ' + data.country);
 
         const cartItems = [];
         document.querySelectorAll('.order-item').forEach(el => {
@@ -1322,6 +1490,7 @@
             delivery_notes: data.delivery_notes,
             delivery_zone: data.delivery_zone,
             distance_km: detectedDistance,
+            fulfillment_type: fulfillmentType,
             customer: {
                 name: customerName,
                 email: data.email,
@@ -1345,7 +1514,9 @@
                 document.getElementById('trackingNumber').textContent = trackingNumber;
                 document.getElementById('deliveryName').textContent = customerName;
                 document.getElementById('deliveryAddress').textContent = fullAddress;
-                document.getElementById('orderTypeMessage').textContent = 'Your order has been confirmed and is being processed';
+                document.getElementById('orderTypeMessage').textContent = fulfillmentType === 'pickup'
+                    ? 'Your pickup order is confirmed — collect at our store'
+                    : 'Your order has been confirmed and is being processed';
 
                 const notes = document.getElementById('deliveryNotesDisplay');
                 notes.textContent = data.delivery_notes ? '📝 ' + data.delivery_notes : 'No special instructions';
@@ -1415,7 +1586,7 @@
     }
 
     // ============================================================
-    // INIT - Auto-detect location on load
+    // INIT
     // ============================================================
     document.addEventListener('DOMContentLoaded', function() {
         const mpesaBtn = document.getElementById('mpesaPayBtn');
@@ -1427,6 +1598,7 @@
         document.getElementById('summarySubtotal').textContent = 'KSh ' + subtotal.toLocaleString();
         updateTotalsDisplay();
 
+        // Default to Delivery mode → run location detection
         setTimeout(() => {
             detectLocation();
         }, 800);
