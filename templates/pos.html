@@ -3253,6 +3253,7 @@ console.log('  - showCreditCustomerInfo()');
                     } else {
                         let url = '/admin/pos/place-order';
                         let body = {
+                            order_id: order.order_id,
                             items: order.items,
                             subtotal: order.subtotal || order.total,
                             shipping: order.shipping || 0,
@@ -3260,6 +3261,8 @@ console.log('  - showCreditCustomerInfo()');
                             customer_name: order.customer_name || 'Walk-in Customer',
                             customer_email: order.customer_email || 'walkin@example.com',
                             customer_phone: order.customer_phone || 'N/A',
+                            customer_address: order.customer_address || 'In-store purchase',
+                            source: order.source || 'pos',
                             notes: order.notes || '',
                             payment_method: order.payment_method || 'cash',
                             tip_amount: order.tip_amount || 0,
@@ -3413,8 +3416,8 @@ console.log('  - showCreditCustomerInfo()');
             customer_email: customerEmail,
             customer_phone: customerPhone,
             customer_address: 'In-store purchase',
-            notes: notes,
             payment_method: paymentMethod,
+            notes: (notes + (window.__mpesaReceipt ? ' | M-Pesa Receipt: ' + window.__mpesaReceipt : '')).trim(),
             tip_amount: tipAmount || 0,
             discount: discountValue,
             discount_type: discountType,
@@ -3492,11 +3495,13 @@ console.log('  - showCreditCustomerInfo()');
                 updateQuickSalesCount();
                 loadSalesStats();
                 loadUserStats();
+                window.mpesaPaymentConfirmed = false;
 
                 btn.innerHTML = originalText;
                 btn.disabled = false;
             } else {
                 console.log('📡 API error, saving offline:', data.message);
+                window.mpesaPaymentConfirmed = false;
                 showToast('📡 Saving order offline...', 'warning');
                 saveOrderOffline(orderData, btn, originalText);
             }
@@ -3504,6 +3509,7 @@ console.log('  - showCreditCustomerInfo()');
         .catch(err => {
             clearTimeout(timeoutId);
             console.log('❌ Network error, saving offline:', err.message);
+            window.mpesaPaymentConfirmed = false;
             showToast('📡 No connection, saving offline...', 'warning');
             saveOrderOffline(orderData, btn, originalText);
         });
@@ -6010,6 +6016,7 @@ function pollMpesaStatus() {
             clearInterval(mpesaPollTimer);
             mpesaPollTimer = null;
             mpesaFinalizing = true;
+            window.mpesaPaymentConfirmed = true;
 
             statusEl.style.background = '#dcfce7';
             statusEl.style.color = '#166534';
