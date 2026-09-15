@@ -932,6 +932,9 @@ def mpesa_callback():
             print(f"   Receipt: {mpesa_receipt}")
             print(f"   Phone: {phone}")
 
+            existing_callback = get_callback_result(checkout_request_id) or {}
+            callback_order_id = session.get('mpesa_order_id') or existing_callback.get('order_id')
+
             save_callback_result(
                 checkout_request_id=checkout_request_id,
                 result_code='0',
@@ -939,15 +942,16 @@ def mpesa_callback():
                 amount=amount,
                 receipt=mpesa_receipt,
                 phone=phone,
-                order_id=session.get('mpesa_order_id'),
+                order_id=callback_order_id,
             )
         else:
             print(f"❌ PAYMENT FAILED: [{result_code}] {result_desc}")
+            existing_callback = get_callback_result(checkout_request_id) or {}
             save_callback_result(
                 checkout_request_id=checkout_request_id,
                 result_code=str(result_code),
                 result_desc=result_desc,
-                order_id=session.get('mpesa_order_id'),
+                order_id=session.get('mpesa_order_id') or existing_callback.get('order_id'),
             )
 
         return jsonify({'ResultCode': 0, 'ResultDesc': 'Success'})
@@ -967,12 +971,24 @@ def place_order():
     """Place M-Pesa order - saves to admin"""
     try:
         cart = get_cart()
-        if not cart:
-            return jsonify({'success': False, 'message': 'Cart is empty'}), 400
-
         data = request.get_json()
         if not data:
             return jsonify({'success': False, 'message': 'No data received'}), 400
+
+        # M-Pesa confirmation can arrive after the browser session changes.
+        # Use the posted items as a fallback, just like the WhatsApp flow.
+        if not cart:
+            posted_items = data.get('items') or []
+            cart = {}
+            for item in posted_items:
+                if not isinstance(item, dict):
+                    continue
+                item_id = item.get('product_id') or item.get('id') or item.get('name')
+                quantity = int(item.get('quantity', 0) or 0)
+                if item_id and quantity > 0:
+                    cart[str(item_id)] = quantity
+        if not cart:
+            return jsonify({'success': False, 'message': 'Cart is empty'}), 400
 
         print("=" * 60)
         print("📦 PLACE ORDER (M-PESA)")
@@ -986,9 +1002,34 @@ def place_order():
         shipping = float(data.get('shipping', 0) or 0)
         subtotal = float(data.get('subtotal', 0) or 0)
         discount = float(data.get('discount', 0) or 0)
-        tax_rate = 0.16
         payment_method = data.get('payment_method', 'mpesa')
         order_id = data.get('order_id', f'ORD-{datetime.now().strftime("%Y%m%d%H%M%S")}')
+
+        # The payment poll can retry while the order request is still finishing.
+        # Treat the client order ID as an idempotency key.
+        existing_response = requests.get(
+            f"{Config.SUPABASE_URL}/rest/v1/orders",
+            headers=Config.SUPABASE_HEADERS,
+            params={
+                'order_id': f'eq.{order_id}',
+                'select': 'order_id,total,status,payment_status',
+                'limit': 1,
+            },
+            timeout=10,
+        )
+        if existing_response.status_code == 200:
+            existing_orders = existing_response.json() or []
+            if existing_orders:
+                existing_order = existing_orders[0]
+                session['cart'] = {}
+                session.modified = True
+                return jsonify({
+                    'success': True,
+                    'duplicate': True,
+                    'order_id': existing_order.get('order_id', order_id),
+                    'total': existing_order.get('total', data.get('total', 0)),
+                    'message': 'Order already recorded; no duplicate created.',
+                })
 
         if subtotal == 0:
             products = load_products()
@@ -996,18 +1037,31 @@ def place_order():
             bundles = load_bundles()
             for item_id, quantity in cart.items():
                 for product in products:
-                    if str(product.get('id')) == str(item_id):
+                    product_matches = (
+                        str(product.get('id')) == str(item_id)
+                        or str(product.get('name', '')).strip().lower() == str(item_id).strip().lower()
+                    )
+                    if product_matches:
                         subtotal += float(product.get('price', 0) or 0) * int(quantity)
                         break
                 else:
                     for bundle in bundles:
-                        if str(bundle.get('id')) == str(item_id):
+                        bundle_matches = (
+                            str(bundle.get('id')) == str(item_id)
+                            or str(bundle.get('name', '')).strip().lower() == str(item_id).strip().lower()
+                        )
+                        if bundle_matches:
                             subtotal += float(bundle.get('price', 0) or 0) * int(quantity)
                             break
 
         net_revenue = subtotal - discount
-        tax = subtotal * tax_rate
-        total_charged = net_revenue + tax + shipping
+        if subtotal >= 5000:
+            shipping = 0
+        # The STK amount is subtotal plus delivery; do not invent tax here.
+        if subtotal >= 5000:
+            total_charged = net_revenue
+        else:
+            total_charged = float(data.get('total', net_revenue + shipping) or (net_revenue + shipping))
 
         products = load_products()
         products = clean_products(products)
@@ -1019,7 +1073,12 @@ def place_order():
                 continue
             item_found = False
             for product in products:
-                if str(product.get('id')) == str(item_id):
+                product_matches = (
+                    str(product.get('id')) == str(item_id)
+                    or str(product.get('name', '')).strip().lower() == str(item_id).strip().lower()
+                )
+                if product_matches:
+                    product_id = str(product.get('id'))
                     current_stock = int(product.get('stock', 0) or 0)
                     if current_stock < int(quantity):
                         return jsonify({
@@ -1028,7 +1087,7 @@ def place_order():
                         }), 400
                     item_total = float(product.get('price', 0) or 0) * int(quantity)
                     order_items.append({
-                        'product_id': str(item_id),
+                        'product_id': product_id,
                         'name': str(product.get('name', 'Product')),
                         'price': float(product.get('price', 0) or 0),
                         'quantity': int(quantity),
@@ -1037,15 +1096,19 @@ def place_order():
                     })
                     item_found = True
                     new_stock = max(0, current_stock - int(quantity))
-                    update_product_stock(item_id, new_stock)
+                    update_product_stock(product_id, new_stock)
                     break
 
             if not item_found:
                 for bundle in bundles:
-                    if str(bundle.get('id')) == str(item_id):
+                    bundle_matches = (
+                        str(bundle.get('id')) == str(item_id)
+                        or str(bundle.get('name', '')).strip().lower() == str(item_id).strip().lower()
+                    )
+                    if bundle_matches:
                         item_total = float(bundle.get('price', 0) or 0) * int(quantity)
                         order_items.append({
-                            'product_id': str(item_id),
+                            'product_id': str(bundle.get('id')),
                             'name': str(bundle.get('name', 'Bundle')),
                             'price': float(bundle.get('price', 0) or 0),
                             'quantity': int(quantity),
@@ -1059,18 +1122,6 @@ def place_order():
 
         order_data = {
             'order_id': str(order_id),
-            'items': order_items,
-            'subtotal': float(subtotal),
-            'discount': float(discount),
-            'tax': float(tax),
-            'net_revenue': float(net_revenue),
-            'shipping': float(shipping),
-            'shipping_cost': float(data.get('shipping_cost', 0) or 0),
-            'total_charged': float(total_charged),
-            'status': str(data.get('status', 'pending')),
-            'source': str(data.get('source', 'web')),
-            'payment_method': str(payment_method),
-            'created_at': datetime.utcnow().isoformat(),
             'customer_name': str(customer_name),
             'customer_email': str(customer_email),
             'customer_phone': str(customer_phone),
@@ -1081,11 +1132,18 @@ def place_order():
                 'phone': str(customer_phone),
                 'address': str(customer_address),
             },
-            'delivery_notes': str(data.get('delivery_notes', '')),
+            'items': order_items,
+            'subtotal': float(subtotal),
+            'discount': float(discount),
+            'shipping': float(shipping),
+            'total': float(total_charged),
+            'status': 'confirmed',
+            'payment_status': 'paid' if payment_method.lower() == 'mpesa' else str(data.get('payment_status', 'pending')),
+            'payment_method': str(payment_method),
+            'source': 'web',
+            'notes': str(data.get('delivery_notes', '')),
+            'created_at': datetime.utcnow().isoformat(),
         }
-
-        if data.get('location'):
-            order_data['location'] = data.get('location')
 
         try:
             response = requests.post(
@@ -1120,9 +1178,10 @@ def place_order():
                     'whatsapp_url': whatsapp_url,
                 })
             else:
+                print(f"❌ Web M-Pesa order save failed: {response.status_code} - {response.text[:500]}")
                 return jsonify({
                     'success': False,
-                    'message': f'Database error: {response.status_code}'
+                    'message': f'Database error: {response.status_code} - {response.text[:200]}'
                 }), 500
 
         except requests.exceptions.Timeout:
@@ -1183,6 +1242,9 @@ def place_order_whatsapp():
                             break
 
         total_charged = subtotal + shipping
+        if subtotal >= 5000:
+            shipping = 0
+            total_charged = subtotal
 
         products = load_products()
         products = clean_products(products)
