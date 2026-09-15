@@ -1043,6 +1043,10 @@
     // UPDATE TOTALS DISPLAY
     // ============================================================
     function updateTotalsDisplay() {
+        if (subtotal >= FREE_DELIVERY_THRESHOLD) {
+            shippingCost = 0;
+            shippingCalculated = true;
+        }
         totalAmount = subtotal + shippingCost;
 
         const shippingDisplayEl = document.getElementById('shippingCostDisplay2');
@@ -1101,6 +1105,7 @@
     // GET CUSTOMER DATA
     // ============================================================
     function getCustomerData() {
+        const effectiveShipping = subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : shippingCost;
         return {
             first_name: document.getElementById('firstName').value.trim(),
             last_name: document.getElementById('lastName').value.trim(),
@@ -1111,7 +1116,7 @@
             zip: document.getElementById('zip').value.trim(),
             country: document.getElementById('country').value.trim() || 'Kenya',
             delivery_notes: document.getElementById('deliveryNotes').value.trim(),
-            shipping_cost: shippingCost,
+            shipping_cost: effectiveShipping,
             delivery_zone: selectedZone,
             distance_km: detectedDistance,
             fulfillment_type: fulfillmentType
@@ -1372,7 +1377,7 @@
             tracking_number: trackingNumber,
             items: cartItems,
             subtotal: subtotal,
-            shipping: shippingCost,
+            shipping: subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : shippingCost,
             total: totalAmount,
             payment_method: 'whatsapp',
             status: 'pending',
@@ -1445,6 +1450,9 @@
     // COMPLETE M-PESA ORDER
     // ============================================================
     function completeOrder(method) {
+        if (orderPlaced) return;
+        orderPlaced = true;
+
         const data = getCustomerData();
         const customerName = data.first_name + ' ' + data.last_name;
         const fullAddress = fulfillmentType === 'pickup'
@@ -1477,7 +1485,7 @@
             tracking_number: trackingNumber,
             items: cartItems,
             subtotal: subtotal,
-            shipping: shippingCost,
+            shipping: subtotal >= FREE_DELIVERY_THRESHOLD ? 0 : shippingCost,
             total: totalAmount,
             payment_method: method,
             status: 'processing',
@@ -1507,7 +1515,6 @@
         .then(response => response.json())
         .then(result => {
             if (result.success) {
-                orderPlaced = true;
                 isProcessingPayment = false;
 
                 document.getElementById('orderId').textContent = result.order_id || orderId;
@@ -1529,11 +1536,13 @@
                     setTimeout(() => window.open(result.whatsapp_url, '_blank'), 1500);
                 }
             } else {
+                orderPlaced = false;
                 showToast('❌ ' + (result.message || 'Failed to place order'), 'error');
                 resetPaymentButtons();
             }
         })
         .catch(error => {
+            orderPlaced = false;
             showToast('❌ Something went wrong. Please try again.', 'error');
             resetPaymentButtons();
         });
