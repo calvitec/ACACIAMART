@@ -1606,7 +1606,7 @@
     /* ============================================================
        CATEGORY IMAGES
        ============================================================ */
-    const CATEGORY_IMAGE_MAP = [
+  const CATEGORY_IMAGE_MAP = [
     [['beverage', 'drink', 'juice', 'soda'],
      'https://images.unsplash.com/photo-1544145945-f90425340c7e?w=400&h=300&fit=crop&auto=format'],
 
@@ -1628,11 +1628,23 @@
     [['household', 'clean', 'homecare', 'laundry', 'detergent'],
      'https://images.unsplash.com/photo-1585421514738-01798e348b17?w=400&h=300&fit=crop&auto=format'],
 
-    [['health', 'beauty', 'personal care', 'cosmetic', 'lotion'],
+    [['health', 'beauty', 'personal care', 'cosmetic'],
      'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&h=300&fit=crop&auto=format'],
 
-    [['baby', 'kid', 'period', 'pads', 'sanitary', 'feminine', 'diaper'],
+    [['body care', 'lotion', 'skin care', 'vaseline', 'body lotion'],
+     'https://images.unsplash.com/photo-1571781926291-c477ebfd024b?w=400&h=300&fit=crop&auto=format'],
+
+    [['baby wipe'],
+     'https://images.unsplash.com/photo-1615486364082-2b8a1a4b7df8?w=400&h=300&fit=crop&auto=format'],
+
+    [['baby diaper', 'diaper', 'pampers', 'huggies'],
+     'https://images.unsplash.com/photo-1611174619659-2508ad8bd7ad?w=400&h=300&fit=crop&auto=format'],
+
+    [['baby', 'kid', 'infant', 'child'],
      'https://images.unsplash.com/photo-1519689680058-324335c77eba?w=400&h=300&fit=crop&auto=format'],
+
+    [['period', 'pads', 'sanitary', 'feminine'],
+     'https://images.unsplash.com/photo-1584451428414-f1e6e3c8dd8c?w=400&h=300&fit=crop&auto=format'],
 
     [['frozen'],
      'https://images.unsplash.com/photo-1584362917165-526a968579e8?w=400&h=300&fit=crop&auto=format'],
@@ -1655,9 +1667,6 @@
     [['soap', 'bar soap'],
      'https://images.unsplash.com/photo-1600857544200-b2f666a9a2ec?w=400&h=300&fit=crop&auto=format'],
 
-    [['body care', 'skin care', 'vaseline'],
-     'https://images.unsplash.com/photo-1570194065650-d99fb4bedf0a?w=400&h=300&fit=crop&auto=format'],
-
     [['toothpaste', 'toothbrush', 'oral'],
      'https://images.unsplash.com/photo-1607613009820-a29f7bb81c04?w=400&h=300&fit=crop&auto=format'],
 
@@ -1667,7 +1676,7 @@
     [['hair care', 'shampoo', 'conditioner'],
      'https://images.unsplash.com/photo-1522338242992-e1a54906a8da?w=400&h=300&fit=crop&auto=format'],
 
-    [['fabric softener'],
+    [['fabric softener', 'comfort', 'downy'],
      'https://images.unsplash.com/photo-1610557892470-55d9e80c0bce?w=400&h=300&fit=crop&auto=format'],
 
     [['salt'],
@@ -1685,7 +1694,10 @@
     [['chocolate', 'sweet', 'candy'],
      'https://images.unsplash.com/photo-1511381939415-e44015466834?w=400&h=300&fit=crop&auto=format'],
 
-    [['jam', 'peanut butter', 'spread', 'honey'],
+    [['jam', 'peanut butter', 'spread'],
+     'https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=400&h=300&fit=crop&auto=format'],
+
+    [['honey'],
      'https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=400&h=300&fit=crop&auto=format'],
 
     [['legume', 'bean', 'lentil', 'pea'],
@@ -1696,9 +1708,6 @@
 
     [['deodorant'],
      'https://images.unsplash.com/photo-1610397648930-477b8c7f0943?w=400&h=300&fit=crop&auto=format'],
-
-    [['baby wipe'],
-     'https://images.unsplash.com/photo-1519689680058-324335c77eba?w=400&h=300&fit=crop&auto=format'],
 
     [['shoe polish', 'leather care'],
      'https://images.unsplash.com/photo-1449505278894-297fdb3edbc1?w=400&h=300&fit=crop&auto=format'],
@@ -1718,7 +1727,6 @@
     [['rice'],
      'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400&h=300&fit=crop&auto=format']
 ];
-
     function getCategoryImage(category) {
         const lower = category.toLowerCase();
         for (const [keywords, url] of CATEGORY_IMAGE_MAP) {
