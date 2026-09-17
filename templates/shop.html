@@ -1607,21 +1607,117 @@
        CATEGORY IMAGES
        ============================================================ */
     const CATEGORY_IMAGE_MAP = [
-        [['beverage', 'drink', 'juice', 'soda'], 'https://quest.co.ke/wp-content/uploads/2023/08/minute-maid.jpg'],
-        [['snack', 'chip', 'biscuit', 'confection'], 'https://images.unsplash.com/photo-1613919113640-25732ec5e61f?w=400&h=300&fit=crop&auto=format'],
-        [['fresh', 'fruit', 'vegetable', 'produce'], 'https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=400&h=300&fit=crop&auto=format'],
-        [['dairy', 'milk', 'cheese', 'yog'], 'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=400&h=300&fit=crop&auto=format'],
-        [['bakery', 'bread'], 'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400&h=300&fit=crop&auto=format'],
-        [['meat', 'butchery', 'chicken', 'beef'], 'https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?w=400&h=300&fit=crop&auto=format'],
-        [['household', 'clean', 'homecare', 'laundry'], 'https://images.unsplash.com/photo-1585421514738-01798e348b17?w=400&h=300&fit=crop&auto=format'],
-        [['health', 'beauty', 'personal care', 'cosmetic'], 'https://nairomarket.co.ke/cdn/shop/files/8DTKkem0P1.jpg?v=1723750494&width=1445'],
-        [['baby', 'kid', 'period', 'pads', 'sanitary', 'feminine'], 'https://cdn.mafrservices.com/sys-master-root/h05/ha4/26929875550238/153610_main.jpg?im=Resize=376'],
-        [['frozen'], 'https://images.unsplash.com/photo-1584362917165-526a968579e8?w=400&h=300&fit=crop&auto=format'],
-        [['grain', 'cereal', 'rice', 'flour', 'cupboard'], 'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400&h=300&fit=crop&auto=format'],
-        [['electronic', 'appliance'], 'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=400&h=300&fit=crop&auto=format'],
-        [['stationery', 'office'], 'https://images.unsplash.com/photo-1568205612837-017257d2310a?w=400&h=300&fit=crop&auto=format'],
-        [['liquor', 'wine', 'beer', 'spirit', 'alcohol'], 'https://images.unsplash.com/photo-1470337458703-46ad1756a187?w=400&h=300&fit=crop&auto=format']
-    ];
+    [['beverage', 'drink', 'juice', 'soda'],
+     'https://images.unsplash.com/photo-1544145945-f90425340c7e?w=400&h=300&fit=crop&auto=format'],
+
+    [['snack', 'chip', 'biscuit', 'crisp'],
+     'https://images.unsplash.com/photo-1566478989037-eec170784d0b?w=400&h=300&fit=crop&auto=format'],
+
+    [['fresh', 'fruit', 'vegetable', 'produce'],
+     'https://images.unsplash.com/photo-1610832958506-aa56368176cf?w=400&h=300&fit=crop&auto=format'],
+
+    [['dairy', 'milk', 'cheese', 'yoghurt', 'yogurt'],
+     'https://images.unsplash.com/photo-1550583724-b2692b85b150?w=400&h=300&fit=crop&auto=format'],
+
+    [['bakery', 'bread', 'cake'],
+     'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400&h=300&fit=crop&auto=format'],
+
+    [['meat', 'butchery', 'chicken', 'beef', 'fish'],
+     'https://images.unsplash.com/photo-1607623814075-e51df1bdc82f?w=400&h=300&fit=crop&auto=format'],
+
+    [['household', 'clean', 'homecare', 'laundry', 'detergent'],
+     'https://images.unsplash.com/photo-1585421514738-01798e348b17?w=400&h=300&fit=crop&auto=format'],
+
+    [['health', 'beauty', 'personal care', 'cosmetic', 'lotion'],
+     'https://images.unsplash.com/photo-1556228720-195a672e8a03?w=400&h=300&fit=crop&auto=format'],
+
+    [['baby', 'kid', 'period', 'pads', 'sanitary', 'feminine', 'diaper'],
+     'https://images.unsplash.com/photo-1519689680058-324335c77eba?w=400&h=300&fit=crop&auto=format'],
+
+    [['frozen'],
+     'https://images.unsplash.com/photo-1584362917165-526a968579e8?w=400&h=300&fit=crop&auto=format'],
+
+    [['grain', 'cereal', 'rice', 'flour', 'cupboard', 'maize', 'unga'],
+     'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400&h=300&fit=crop&auto=format'],
+
+    [['electronic', 'appliance'],
+     'https://images.unsplash.com/photo-1585771724684-38269d6639fd?w=400&h=300&fit=crop&auto=format'],
+
+    [['stationery', 'office', 'school'],
+     'https://images.unsplash.com/photo-1568205612837-017257d2310a?w=400&h=300&fit=crop&auto=format'],
+
+    [['liquor', 'wine', 'beer', 'spirit', 'alcohol'],
+     'https://images.unsplash.com/photo-1470337458703-46ad1756a187?w=400&h=300&fit=crop&auto=format'],
+
+    [['spice', 'seasoning'],
+     'https://images.unsplash.com/photo-1596040033229-a9821ebd058d?w=400&h=300&fit=crop&auto=format'],
+
+    [['soap', 'bar soap'],
+     'https://images.unsplash.com/photo-1600857544200-b2f666a9a2ec?w=400&h=300&fit=crop&auto=format'],
+
+    [['body care', 'skin care', 'vaseline'],
+     'https://images.unsplash.com/photo-1570194065650-d99fb4bedf0a?w=400&h=300&fit=crop&auto=format'],
+
+    [['toothpaste', 'toothbrush', 'oral'],
+     'https://images.unsplash.com/photo-1607613009820-a29f7bb81c04?w=400&h=300&fit=crop&auto=format'],
+
+    [['tea', 'coffee', 'hot drink'],
+     'https://images.unsplash.com/photo-1544787219-7f47ccb76574?w=400&h=300&fit=crop&auto=format'],
+
+    [['hair care', 'shampoo', 'conditioner'],
+     'https://images.unsplash.com/photo-1522338242992-e1a54906a8da?w=400&h=300&fit=crop&auto=format'],
+
+    [['fabric softener'],
+     'https://images.unsplash.com/photo-1610557892470-55d9e80c0bce?w=400&h=300&fit=crop&auto=format'],
+
+    [['salt'],
+     'https://images.unsplash.com/photo-1518110925495-b37eccc2c6e1?w=400&h=300&fit=crop&auto=format'],
+
+    [['sugar'],
+     'https://images.unsplash.com/photo-1581441363689-1f3c3c414635?w=400&h=300&fit=crop&auto=format'],
+
+    [['cooking oil', 'cooking fat', 'margarine'],
+     'https://images.unsplash.com/photo-1474979266404-7eaacbcd87c5?w=400&h=300&fit=crop&auto=format'],
+
+    [['noodle', 'pasta', 'macaroni', 'spaghetti'],
+     'https://images.unsplash.com/photo-1551462147-ff29053bfc14?w=400&h=300&fit=crop&auto=format'],
+
+    [['chocolate', 'sweet', 'candy'],
+     'https://images.unsplash.com/photo-1511381939415-e44015466834?w=400&h=300&fit=crop&auto=format'],
+
+    [['jam', 'peanut butter', 'spread', 'honey'],
+     'https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=400&h=300&fit=crop&auto=format'],
+
+    [['legume', 'bean', 'lentil', 'pea'],
+     'https://images.unsplash.com/photo-1610970881699-44a5587cabec?w=400&h=300&fit=crop&auto=format'],
+
+    [['cereal', 'cornflake', 'oats'],
+     'https://images.unsplash.com/photo-1517686469429-8bdb88b9f907?w=400&h=300&fit=crop&auto=format'],
+
+    [['deodorant'],
+     'https://images.unsplash.com/photo-1610397648930-477b8c7f0943?w=400&h=300&fit=crop&auto=format'],
+
+    [['baby wipe'],
+     'https://images.unsplash.com/photo-1519689680058-324335c77eba?w=400&h=300&fit=crop&auto=format'],
+
+    [['shoe polish', 'leather care'],
+     'https://images.unsplash.com/photo-1449505278894-297fdb3edbc1?w=400&h=300&fit=crop&auto=format'],
+
+    [['kitchenware', 'utensil', 'pot', 'pan'],
+     'https://images.unsplash.com/photo-1556909212-d5b604d0c90d?w=400&h=300&fit=crop&auto=format'],
+
+    [['battery', 'torch'],
+     'https://images.unsplash.com/photo-1609091839311-d5365f9ff1c5?w=400&h=300&fit=crop&auto=format'],
+
+    [['sauce', 'ketchup', 'mayonnaise'],
+     'https://images.unsplash.com/photo-1472476443507-c7a5948772fc?w=400&h=300&fit=crop&auto=format'],
+
+    [['flour', 'unga', 'maize flour'],
+     'https://images.unsplash.com/photo-1509440159596-0249088772ff?w=400&h=300&fit=crop&auto=format'],
+
+    [['rice'],
+     'https://images.unsplash.com/photo-1586201375761-83865001e31c?w=400&h=300&fit=crop&auto=format']
+];
 
     function getCategoryImage(category) {
         const lower = category.toLowerCase();
